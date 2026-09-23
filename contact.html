@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact · Paolo Barucca</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site">
+  <nav class="nav">
+    <a class="name" href="index.html">Paolo Barucca</a>
+    <a href="research.html">Research</a>
+    <a href="teaching.html">Teaching</a>
+    <a href="consultancy.html">Consultancy</a>
+    <a href="comedy.html">Comedy</a>
+    <a href="links.html">Links</a>
+    <a href="contact.html" aria-current="page">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Contact</h1>
+  <p class="lead">For research, students, consultancy or shows — drop me a line.</p>
+  <p>Email: p dot barucca at ucl dot ac dot uk · <a href="https://www.linkedin.com/in/paolobarucca">LinkedIn</a> · <a href="https://www.instagram.com/the_standup_scientist">Instagram</a></p>
+
+  <!-- Replace YOUR_FORM_ID with the ID Formspree gives you (free at formspree.io) -->
+  <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+    <div>
+      <label for="name">Name / Company</label>
+      <input id="name" name="name" required>
+    </div>
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" required>
+    </div>
+    <div>
+      <label for="topic">About</label>
+      <select id="topic" name="topic">
+        <option value="research">Research / collaboration</option>
+        <option value="students">Prospective student</option>
+        <option value="rd">R&amp;D</option>
+        <option value="consulting">Consulting</option>
+        <option value="training">Training</option>
+        <option value="events">Events</option>
+        <option value="comedy">Comedy / shows</option>
+        <option value="other">Something else</option>
+      </select>
+    </div>
+    <div>
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="6" required></textarea>
+    </div>
+    <button type="submit">Send</button>
+  </form>
+</main>
+
+<footer>© Paolo Barucca</footer>
+
+<script>
+  // Pre-select the topic when arriving from e.g. contact.html?topic=consulting
+  const t = new URLSearchParams(location.search).get('topic');
+  if (t) { const s = document.getElementById('topic'); if ([...s.options].some(o => o.value === t)) s.value = t; }
+</script>
+</body>
+</html>
