@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Guess two-thirds of the average: paste in a room's numbers from two rounds and see the average, the target, the winner and how far the crowd reasoned.">
+<title>Two-Thirds of the Average · Paolo Barucca</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Fallbacks so the page also works on its own, outside the site */
+  :root {
+    --bg: #fbfaf7; --text: #1f2328; --muted: #5b6168; --accent: #b4412c;
+    --card: #ffffff; --border: #e6e2da; --max: 760px;
+    --r1: #8a8f96; --r2: #2f6fc0; --grid: #ece8e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181b; --text: #e8e6e1; --muted: #a3a8ae; --accent: #f07a5f;
+      --card: #1f2226; --border: #2e3237;
+      --r1: #8d939a; --r2: #6ea8f0; --grid: #2a2e33;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); margin: 0;
+         font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.6; }
+  header.site { border-bottom: 1px solid var(--border); background: var(--card); position: sticky; top: 0; z-index: 10; }
+  .nav { max-width: var(--max); margin: 0 auto; padding: .8rem 16px; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1.1rem; }
+  .nav .name { font-family: "Source Serif 4", Georgia, serif; font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; margin-right: auto; }
+  .nav a:not(.name) { color: var(--muted); text-decoration: none; font-size: .95rem; }
+  .nav a[aria-current="page"], .nav a:not(.name):hover { color: var(--accent); }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-size: 2.2rem; margin: 0 0 .4rem; line-height: 1.25; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 1.3rem; margin: 2rem 0 .6rem; border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+  .lead { font-size: 1.15rem; color: var(--muted); margin-top: 0; }
+  a { color: var(--accent); }
+  button { font: inherit; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 8px; cursor: pointer; padding: .5rem .9rem; font-size: .9rem; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  textarea { width: 100%; min-height: 9rem; padding: .5rem .7rem; font: inherit; font-size: .88rem; color: var(--text);
+             background: var(--card); border: 1px solid var(--border); border-radius: 8px; font-variant-numeric: tabular-nums; }
+  textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 2rem 16px; border-top: 1px solid var(--border); }
+  main.wide { max-width: 1120px; margin: 0 auto; padding: 2rem 16px 4rem; }
+  .intro { max-width: 760px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; }
+  .panel h3 { margin: 0 0 .5rem; font-family: "Source Serif 4", Georgia, serif; font-size: 1.05rem; }
+  .muted { color: var(--muted); }
+  .small { font-size: .85rem; }
+  .row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: .6rem 0 0; }
+  input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--accent); }
+  .row label { font-size: .9rem; display: inline-flex; gap: .35rem; align-items: center; }
+
+  details.entry > summary { cursor: pointer; font-weight: 600; color: var(--muted); margin: 1.4rem 0 .6rem; }
+  .entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 760px) { .entry-grid { grid-template-columns: 1fr; } }
+  .parse-note { font-size: .8rem; color: var(--muted); margin: .3rem 0 0; min-height: 1.2em; }
+  .parse-note.warn { color: var(--accent); }
+
+  .rounds { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.2rem; }
+  @media (max-width: 760px) { .rounds { grid-template-columns: 1fr; } }
+  .round-card { position: relative; }
+  .round-card .tag { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .dot { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; }
+  .big { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-top: .6rem; }
+  .stat { border: 1px solid var(--border); border-radius: 8px; padding: .5rem .65rem; min-width: 0; }
+  .rounds > *, .entry-grid > *, .compare > * { min-width: 0; }
+  .stat .k { overflow-wrap: anywhere; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat .v { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+  .stat.key .v { color: var(--accent); }
+  .winner { margin: .7rem 0 0; font-size: 1rem; }
+  .winner strong { color: var(--accent); }
+  .hidden-veil { color: var(--muted); letter-spacing: .1em; }
+  .reveal-btn { margin-top: .7rem; }
+
+  .chart-wrap { margin-top: 1rem; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  svg.chart text { font-family: inherit; }
+  .chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  @media (max-width: 700px) { svg.chart { min-width: 680px; } }
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-size: .85rem; color: var(--muted); margin-top: .4rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .sw-line { width: 1.4rem; height: 0; border-top: 2px solid var(--accent); display: inline-block; }
+  .sw-dash { width: 1.4rem; height: 0; border-top: 2px dashed var(--muted); display: inline-block; }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: .6rem; }
+  .compare .stat .v { font-size: 1.3rem; }
+  .ledoux table { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
+  .ledoux td { padding: .3rem .2rem; border-bottom: 1px solid var(--border); }
+  .ledoux td:last-child { text-align: right; font-weight: 600; }
+  ol.ladder { margin: .4rem 0 0; padding-left: 1.2rem; }
+  ol.ladder li { margin: .15rem 0; }
+</style>
+</head>
+<body>
+<header class="site">
+  <nav class="nav">
+    <a class="name" href="index.html">Paolo Barucca</a>
+    <a href="research.html">Research</a>
+    <a href="teaching.html" aria-current="page">Teaching</a>
+    <a href="consultancy.html">Consultancy</a>
+    <a href="comedy.html">Comedy</a>
+    <a href="links.html">Links</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+</header>
+
+<main class="wide">
+  <div class="intro">
+    <h1>Two-thirds of the average</h1>
+    <p class="lead">Everybody picks a whole number from 0 to 100. The winner is whoever comes closest to two-thirds of the average. Play it twice and watch the target retreat.</p>
+  </div>
+
+  <details class="entry" id="entry" open>
+    <summary>Enter the numbers</summary>
+    <p class="small muted" style="margin-top:0">Paste straight from a form's response sheet or a spreadsheet: one person per line, the number last (for example <code>Amara K, 33</code> or a copied row with a timestamp). Lines with no number between 0 and 100 are skipped and counted below the box. Everything stays in this browser.</p>
+    <div class="entry-grid">
+      <div>
+        <label for="in1"><strong>Round 1</strong></label>
+        <textarea id="in1" spellcheck="false" placeholder="Amara K, 33&#10;Ben L, 22&#10;Cleo M, 50&#10;…"></textarea>
+        <p class="parse-note" id="note1"></p>
+      </div>
+      <div>
+        <label for="in2"><strong>Round 2</strong></label>
+        <textarea id="in2" spellcheck="false" placeholder="Same people, second go"></textarea>
+        <p class="parse-note" id="note2"></p>
+      </div>
+    </div>
+    <div class="row">
+      <button class="ghost" id="exampleBtn">Load an example room</button>
+      <button class="ghost" id="clearBtn">Clear both rounds</button>
+      <label><input type="checkbox" id="suspense" checked> Hide each target and winner until I reveal it</label>
+    </div>
+  </details>
+
+  <div class="rounds">
+    <section class="panel round-card" id="card1" aria-live="polite"></section>
+    <section class="panel round-card" id="card2" aria-live="polite"></section>
+  </div>
+
+  <div class="panel chart-wrap">
+    <h3 id="chartTitle">Every guess, one dot per person</h3>
+    <div class="chart-scroll"><svg class="chart" id="chart" role="img" aria-labelledby="chartTitle"></svg></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--r1)"></span>Round 1</span>
+      <span><span class="dot" style="background:var(--r2)"></span>Round 2</span>
+      <span><span class="sw-line"></span>Target: two-thirds of the average</span>
+      <span><span class="sw-dash"></span>Average</span>
+      <span>Ringed dot: the winner</span>
+    </div>
+  </div>
+
+  <h2>Between the rounds</h2>
+  <div class="compare" id="compare"></div>
+  <p class="small muted" id="compareNote"></p>
+
+  <h2>Why the answer keeps moving</h2>
+  <div class="entry-grid">
+    <div class="panel">
+      <h3>The ladder</h3>
+      <p class="small" style="margin:0">Each step assumes everybody else reasoned one step less, and multiplies by two-thirds.</p>
+      <ol class="ladder small" start="0">
+        <li>Pick at random: the average is about 50.</li>
+        <li>So aim for two-thirds of 50: <strong>33</strong>.</li>
+        <li>But everyone can work that out: <strong>22</strong>.</li>
+        <li>And that too: <strong>15</strong>, then <strong>10</strong>, then 7 …</li>
+        <li>All the way down to <strong>0</strong>, the only answer nobody can improve on. (With whole numbers, everybody saying 1 is stable too.)</li>
+      </ol>
+      <p class="small muted" style="margin:.6rem 0 0">Almost nobody plays 0, and anybody who does loses. The winning number is a fact about the room, not about the game. In a second round everybody knows roughly what the room did, aims lower, and so lowers the target: the equilibrium is where the crowd is heading, not where it is.</p>
+    </div>
+    <div class="panel ledoux">
+      <h3>Where it started: <em>Jeux &amp; Stratégie</em>, 1981</h3>
+      <p class="small" style="margin:0 0 .4rem">Alain Ledoux used the game as a tie-break for 4,078 readers of his French puzzle magazine, asking for a positive whole number below a billion.</p>
+      <table>
+        <tr><td>Average</td><td>134,822,738.26</td></tr>
+        <tr><td>Target (two-thirds)</td><td>89,881,825.51</td></tr>
+        <tr><td>Winning guess</td><td>89,793,238</td></tr>
+        <tr><td>Missed by</td><td>88,588 (0.009%)</td></tr>
+        <tr><td>Reasoning in the average</td><td id="ledouxSteps">3.2 steps from 500 million</td></tr>
+      </table>
+      <p class="small muted" style="margin:.5rem 0 0">Keynes described the idea in 1936 as a newspaper beauty contest; Rosemarie Nagel's 1995 laboratory games found first-round averages around 36.</p>
+    </div>
+  </div>
+</main>
+
+<footer>© Paolo Barucca · <a href="teaching.html">Teaching</a> · <a href="lattice.html">The 7 × 7 lattice</a></footer>
+
+<script>
+(() => {
+  const EXAMPLE = {
+    names: ["Amara K","Ben L","Cleo M","Dev N","Eli O","Fatima P","George Q","Hana R","Isaac S","Jade T",
+            "Kofi U","Lena V","Max W","Nia X","Omar Y","Priya Z","Quinn A","Rosa B","Sami C","Tom D",
+            "Uma E","Vik F","Wen G","Xavi H","Yara I","Zane J","Ava K","Bilal L","Chloe M","Dan N"],
+    r1: [50,50,50,45,40,37,35,33,33,33,33,33,50,48,45,22,22,22,22,40,67,67,60,100,35,10,1,0,0,42],
+    r2: [33,22,22,28,20,20,20,15,24,22,22,22,25,30,33,22,26,16,24,33,40,35,40,50,20,25,11,0,0,20]
+  };
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem("twothirds:" + k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem("twothirds:" + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const $ = id => document.getElementById(id);
+  const ins = [$("in1"), $("in2")];
+  let revealed = [false, false];
+
+  // ---------- parsing: one person per line, the number is the last field that is a number from 0 to 100
+  function parse(text) {
+    const rows = [], skipped = [];
+    text.split(/\r?\n/).forEach((line, n) => {
+      const raw = line.trim();
+      if (!raw) return;
+      const fields = raw.split(/\t|,|;/).map(f => f.trim()).filter(Boolean);
+      let idx = -1;
+      for (let i = fields.length - 1; i >= 0; i--) {
+        if (/^[-+]?\d+(\.\d+)?$/.test(fields[i])) { idx = i; break; }
+      }
+      if (idx < 0 && fields.length === 1) {               // "Amara 33" with spaces only
+        const m = raw.match(/^(.*?)[\s]+([-+]?\d+(?:\.\d+)?)$/);
+        if (m) { fields.splice(0, 1, m[1], m[2]); idx = 1; }
+      }
+      const v = idx >= 0 ? Number(fields[idx]) : NaN;
+      if (!(v >= 0 && v <= 100)) { skipped.push(n + 1); return; }
+      // the name: the nearest field before the number that is not a timestamp or a number
+      let name = "";
+      for (let i = idx - 1; i >= 0; i--) {
+        const f = fields[i];
+        if (/\d{1,4}[\/\-.]\d{1,2}[\/\-.]\d{1,4}|\d{1,2}:\d{2}/.test(f) || /^[-+]?\d+(\.\d+)?$/.test(f)) continue;
+        name = f; break;
+      }
+      rows.push({ name: name || ("Player " + (rows.length + 1)), v });
+    });
+    return { rows, skipped };
+  }
+
+  function analyse(rows) {
+    if (!rows.length) return null;
+    const n = rows.length, sum = rows.reduce((a, r) => a + r.v, 0), avg = sum / n, target = 2 / 3 * avg;
+    const best = Math.min(...rows.map(r => Math.abs(r.v - target)));
+    const winners = rows.filter(r => Math.abs(Math.abs(r.v - target) - best) < 1e-9);
+    const sorted = rows.map(r => r.v).sort((a, b) => a - b);
+    const median = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+    const steps = avg > 0 && avg <= 50 ? Math.log(50 / avg) / Math.log(1.5) : null;
+    return { n, avg, target, best, winners, median, steps, low: rows.filter(r => r.v <= 1).length };
+  }
+
+  const f1 = x => (Math.round(x * 10) / 10).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fnum = x => Number.isInteger(x) ? String(x) : f1(x);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const stat = (k, v, cls = "") => `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+
+  function card(i, a, parsed) {
+    const el = $("card" + (i + 1));
+    const colour = i === 0 ? "var(--r1)" : "var(--r2)";
+    const head = `<div class="tag"><span class="dot" style="background:${colour}"></span>Round ${i + 1}</div>`;
+    if (!a) { el.innerHTML = head + `<p class="muted small" style="margin:.6rem 0 0">No numbers yet. Paste them in above.</p>`; return; }
+    const hide = $("suspense").checked && !revealed[i];
+    const veil = `<span class="hidden-veil">? ? ?</span>`;
+    const w = a.winners;
+    const wText = w.length === 1
+      ? `Winner: <strong>${esc(w[0].name)}</strong> with ${fnum(w[0].v)}, ${a.best < 0.05 ? "exactly on target" : f1(a.best) + " away"}.`
+      : `Shared by <strong>${w.length}</strong> people on ${[...new Set(w.map(r => fnum(r.v)))].join(" and ")}: ${w.slice(0, 4).map(r => esc(r.name)).join(", ")}${w.length > 4 ? " …" : ""}.`;
+    el.innerHTML = head +
+      `<div class="big">${stat("Players", a.n)}${stat("Average", f1(a.avg))}${stat("Target", hide ? veil : f1(a.target), "key")}</div>` +
+      `<p class="winner">${hide ? `<span class="muted">The winner is hidden until you reveal it.</span>` : wText}</p>` +
+      `<p class="small muted" style="margin:.35rem 0 0">Median ${fnum(a.median)} · ${a.low} picked 0 or 1 · ${a.steps === null ? "average above 50" : `the average sits ${f1(a.steps)} steps of ×⅔ below 50`}</p>` +
+      (hide ? `<button class="reveal-btn" data-reveal="${i}">Reveal round ${i + 1}</button>` : "");
+  }
+
+  // ---------- chart: one dot per person, stacked in whole-number columns, round 1 above round 2
+  function chart(data) {
+    const svg = $("chart"), W = 1000, L = 40, R = 960, xs = v => L + (R - L) * v / 100;
+    const DOT = 9, R0 = 4.2, GAP = 22, AXIS = 30;
+    const stacks = data.map(d => {
+      if (!d) return { cols: new Map(), max: 0 };
+      const cols = new Map();
+      d.rows.slice().sort((a, b) => a.v - b.v).forEach(r => { const k = Math.round(r.v); if (!cols.has(k)) cols.set(k, []); cols.get(k).push(r); });
+      return { cols, max: Math.max(0, ...[...cols.values()].map(c => c.length)) };
+    });
+    const bandH = s => Math.max(60, s.max * DOT + 34);
+    const h1 = bandH(stacks[0]), h2 = bandH(stacks[1]);
+    const top0 = 58, base1 = top0 + h1, base2 = base1 + GAP + h2, H = base2 + AXIS + 6;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    let g = "";
+    // the ladder as faint gridlines
+    const ladder = [[50, "random"], [100 / 3, "1 step"], [200 / 9, "2"], [400 / 27, "3"], [800 / 81, "4"], [0, "∞"]];
+    ladder.forEach(([v, lab]) => {
+      g += `<line x1="${xs(v)}" x2="${xs(v)}" y1="${top0 - 6}" y2="${base2}" stroke="var(--grid)" stroke-width="1"/>`;
+      g += `<text x="${xs(v)}" y="${top0 - 12}" text-anchor="middle" font-size="12" fill="var(--muted)">${lab}</text>`;
+    });
+    g += `<text x="${L}" y="16" font-size="12" font-weight="600" fill="var(--muted)">Levels of reasoning, each step × ⅔ →</text>`;
+    // axis
+    g += `<line x1="${L}" x2="${R}" y1="${base2 + 4}" y2="${base2 + 4}" stroke="var(--border)"/>`;
+    for (let v = 0; v <= 100; v += 10) g += `<text x="${xs(v)}" y="${base2 + 22}" text-anchor="middle" font-size="12" fill="var(--muted)">${v}</text>`;
+    // bands
+    [[0, base1, top0], [1, base2, base1 + GAP]].forEach(([i, base, bandTop]) => {
+      const d = data[i], s = stacks[i], colour = i === 0 ? "var(--r1)" : "var(--r2)";
+      g += `<line x1="${L}" x2="${R}" y1="${base + 4}" y2="${base + 4}" stroke="var(--border)" stroke-dasharray="2 4"/>`;
+      g += `<text x="${R}" y="${bandTop + 12}" text-anchor="end" font-size="12" font-weight="700" fill="${colour}">ROUND ${i + 1}</text>`;
+      if (!d) { g += `<text x="${(L + R) / 2}" y="${base - 20}" text-anchor="middle" font-size="13" fill="var(--muted)">no numbers yet</text>`; return; }
+      const a = d.a, hide = $("suspense").checked && !revealed[i];
+      const winSet = new Set(a.winners);
+      // average and target
+      g += `<line x1="${xs(a.avg)}" x2="${xs(a.avg)}" y1="${bandTop + 18}" y2="${base + 4}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+      g += `<text x="${xs(a.avg) + 5}" y="${bandTop + 28}" font-size="12" fill="var(--muted)">average ${f1(a.avg)}</text>`;
+      if (!hide) {
+        g += `<line x1="${xs(a.target)}" x2="${xs(a.target)}" y1="${bandTop + 18}" y2="${base + 4}" stroke="var(--accent)" stroke-width="2.5"/>`;
+        g += `<text x="${xs(a.target) - 5}" y="${bandTop + 28}" text-anchor="end" font-size="13" font-weight="700" fill="var(--accent)">target ${f1(a.target)}</text>`;
+      }
+      s.cols.forEach((col, k) => col.forEach((r, j) => {
+        const cx = xs(k), cy = base - R0 - j * DOT, win = !hide && winSet.has(r);
+        g += `<circle cx="${cx}" cy="${cy}" r="${R0}" fill="${win ? "var(--accent)" : colour}"${win ? ` stroke="var(--accent)" stroke-width="0"` : ""}><title>${esc(r.name)}: ${fnum(r.v)}</title></circle>`;
+        if (win) g += `<circle cx="${cx}" cy="${cy}" r="${R0 + 3.5}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+      }));
+    });
+    svg.innerHTML = g;
+  }
+
+  function compare(a1, a2, rows1, rows2) {
+    const el = $("compare"), note = $("compareNote");
+    if (!a1 || !a2) { el.innerHTML = ""; note.textContent = "Enter both rounds to compare them."; return; }
+    const hide = $("suspense").checked && !(revealed[0] && revealed[1]);
+    const key = s => s.toLowerCase().replace(/\s+/g, " ").trim();
+    const m1 = new Map(rows1.map(r => [key(r.name), r.v]));
+    const pairs = rows2.filter(r => !/^player \d+$/i.test(r.name) && m1.has(key(r.name))).map(r => r.v - m1.get(key(r.name)));
+    const lower = pairs.filter(d => d < 0).length;
+    const sign = x => (x > 0 ? "+" : x < 0 ? "−" : "") + f1(Math.abs(x));
+    el.innerHTML =
+      stat("Average", `${f1(a1.avg)} → ${f1(a2.avg)}`) +
+      stat("Target", hide ? `<span class="hidden-veil">? ? ?</span>` : `${f1(a1.target)} → ${f1(a2.target)}`, "key") +
+      stat("Reasoning in the average", a1.steps === null || a2.steps === null ? "—" : `${f1(a1.steps)} → ${f1(a2.steps)} steps`) +
+      stat("Played both rounds", pairs.length ? `${lower} of ${pairs.length} aimed lower` : "—");
+    note.textContent = pairs.length
+      ? `People are matched by name. Average change for those who played twice: ${sign(pairs.reduce((s, d) => s + d, 0) / pairs.length)}.`
+      : "People are matched by name; no names appear in both rounds.";
+  }
+
+  function render() {
+    const parsed = ins.map(t => parse(t.value));
+    const data = parsed.map(p => p.rows.length ? { rows: p.rows, a: analyse(p.rows) } : null);
+    parsed.forEach((p, i) => {
+      const note = $("note" + (i + 1));
+      note.className = "parse-note" + (p.skipped.length ? " warn" : "");
+      note.textContent = (p.rows.length ? `${p.rows.length} numbers read.` : "") +
+        (p.skipped.length ? ` Skipped line${p.skipped.length > 1 ? "s" : ""} ${p.skipped.slice(0, 8).join(", ")}${p.skipped.length > 8 ? " …" : ""}: no number from 0 to 100.` : "");
+      card(i, data[i] && data[i].a, p);
+    });
+    chart(data);
+    compare(data[0] && data[0].a, data[1] && data[1].a, parsed[0].rows, parsed[1].rows);
+  }
+
+  function save() { store.set("inputs", ins.map(t => t.value)); store.set("revealed", revealed); store.set("suspense", $("suspense").checked); }
+
+  // ---------- wiring
+  ins.forEach((t, i) => t.addEventListener("input", () => { revealed[i] = false; save(); render(); }));
+  $("suspense").addEventListener("change", () => { save(); render(); });
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-reveal]");
+    if (b) { revealed[+b.dataset.reveal] = true; save(); render(); }
+  });
+  $("exampleBtn").onclick = () => {
+    ins[0].value = EXAMPLE.names.map((n, i) => `${n}, ${EXAMPLE.r1[i]}`).join("\n");
+    ins[1].value = EXAMPLE.names.map((n, i) => `${n}, ${EXAMPLE.r2[i]}`).join("\n");
+    revealed = [false, false]; save(); render();
+  };
+  $("clearBtn").onclick = () => {
+    if (!confirm("Clear both rounds?")) return;
+    ins.forEach(t => t.value = ""); revealed = [false, false]; save(); render();
+  };
+
+  const saved = store.get("inputs");
+  if (Array.isArray(saved)) saved.forEach((v, i) => { if (ins[i] && typeof v === "string") ins[i].value = v; });
+  const savedRev = store.get("revealed");
+  if (Array.isArray(savedRev)) revealed = savedRev.map(Boolean).slice(0, 2);
+  const savedSus = store.get("suspense");
+  if (typeof savedSus === "boolean") $("suspense").checked = savedSus;
+  if (ins[0].value || ins[1].value) $("entry").open = false;
+  $("ledouxSteps").textContent = `${f1(Math.log(5e8 / 134822738.26) / Math.log(1.5))} steps from 500 million`;
+  render();
+})();
+</script>
+</body>
+</html>
