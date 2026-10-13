@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Temporal Network Explorer · Paolo Barucca</title>
+<meta name="description" content="Fit and compare continuous-time maximum-entropy temporal network models (time layer × MaxEnt mark layer) in the browser: likelihoods, diagnostics, raster plots and animated dynamics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:light dark;
+ --bg:#fbfaf7;--panel:#ffffff;--ink:#1f2328;--muted:#5b6168;--faint:#9aa1a8;--line:#e6e2da;--grid:#efece6;
+ --accent:#b4412c;--accent-soft:#f6e4df;--warn:#9a4a12;
+ --s0:#22313f;--s1:#0e7c7b;--s2:#d1603d;--s3:#6a4c93;--s4:#3d8b37;--s5:#b8972c;--s6:#b5446e;
+ --serif:"Source Serif 4",Georgia,serif;
+ --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+@media (prefers-color-scheme:dark){:root{
+ --bg:#16181b;--panel:#1f2226;--ink:#e8e6e1;--muted:#a3a8ae;--faint:#6f7880;--line:#2e3237;--grid:#272a2f;
+ --accent:#f07a5f;--accent-soft:#3a2520;--warn:#e39a62;
+ --s0:#dfe5ea;--s1:#4fb3b0;--s2:#ee8a63;--s3:#a68bd6;--s4:#7cc47f;--s5:#e2c96a;--s6:#e07aa0;}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+a{color:var(--accent)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px}
+header.sitenav{border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+.sitenav nav{max-width:1360px;margin:0 auto;padding:.8rem 16px;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1.1rem}
+.sitenav .name{font:700 1.1rem var(--serif);color:var(--ink);text-decoration:none;margin-right:auto}
+.sitenav a:not(.name){color:var(--muted);text-decoration:none;font-size:.95rem}
+.sitenav a:not(.name):hover,.sitenav a[aria-current=page]{color:var(--accent)}
+.pagehead{border-bottom:1px solid var(--line);padding:26px 0 20px}
+.kicker{margin:0;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.kicker a{color:var(--muted)}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
+.lede{max-width:820px;color:var(--muted);margin:0}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:24px;padding-top:20px;padding-bottom:40px;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:minmax(0,1fr)}}
+aside.controls{position:sticky;top:64px;max-height:calc(100vh - 76px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+@media(max-width:920px){aside.controls{position:static;max-height:none}}
+.controls h2{font:600 11.5px/1 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.controls h2:first-child{margin-top:2px;padding-top:0;border-top:0}
+label.f{display:block;font-size:13px;margin:9px 0 3px}
+.val{font:12px var(--mono);color:var(--muted);float:right}
+.hint{font-size:12px;color:var(--faint);margin:3px 0 0}
+select,input[type=text],input[type=number],input[type=url]{width:100%;font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+input[type=checkbox]{accent-color:var(--accent)}
+.check{display:flex;gap:7px;align-items:center;font-size:13px;margin:6px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row2 label.f{margin-top:6px}
+button{font:600 14px var(--sans);padding:8px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--panel);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button:disabled{opacity:.55;cursor:progress}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btnrow button{flex:1}
+details.gen{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+details.gen summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+.status{font:12px/1.45 var(--mono);color:var(--muted);margin-top:12px;min-height:1.4em;white-space:pre-wrap}
+.status.err{color:var(--warn)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:18px;scrollbar-width:thin}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);border-radius:0;padding:10px 12px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel[hidden]{display:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1150px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.grid3{grid-template-columns:minmax(0,1fr)}}
+figure.chart{margin:0 0 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;min-width:0}
+.grid2 figure.chart{margin:0}
+figure.chart figcaption{font-weight:600;font-size:14px}
+.sub{font-size:12px;color:var(--muted);text-align:center;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12px;color:var(--muted);margin:5px 0 6px;min-height:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+canvas{display:block;width:100%}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card b{display:block;font:600 21px/1.25 var(--serif);font-variant-numeric:tabular-nums}
+.card span{font-size:12px;color:var(--muted)}
+h3.sec{font:600 19px var(--serif);margin:6px 0 4px}
+p.secnote{color:var(--muted);font-size:13.5px;margin:0 0 12px;max-width:860px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:18px}
+table.t{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.t th,.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.t tr:last-child td{border-bottom:0}
+.t th:first-child,.t td:first-child{text-align:left}
+.t thead th{color:var(--muted);font-weight:600;font-size:12px}
+.t td.best{color:var(--accent);font-weight:700}
+.t td.feat{background:var(--accent-soft)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:12px;font-size:13px}
+.toolbar label{display:flex;gap:6px;align-items:center}
+.toolbar input[type=range]{width:130px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:transparent;color:var(--muted);border:0;border-radius:0;padding:6px 11px;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.warn{color:var(--warn)}
+#dynCanvas{background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:crosshair}
+#dynStrip{margin-top:8px;cursor:pointer}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:12px var(--mono);padding:4px 7px;border-radius:5px;display:none;z-index:10}
+.prose{max-width:820px}
+.prose h3{font-family:var(--serif);font-size:21px;margin:26px 0 6px}
+.prose h3:first-child{margin-top:0}
+.prose li{margin:3px 0}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font:12.5px/1.5 var(--mono)}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:2rem 16px;text-align:center}
+.empty{padding:40px 12px;text-align:center;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<header class="sitenav">
+ <nav>
+  <a class="name" href="index.html">Paolo Barucca</a>
+  <a href="research.html" aria-current="page">Research</a>
+  <a href="teaching.html">Teaching</a>
+  <a href="consultancy.html">Consultancy</a>
+  <a href="comedy.html">Comedy</a>
+  <a href="links.html">Links</a>
+  <a href="contact.html">Contact</a>
+ </nav>
+</header>
+<div class="pagehead">
+ <div class="wrap">
+  <p class="kicker"><a href="research.html">Research</a> › Interactive tools</p>
+  <h1>Maximum-entropy temporal networks, interactively</h1>
+  <p class="lede">A companion to <a href="https://arxiv.org/abs/2509.02098"><i>Maximum entropy temporal networks</i></a>. Load a temporal network, carve out a subset, fit time-layer × mark-layer models of the form \(\lambda_{ij}(t)=\varphi_{r(i,j)}(t)\,w_{ij}\), and compare them by held-out likelihood, goodness-of-fit diagnostics, raster plots and animated dynamics. Everything runs locally in your browser; no data leaves your machine.</p>
+ </div>
+</div>
+
+<main class="wrap layout">
+ <aside class="controls" aria-label="Controls">
+  <h2>1 · Dataset</h2>
+  <label class="f" for="src">Source</label>
+  <select id="src"></select>
+  <details class="gen" id="genBox">
+   <summary>Synthetic generator parameters</summary>
+   <div class="row2">
+    <div><label class="f" for="g_n">Nodes</label><input type="number" id="g_n" min="3" max="400"></div>
+    <div><label class="f" for="g_B">Blocks</label><input type="number" id="g_B" min="1" max="30"></div>
+    <div><label class="f" for="g_K">Events (target)</label><input type="number" id="g_K" min="100" max="40000" step="100"></div>
+    <div><label class="f" for="g_seed">Seed</label><input type="number" id="g_seed"></div>
+    <div><label class="f" for="g_eta">Branching η</label><input type="number" id="g_eta" min="0" max="0.95" step="0.05"></div>
+    <div><label class="f" for="g_beta">Decay β</label><input type="number" id="g_beta" min="0.05" step="0.5"></div>
+    <div><label class="f" for="g_aff">Block affinity</label><input type="number" id="g_aff" min="1" step="1"></div>
+    <div><label class="f" for="g_het">Fitness σ</label><input type="number" id="g_het" min="0" max="3" step="0.1"></div>
+    <div><label class="f" for="g_reply">P(reply)</label><input type="number" id="g_reply" min="0" max="1" step="0.05"></div>
+    <div><label class="f" for="g_repeat">P(repeat)</label><input type="number" id="g_repeat" min="0" max="1" step="0.05"></div>
+    <div><label class="f" for="g_bcast">P(broadcast)</label><input type="number" id="g_bcast" min="0" max="1" step="0.05"></div>
+   </div>
+   <p class="hint">Offspring events reply, repeat, or broadcast with these probabilities, otherwise draw a fresh block-structured pair. The timeline is exactly Hawkes; the marks deliberately break time×mark factorisation.</p>
+   <div class="btnrow"><button id="genBtn" class="ghost">Generate</button></div>
+  </details>
+  <div id="uploadBox" hidden>
+   <label class="f" for="file">Edge list file <small>(source, target, timestamp)</small></label>
+   <input type="file" id="file" accept=".csv,.tsv,.txt,.dat,.edges">
+  </div>
+  <div id="urlBox" hidden>
+   <label class="f" for="url">CSV URL</label>
+   <input type="url" id="url" placeholder="data/enron.csv">
+   <div class="btnrow"><button id="urlBtn" class="ghost">Load</button></div>
+   <p class="hint">Same-origin paths (files in this repository) always work; other sites must allow CORS.</p>
+  </div>
+  <p class="hint" id="dsInfo"></p>
+
+  <h2>2 · Subset</h2>
+  <label class="f" for="from">Time window <span class="val" id="winVal"></span></label>
+  <input type="range" id="from" min="0" max="99" value="0" aria-label="Window start (%)">
+  <input type="range" id="to" min="1" max="100" value="100" aria-label="Window end (%)">
+  <div class="row2">
+   <div><label class="f" for="topN">Top-N nodes <small>(0 = all)</small></label><input type="number" id="topN" min="0" max="500" value="0"></div>
+   <div><label class="f" for="maxEv">Max events</label><input type="number" id="maxEv" min="100" step="500" value="20000"></div>
+  </div>
+  <label class="f" for="trainFrac">Train fraction <span class="val" id="trainVal"></span></label>
+  <input type="range" id="trainFrac" min="50" max="95" step="5" value="75">
+  <label class="check"><input type="checkbox" id="jitter" checked> Jitter tied timestamps within clock resolution</label>
+  <label class="check"><input type="checkbox" id="dedupe"> Drop exact duplicate events</label>
+  <label class="check"><input type="checkbox" id="selfLoops"> Keep self-loops</label>
+
+  <h2>3 · Estimation</h2>
+  <label class="f" for="bins">NHPP bins <span class="val" id="binsVal"></span></label>
+  <input type="range" id="bins" min="2" max="120" value="20">
+  <label class="f" for="gamma">Louvain resolution γ <span class="val" id="gammaVal"></span></label>
+  <input type="range" id="gamma" min="0.2" max="3" step="0.1" value="1">
+  <label class="f" for="kappa">Mark smoothing κ <small>(mixture with uniform)</small></label>
+  <select id="kappa"><option>0.0001</option><option selected>0.001</option><option>0.01</option><option>0.05</option></select>
+  <div class="btnrow"><button id="fitBtn">Apply subset &amp; fit</button></div>
+
+  <h2>4 · Featured model</h2>
+  <label class="f" for="fTime">Time layer \(\varphi\)</label><select id="fTime"></select>
+  <label class="f" for="fMark">Mark layer \(w\)</label><select id="fMark"></select>
+  <label class="f" for="nSims">Simulations for diagnostics</label>
+  <input type="number" id="nSims" min="1" max="30" value="5">
+  <p class="hint">Used by diagnostics, rasters and dynamics.</p>
+  <div class="btnrow"><button id="dlCsv" class="ghost">Subset CSV</button><button id="dlJson" class="ghost">Results JSON</button></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+ </aside>
+
+ <div class="content">
+  <nav class="tabs" role="tablist">
+   <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+   <button role="tab" data-tab="lik" aria-selected="false">Likelihoods</button>
+   <button role="tab" data-tab="diag" aria-selected="false">Diagnostics</button>
+   <button role="tab" data-tab="raster" aria-selected="false">Rasters</button>
+   <button role="tab" data-tab="dyn" aria-selected="false">Dynamics</button>
+   <button role="tab" data-tab="method" aria-selected="false">Method</button>
+  </nav>
+
+  <section class="panel" id="p-overview" role="tabpanel">
+   <div class="cards" id="cards"></div>
+   <figure class="chart"><figcaption>Activity and one-step-ahead Hawkes expectation</figcaption><div class="legend" id="lgActivity"></div><canvas id="cvActivity"></canvas>
+    <p class="note">Observed event rate per bin over the whole subset, with the expected rate per bin from the global Hawkes fit (compensator increments conditioned on the observed history) and the Poisson rate. The dashed line separates training and test windows.</p></figure>
+   <figure class="chart"><figcaption>Training adjacency ordered by detected blocks</figcaption><canvas id="cvAdj"></canvas>
+    <p class="note" id="adjNote"></p></figure>
+  </section>
+
+  <section class="panel" id="p-lik" role="tabpanel" hidden>
+   <h3 class="sec">Time layers</h3>
+   <p class="secnote">\(\ell_{\rm time}=\sum_k\log G(t_k)-\int G\,dt\). Test likelihoods condition Hawkes intensities on the full training history. The NHPP cannot extrapolate, so on the test window it falls back to the mean training rate. KS: time-rescaling test on training inter-event times (pooled across senders for per-sender layers).</p>
+   <div class="tablewrap"><table class="t" id="tblTime"></table></div>
+   <h3 class="sec">Mark layers</h3>
+   <p class="secnote">\(\ell_{\rm mark}=\sum_k\log p_{i_kj_k}\) with \(p_{ij}=w_{ij}/W\) (joint, paired with global time layers) or \(p_{j\mid i}=w_{ij}/\sum_{j'}w_{ij'}\) (conditional on sender, paired with per-sender layers). \(\mathbb E[U]=\sum_{i\neq j}(1-e^{-Kp_{ij}})\) is the expected number of distinct directed pairs.</p>
+   <div class="tablewrap"><table class="t" id="tblMark"></table></div>
+   <h3 class="sec">Full model: test log-likelihood per event</h3>
+   <p class="secnote">\(\ell=\ell_{\rm time}+\ell_{\rm mark}\). The best cell is highlighted, and the featured model is shaded. With ME-Strength, the global-Poisson and per-sender-Poisson rows coincide on training data: this checks the time × mark factorisation.</p>
+   <div class="tablewrap"><table class="t" id="tblComb"></table></div>
+   <h3 class="sec">Full model: training ΔAIC / ΔBIC</h3>
+   <div class="tablewrap"><table class="t" id="tblAic"></table></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Global Hawkes estimate</figcaption><div id="hawkesBox" class="mono" style="padding:6px 2px;line-height:1.75"></div></figure>
+    <figure class="chart"><figcaption>Per-sender branching ratios</figcaption><div class="legend" id="lgEta"></div><canvas id="cvEta"></canvas>
+     <p class="note">Senders with ≥ 8 training events get their own Hawkes fit; the rest fall back to Poisson.</p></figure>
+   </div>
+  </section>
+
+  <section class="panel" id="p-diag" role="tabpanel" hidden>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Inter-event time distribution (training)</figcaption><div class="legend" id="lgIET"></div><canvas id="cvIET"></canvas>
+     <p class="note">Log-binned density of gaps between consecutive events, empirical vs. simulated from fitted time layers.</p></figure>
+    <figure class="chart"><figcaption>Time-rescaling KS plot</figcaption><div class="legend" id="lgKS"></div><canvas id="cvKS"></canvas>
+     <p class="note">Under a correct model, \(u_k=1-e^{-\Delta\Lambda_k}\) are i.i.d. uniform. Plotted: empirical minus uniform quantiles, with the 95% KS band.</p></figure>
+   </div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Unique-degree calibration (featured mark layer)</figcaption><div class="legend" id="lgDeg"></div><canvas id="cvDeg"></canvas>
+     <p class="note">Expected distinct out/in-neighbours \(\sum_j(1-e^{-Kp_{ij}})\) vs. observed, training window.</p></figure>
+    <figure class="chart"><figcaption>Temporal motifs within a window δ</figcaption><div class="legend" id="lgMotif"></div><canvas id="cvMotif"></canvas>
+     <div class="toolbar" style="margin:8px 0 0"><label>δ = <input type="range" id="delta" min="0" max="100" value="50"> <span class="mono" id="deltaVal"></span></label></div>
+     <p class="note">Fraction of events \(i\to j\) followed within δ by \(j\to i\) (reciprocity), \(i\to k\) (broadcast), \(k\to j\) (convergence), or \(i\to j\) (repeat). Bars are means over simulations; whiskers are ±1 s.d.</p></figure>
+   </div>
+   <figure class="chart"><figcaption>Block–block unique-edge calibration (featured mark layer, training)</figcaption>
+    <div class="grid3"><div><canvas id="cvBObs"></canvas><div class="sub">Observed \(U_{a\to b}\)</div></div><div><canvas id="cvBExp"></canvas><div class="sub">Expected \(\mathbb E[U_{a\to b}]\)</div></div><div><canvas id="cvBRes"></canvas><div class="sub">Residual expected − observed</div></div></div>
+   </figure>
+  </section>
+
+  <section class="panel" id="p-raster" role="tabpanel" hidden>
+   <div class="toolbar">
+    <span class="seg" id="rasMode"><button aria-pressed="true" data-v="node">Top nodes</button><button aria-pressed="false" data-v="block">Blocks</button></span>
+    <label>Rows <input type="range" id="rasRows" min="4" max="24" value="10"> <span class="mono" id="rasRowsVal"></span></label>
+    <label>Simulation seed <input type="number" id="rasSeed" value="1" style="width:70px"></label>
+   </div>
+   <figure class="chart"><figcaption>Empirical (training window)</figcaption><canvas id="cvRasEmp"></canvas></figure>
+   <figure class="chart"><figcaption id="rasModCap">Model</figcaption><canvas id="cvRasMod"></canvas>
+    <p class="note">Each tick is one event. Rows are nodes (or blocks) ranked by training activity; upper panel outgoing, lower panel incoming. Same rows and time axis in both panels.</p></figure>
+  </section>
+
+  <section class="panel" id="p-dyn" role="tabpanel" hidden>
+   <div class="toolbar">
+    <button id="dynPlay" style="min-width:84px">Play</button>
+    <span class="seg" id="dynSrc"><button aria-pressed="true" data-v="emp">Empirical</button><button aria-pressed="false" data-v="model">Featured model</button></span>
+    <label>Window <input type="range" id="dynWin" min="0" max="100" value="45"></label>
+    <label>Speed <input type="range" id="dynSpeed" min="0" max="100" value="40"></label>
+    <label class="check" style="margin:0"><input type="checkbox" id="dynLabels"> Labels</label>
+    <span class="mono" id="dynTime"></span>
+   </div>
+   <canvas id="dynCanvas"></canvas>
+   <canvas id="dynStrip"></canvas>
+   <p class="note">Nodes are placed by a force layout of the aggregated training network and coloured by detected block. Arrows show events in the sliding window, fading with age; node size tracks recent activity. Click or drag the strip to scrub. Best for subsets of up to about 150 nodes.</p>
+  </section>
+
+  <section class="panel prose" id="p-method" role="tabpanel" hidden>
+   <h3>Temporal networks as marked point processes</h3>
+   <p>Events are pairs \((t_k, i_k\!\to\! j_k)\) on \([0,T]\). Each directed pair carries an intensity \(\lambda_{ij}(t)\), and the log-likelihood of a marked non-homogeneous Poisson process is</p>
+   $$\ell(\{\lambda_{ij}\})=\sum_k \log\lambda_{i_kj_k}(t_k)-\sum_{(i,j)}\int_0^T\lambda_{ij}(t)\,dt .$$
+   <h3>Maximum-entropy factorisation</h3>
+   <p>Maximising the path entropy \(-\sum_{ij}\int(\lambda_{ij}\log\lambda_{ij}-\lambda_{ij})\,dt\) subject to time-dependent constraints on partition totals \(\sum_{(i,j)\in E_r}\lambda_{ij}(t)=G_r(t)\) and time-independent linear constraints on the integrated intensities gives</p>
+   $$\lambda_{ij}(t)=\varphi_{r(i,j)}(t)\,w_{ij},\qquad w_{ij}=M_{ij}\,e^{\Theta_{ij}+\theta^{\rm out}_i+\theta^{\rm in}_j+\zeta_{g(i)g(j)}-1}.$$
+   <p>The likelihood then splits exactly into a time part and a mark part, \(\ell=\ell_{\rm time}[G]+\sum_k\log p_{m_k}\), so each layer can be fitted and compared independently.</p>
+   <h3>Layers implemented here</h3>
+   <ul>
+    <li><b>Poisson</b> and <b>NHPP</b> (piecewise constant, user-set bins) global profiles.</li>
+    <li><b>Hawkes-exp</b>: \(G(t)=\mu+\eta\beta\sum_{t_k<t}e^{-\beta(t-t_k)}\), with branching ratio \(\eta\). Maximum likelihood by multi-start Nelder–Mead on \((\log\mu,\operatorname{logit}\eta,\log\beta)\), using the \(O(n)\) recursion.</li>
+    <li><b>Per-sender</b> Poisson or Hawkes profiles, i.e. the partition \(E_r=\{(r,j)\}\). Here marks are conditional, \(p_{j\mid i}\).</li>
+    <li><b>Uniform</b>: \(w_{ij}\equiv\)const. <b>Edge-Poisson</b>: \(w_{ij}=N_{ij}\).</li>
+    <li><b>ME-Strength</b>: the directed weighted configuration model \(w_{ij}=x_iy_j\), fitted by iterative proportional fitting to in/out strengths.</li>
+    <li><b>Block-DWCM</b>: \(w_{ij}=x_iy_jz_{g(i)g(j)}\) on the full support, which also matches block-pair totals \(C_{ab}\). Blocks come from Louvain on the symmetrised training counts.</li>
+    <li><b>Block-Mask</b>: the same constraints restricted to the support observed in training, \(M_{ij}=\mathbb 1[N_{ij}>0]\). The mask is selected from data and is not penalised in AIC.</li>
+   </ul>
+   <p>For out-of-sample evaluation every mark distribution is mixed with the uniform one, \(p\to(1-\kappa)p+\kappa/|S|\), so that pairs unseen in training have finite likelihood. Parameter counts subtract gauge freedoms (one for DWCM, \(2B-1\) for block factors).</p>
+   <h3>Diagnostics</h3>
+   <ul>
+    <li><b>Time rescaling</b>: \(\Delta\Lambda_k=\int_{t_{k-1}}^{t_k}G\,dt\) are i.i.d. Exp(1) under the true model, so a KS test on \(1-e^{-\Delta\Lambda_k}\) checks the time layer.</li>
+    <li><b>Unique edges and degrees</b> under Poissonisation: \(\mathbb E[U]=\sum_{i\ne j}(1-e^{-Kp_{ij}})\).</li>
+    <li><b>Motifs</b> are compared against simulations of the fitted model and of the same mark layer with a Poisson clock, isolating the role of temporal clustering.</li>
+   </ul>
+   <h3>Adding datasets to this page</h3>
+   <p>Any whitespace-, comma- or semicolon-separated edge list with columns <code>source target timestamp</code> works; headers and lines starting with <code>#</code> or <code>%</code> are skipped, and ISO dates are parsed. Visitors can upload files directly. To offer datasets from this site, put files in the repository (e.g. <code>data/enron.csv</code>) and list them at the top of the page script:</p>
+<pre>const HOSTED_DATASETS = [
+  {name: 'Enron e-mail', url: 'data/enron.csv'},
+  {name: 'SocioPatterns hospital', url: 'data/hospital.csv'},
+];</pre>
+   <h3>Citation</h3>
+<pre>@article{barucca2025maxent,
+  title   = {Maximum entropy temporal networks},
+  author  = {Barucca, Paolo},
+  journal = {arXiv preprint arXiv:2509.02098},
+  year    = {2025}
+}</pre>
+  </section>
+ </div>
+</main>
+<footer>© Paolo Barucca · <a href="research.html">Research</a> · <a href="contact.html">Get in touch</a></footer>
+<div class="tip" id="tip"></div>
+<script>
+'use strict';
+/* =====================================================================
+   METN core: maximum-entropy temporal network models (pure functions)
+   ===================================================================== */
+
+/* ---------- RNG & small utilities ---------- */
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+let RNG=mulberry32(20250902);
+function seed(s){RNG=mulberry32((s>>>0)||1);}
+function rand(){return RNG();}
+function randExp(rate){return -Math.log(1-rand())/rate;}
+function randNorm(){const u=1-rand(),v=rand();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function randPois(l){if(!(l>0))return 0;if(l<40){const L=Math.exp(-l);let k=0,p=1;do{k++;p*=rand();}while(p>L);return k-1;}return Math.max(0,Math.round(l+Math.sqrt(l)*randNorm()));}
+function shuffleInPlace(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function cumSampler(w){const c=new Float64Array(w.length);let s=0;for(let i=0;i<w.length;i++){if(w[i]>0)s+=w[i];c[i]=s;}
+  return function(){const u=rand()*s;let lo=0,hi=c.length-1;while(lo<hi){const m=(lo+hi)>>1;if(c[m]>u)hi=m;else lo=m+1;}return lo;};}
+function clamp(x,a,b){return x<a?a:x>b?b:x;}
+function lowerBound(a,x){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>1;if(a[m]<x)lo=m+1;else hi=m;}return lo;}
+function upperBound(a,x){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>1;if(a[m]<=x)lo=m+1;else hi=m;}return lo;}
+function meanStd(a){const n=a.length;if(!n)return [NaN,NaN];let s=0;for(const x of a)s+=x;const m=s/n;let v=0;for(const x of a)v+=(x-m)*(x-m);return [m,Math.sqrt(v/n)];}
+function ksPValue(D,m){if(!(m>0)||!isFinite(D))return NaN;const en=Math.sqrt(m);const l=(en+0.12+0.11/en)*D;if(l<0.27)return 1;let s=0;for(let k=1;k<=100;k++){const t=2*((k%2)?1:-1)*Math.exp(-2*k*k*l*l);s+=t;if(Math.abs(t)<1e-12)break;}return clamp(s,0,1);}
+
+function nelderMead(f,x0,o={}){
+  const maxIter=o.maxIter||300,step=o.step||0.5,tol=o.tol||1e-8,n=x0.length;
+  let S=[x0.slice()];for(let i=0;i<n;i++){const x=x0.slice();x[i]+=step;S.push(x);}
+  let F=S.map(f);
+  for(let it=0;it<maxIter;it++){
+    const idx=[...Array(n+1).keys()].sort((a,b)=>F[a]-F[b]);S=idx.map(i=>S[i]);F=idx.map(i=>F[i]);
+    if(Math.abs(F[n]-F[0])<=tol*(1+Math.abs(F[0])))break;
+    const c=new Array(n).fill(0);for(let i=0;i<n;i++)for(let j=0;j<n;j++)c[j]+=S[i][j]/n;
+    const xr=c.map((v,j)=>v+(v-S[n][j])),fr=f(xr);
+    if(fr<F[0]){const xe=c.map((v,j)=>v+2*(v-S[n][j])),fe=f(xe);if(fe<fr){S[n]=xe;F[n]=fe;}else{S[n]=xr;F[n]=fr;}}
+    else if(fr<F[n-1]){S[n]=xr;F[n]=fr;}
+    else{const out=fr<F[n];const xc=out?c.map((v,j)=>v+0.5*(xr[j]-v)):c.map((v,j)=>v+0.5*(S[n][j]-v));const fc=f(xc);
+      if(fc<Math.min(fr,F[n])){S[n]=xc;F[n]=fc;}
+      else{for(let i=1;i<=n;i++){S[i]=S[i].map((v,j)=>S[0][j]+0.5*(v-S[0][j]));F[i]=f(S[i]);}}}
+  }
+  let b=0;for(let i=1;i<=n;i++)if(F[i]<F[b])b=i;return {x:S[b],f:F[b]};
+}
+
+/* ---------- Data: parsing, synthetic generator, subsetting ---------- */
+function parseEdgeList(text){
+  const labelIdx=new Map(),labels=[],ev=[];let skipped=0;
+  const id=s=>{let k=labelIdx.get(s);if(k===undefined){k=labels.length;labelIdx.set(s,k);labels.push(s);}return k;};
+  for(const raw of text.split(/\r?\n/)){
+    const line=raw.trim();if(!line||line[0]==='#'||line[0]==='%')continue;
+    const p=line.split(/[\s,;]+/).filter(Boolean);if(p.length<3){skipped++;continue;}
+    let t=Number(p[2]);if(!isFinite(t)){const d=Date.parse(p[2]);if(isFinite(d))t=d/1000;else{skipped++;continue;}}
+    ev.push({i:id(p[0]),j:id(p[1]),time:t});
+  }
+  ev.sort((a,b)=>a.time-b.time);
+  return {labels,events:ev,skipped,truth:null};
+}
+
+const PRESETS={
+  tiny:{label:'Tiny office · 12 nodes',n:12,B:2,K:900,eta:0.65,beta:4,affinity:6,hetero:0.6,reply:0.35,repeat:0.15,broadcast:0.2,seed:7},
+  dept:{label:'Department · 40 nodes',n:40,B:4,K:3000,eta:0.7,beta:3,affinity:10,hetero:0.9,reply:0.3,repeat:0.15,broadcast:0.25,seed:11},
+  org:{label:'Organisation · 150 nodes',n:150,B:8,K:8000,eta:0.6,beta:2,affinity:15,hetero:1.1,reply:0.25,repeat:0.15,broadcast:0.25,seed:5},
+  nullm:{label:'Null: Poisson × DWCM · 40 nodes',n:40,B:4,K:3000,eta:0,beta:1,affinity:10,hetero:0.9,reply:0,repeat:0,broadcast:0,seed:3}
+};
+
+/* Cluster (branching) process: immigrants ~ Poisson(mu), each event has Poisson(eta) children
+   delayed by Exp(beta). Children inherit mark structure (reply / repeat / broadcast) with the
+   given probabilities, otherwise a fresh draw from a block-structured fitness model. The global
+   timeline is exactly a Hawkes-exp process; the marks deliberately violate time×mark factorisation. */
+function synthNetwork(P){
+  seed(P.seed);const n=Math.max(3,P.n|0),B=Math.max(1,Math.min(P.B|0,n));
+  const block=shuffleInPlace([...Array(n).keys()].map(i=>i%B));
+  const x=[],y=[];for(let i=0;i<n;i++){x.push(Math.exp(P.hetero*randNorm()));y.push(Math.exp(P.hetero*randNorm()));}
+  const w=new Float64Array(n*n);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(i!==j)w[i*n+j]=x[i]*y[j]*(block[i]===block[j]?P.affinity:1);
+  const draw=cumSampler(w);const rowS=[];
+  const rowDraw=i=>{if(!rowS[i])rowS[i]=cumSampler(w.subarray(i*n,i*n+n));return rowS[i]();};
+  const mu=1,eta=clamp(P.eta,0,0.97),T=P.K*(1-eta)/mu,cap=6*P.K;
+  const out=[],stack=[];
+  const m0=randPois(mu*T);
+  for(let k=0;k<m0;k++){const kk=draw();stack.push({i:(kk/n)|0,j:kk%n,time:rand()*T});}
+  while(stack.length&&out.length<cap){
+    const e=stack.pop();out.push(e);
+    const c=randPois(eta);
+    for(let q=0;q<c;q++){
+      const t=e.time+randExp(P.beta);if(t>T)continue;
+      const r=rand();let i,j;
+      if(r<P.reply){i=e.j;j=e.i;}
+      else if(r<P.reply+P.repeat){i=e.i;j=e.j;}
+      else if(r<P.reply+P.repeat+P.broadcast){i=e.i;j=rowDraw(i);}
+      else{const kk=draw();i=(kk/n)|0;j=kk%n;}
+      stack.push({i,j,time:t});
+    }
+  }
+  out.sort((a,b)=>a.time-b.time);
+  const labels=[...Array(n).keys()].map(i=>'v'+String(i).padStart(3,'0'));
+  return {labels,events:out,truth:block,skipped:0};
+}
+
+function makeSubset(ds,o){
+  let ev=ds.events;if(!ev.length)throw new Error('This dataset has no events.');
+  const t0=ev[0].time,t1=ev[ev.length-1].time,span=(t1-t0)||1;
+  const a=t0+o.from*span,b=t0+o.to*span;
+  ev=ev.filter(e=>e.time>=a&&e.time<=b&&(o.selfLoops||e.i!==e.j));
+  if(o.dedupe){const seen=new Set();ev=ev.filter(e=>{const k=e.i+','+e.j+','+e.time;if(seen.has(k))return false;seen.add(k);return true;});}
+  if(o.topN>0){const act=new Map();for(const e of ev){act.set(e.i,(act.get(e.i)||0)+1);act.set(e.j,(act.get(e.j)||0)+1);}
+    if(act.size>o.topN){const keep=new Set([...act.entries()].sort((p,q)=>q[1]-p[1]).slice(0,o.topN).map(p=>p[0]));ev=ev.filter(e=>keep.has(e.i)&&keep.has(e.j));}}
+  if(o.maxEvents>0&&ev.length>o.maxEvents)ev=ev.slice(0,o.maxEvents);
+  if(ev.length<40)throw new Error(`Only ${ev.length} events in this subset — widen the time window or raise Top-N.`);
+  const act=new Map();for(const e of ev){act.set(e.i,(act.get(e.i)||0)+1);act.set(e.j,(act.get(e.j)||0)+1);}
+  const order=[...act.entries()].sort((p,q)=>q[1]-p[1]||p[0]-q[0]).map(p=>p[0]);
+  const idx=new Map(order.map((v,k)=>[v,k]));
+  const n=order.length,labels=order.map(v=>String(ds.labels[v])),truth=ds.truth?order.map(v=>ds.truth[v]):null;
+  const base=ev[0].time;
+  const E=ev.map(e=>({i:idx.get(e.i),j:idx.get(e.j),time:e.time-base}));
+  let nTies=0;for(let k=1;k<E.length;k++)if(E[k].time===E[k-1].time)nTies++;
+  if(o.jitter&&nTies>0){
+    let res=Infinity;for(let k=1;k<E.length;k++){const g=E[k].time-E[k-1].time;if(g>0&&g<res)res=g;}
+    if(!isFinite(res))res=1;seed(424242);
+    const orig=E.map(e=>e.time);
+    for(let k=0;k<E.length;k++){const tied=(k>0&&orig[k]===orig[k-1])||(k<E.length-1&&orig[k]===orig[k+1]);if(tied)E[k].time=orig[k]+rand()*res*0.999;}
+    E.sort((p,q)=>p.time-q.time);
+  }
+  const m=E.length,ks=clamp(Math.round(o.trainFrac*m),30,m);
+  const train=E.slice(0,ks),test=E.slice(ks);
+  const T0=E[0].time,Ts=test.length?(E[ks-1].time+E[ks].time)/2:E[m-1].time,T1=test.length?E[m-1].time:Ts;
+  if(!(Ts>T0))throw new Error('Training window has zero length.');
+  return {n,labels,truth,events:E,train,test,T0,Ts,T1,nTies,jittered:!!(o.jitter&&nTies>0),selfLoops:!!o.selfLoops};
+}
+
+function countMatrix(n,events){const N=new Float64Array(n*n);for(const e of events)N[e.i*n+e.j]++;return N;}
+function groupBySender(n,evs){const g=Array.from({length:n},()=>[]);for(const e of evs)g[e.i].push(e.time);return g;}
+
+/* ---------- Louvain blocks ---------- */
+function louvainPhase(g,gamma){
+  const n=g.n,k=new Float64Array(n);let m2=0;
+  for(let i=0;i<n;i++){let s=2*g.self[i];for(const [,w] of g.adj[i])s+=w;k[i]=s;m2+=s;}
+  const comm=new Int32Array(n);for(let i=0;i<n;i++)comm[i]=i;
+  if(m2===0)return {comm,nc:n,moved:false};
+  const tot=Float64Array.from(k);let moved=false,changed=true,pass=0;const order=[...Array(n).keys()];
+  while(changed&&pass<40){changed=false;pass++;shuffleInPlace(order);
+    for(const i of order){if(k[i]===0)continue;const ci=comm[i],wTo=new Map();
+      for(const [j,w] of g.adj[i]){const c=comm[j];wTo.set(c,(wTo.get(c)||0)+w);}
+      tot[ci]-=k[i];let best=ci,bg=(wTo.get(ci)||0)-gamma*tot[ci]*k[i]/m2;
+      for(const [c,w] of wTo){const gn=w-gamma*tot[c]*k[i]/m2;if(gn>bg+1e-12){best=c;bg=gn;}}
+      tot[best]+=k[i];if(best!==ci){comm[i]=best;changed=true;moved=true;}}}
+  const map=new Map();let nc=0;for(let i=0;i<n;i++){if(!map.has(comm[i]))map.set(comm[i],nc++);comm[i]=map.get(comm[i]);}
+  return {comm,nc,moved};
+}
+function louvainAggregate(g,comm,nc){
+  const adj=Array.from({length:nc},()=>new Map()),self=new Float64Array(nc);
+  for(let i=0;i<g.n;i++){const ci=comm[i];self[ci]+=g.self[i];
+    for(const [j,w] of g.adj[i]){const cj=comm[j];if(ci===cj)self[ci]+=w/2;else adj[ci].set(cj,(adj[ci].get(cj)||0)+w);}}
+  return {n:nc,adj:adj.map(m=>[...m.entries()]),self};
+}
+function detectBlocks(n,N,gamma){
+  seed(1234);
+  const adj=Array.from({length:n},()=>new Map());const deg=new Float64Array(n);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const w=N[i*n+j];if(w>0&&i!==j){adj[i].set(j,(adj[i].get(j)||0)+w);adj[j].set(i,(adj[j].get(i)||0)+w);deg[i]+=w;deg[j]+=w;}}
+  let g={n,adj:adj.map(m=>[...m.entries()]),self:new Float64Array(n)};
+  const mem=[...Array(n).keys()];
+  for(let lv=0;lv<12;lv++){const r=louvainPhase(g,gamma);if(!r.moved)break;for(let i=0;i<n;i++)mem[i]=r.comm[mem[i]];g=louvainAggregate(g,r.comm,r.nc);}
+  const size=new Map();for(let i=0;i<n;i++)if(deg[i]>0)size.set(mem[i],(size.get(mem[i])||0)+1);
+  const ord=[...size.entries()].sort((a,b)=>b[1]-a[1]).map(e=>e[0]);const rel=new Map(ord.map((c,k)=>[c,k]));
+  let B=ord.length;const block=new Int32Array(n);let hasInactive=false;
+  for(let i=0;i<n;i++){if(deg[i]>0)block[i]=rel.get(mem[i]);else{block[i]=B;hasInactive=true;}}
+  if(hasInactive)B++;
+  const sizes=new Array(B).fill(0);for(let i=0;i<n;i++)sizes[block[i]]++;
+  // modularity of final partition
+  let m2=0;for(let i=0;i<n;i++)m2+=deg[i];let Q=0;
+  if(m2>0){const tot=new Float64Array(B),inn=new Float64Array(B);
+    for(let i=0;i<n;i++){tot[block[i]]+=deg[i];for(const [j,w] of adj[i])if(block[j]===block[i])inn[block[i]]+=w;}
+    for(let b=0;b<B;b++)Q+=inn[b]/m2-gamma*(tot[b]/m2)**2;}
+  return {block,B,sizes,hasInactive,Q};
+}
+
+/* ---------- Mark layers (static MaxEnt edge weights) ---------- */
+function ipf(n,M,sout,sin,blk,B,C,maxIt,tol){
+  const nn=n*n,W=new Float64Array(nn);for(let k=0;k<nn;k++)W[k]=M[k];
+  const c=new Float64Array(n);let err=Infinity,it=0;
+  const cur=blk?new Float64Array(B*B):null;
+  for(it=1;it<=maxIt;it++){
+    for(let i=0;i<n;i++){const o=i*n;let s=0;for(let j=0;j<n;j++)s+=W[o+j];if(s>0){const f=sout[i]/s;for(let j=0;j<n;j++)W[o+j]*=f;}}
+    c.fill(0);for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++)c[j]+=W[o+j];}
+    for(let j=0;j<n;j++)c[j]=c[j]>0?sin[j]/c[j]:1;
+    for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++)W[o+j]*=c[j];}
+    if(blk){cur.fill(0);for(let i=0;i<n;i++){const o=i*n,bi=blk[i]*B;for(let j=0;j<n;j++)cur[bi+blk[j]]+=W[o+j];}
+      for(let q=0;q<B*B;q++)cur[q]=cur[q]>0?C[q]/cur[q]:1;
+      for(let i=0;i<n;i++){const o=i*n,bi=blk[i]*B;for(let j=0;j<n;j++)W[o+j]*=cur[bi+blk[j]];}}
+    if(it%5===0||it===maxIt){
+      err=0;const r=new Float64Array(n),cc=new Float64Array(n);
+      for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++){r[i]+=W[o+j];cc[j]+=W[o+j];}}
+      for(let i=0;i<n;i++){err=Math.max(err,Math.abs(r[i]-sout[i])/Math.max(1,sout[i]),Math.abs(cc[i]-sin[i])/Math.max(1,sin[i]));}
+      if(blk){const bs=new Float64Array(B*B);for(let i=0;i<n;i++){const o=i*n,bi=blk[i]*B;for(let j=0;j<n;j++)bs[bi+blk[j]]+=W[o+j];}
+        for(let q=0;q<B*B;q++)err=Math.max(err,Math.abs(bs[q]-C[q])/Math.max(1,C[q]));}
+      if(err<tol)break;
+    }
+  }
+  return {W,it:Math.min(it,maxIt),err};
+}
+
+const MARK_DEFS=[['unif','Uniform'],['ep','Edge-Poisson'],['me','ME-Strength (DWCM)'],['bd','Block-DWCM'],['bm','Block-Mask']];
+
+function buildMarkLayers(S,blocks,opts){
+  const n=S.n,nn=n*n,kappa=opts.kappa;
+  const Ntr=countMatrix(n,S.train),Nte=countMatrix(n,S.test);
+  const sout=new Float64Array(n),sin=new Float64Array(n);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const v=Ntr[i*n+j];sout[i]+=v;sin[j]+=v;}
+  const {block,B}=blocks;const C=new Float64Array(B*B);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++)C[block[i]*B+block[j]]+=Ntr[i*n+j];
+  const full=new Uint8Array(nn),supp=new Uint8Array(nn);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const k=i*n+j;full[k]=(i!==j||S.selfLoops)?1:0;supp[k]=(Ntr[k]>0&&full[k])?1:0;}
+  let nAllowed=0;for(let k=0;k<nn;k++)nAllowed+=full[k];const perRow=S.selfLoops?n:n-1;
+  const Ktr=S.train.length,Kte=S.test.length;
+  let uTr=0,uTe=0;for(let k=0;k<nn;k++){if(Ntr[k]>0)uTr++;if(Nte[k]>0)uTe++;}
+  let aOut=0,aIn=0;for(let i=0;i<n;i++){if(sout[i]>0)aOut++;if(sin[i]>0)aIn++;}
+  let cNZ=0;for(let q=0;q<B*B;q++)if(C[q]>0)cNZ++;
+  const kDW=aOut+aIn-1,kBlk=kDW+Math.max(0,cNZ-(2*B-1));
+  const fit={
+    unif:()=>{const W=new Float64Array(nn),v=Ktr/nAllowed;for(let k=0;k<nn;k++)if(full[k])W[k]=v;return {W,k:0};},
+    ep:()=>({W:Float64Array.from(Ntr),k:Math.max(0,uTr-1)}),
+    me:()=>{const r=ipf(n,full,sout,sin,null,0,null,400,1e-7);return {W:r.W,k:kDW,iters:r.it,err:r.err};},
+    bd:()=>{const r=ipf(n,full,sout,sin,block,B,C,500,1e-7);return {W:r.W,k:kBlk,iters:r.it,err:r.err};},
+    bm:()=>{const r=ipf(n,supp,sout,sin,block,B,C,500,1e-7);return {W:r.W,k:kBlk,iters:r.it,err:r.err,maskSize:uTr};}
+  };
+  const out={};
+  for(const [key,name] of MARK_DEFS){
+    const f=fit[key]();const W=f.W;let Wsum=0;const rs=new Float64Array(n);
+    for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++){rs[i]+=W[o+j];}Wsum+=rs[i];}
+    const pg=new Float64Array(nn),pc=new Float64Array(nn);
+    for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++){const k=o+j;if(!full[k])continue;
+      pg[k]=(1-kappa)*W[k]/Wsum+kappa/nAllowed;
+      pc[k]=(1-kappa)*(rs[i]>0?W[k]/rs[i]:1/perRow)+kappa/perRow;}}
+    const ll=(evs,p)=>{let s=0;for(const e of evs)s+=Math.log(p[e.i*n+e.j]);return s;};
+    const EU=K=>{let s=0;for(let k=0;k<nn;k++)if(full[k])s+=1-Math.exp(-K*pg[k]);return s;};
+    out[key]={key,name,W,pg,pc,k:f.k,kc:Math.max(0,f.k-(aOut-1)),iters:f.iters,err:f.err,
+      llTrJ:ll(S.train,pg),llTeJ:ll(S.test,pg),llTrC:ll(S.train,pc),llTeC:ll(S.test,pc),
+      EUtr:EU(Ktr),EUte:EU(Kte)};
+  }
+  return {layers:out,Ntr,Nte,sout,sin,uTr,uTe,full,C,nAllowed};
+}
+
+/* ---------- Time layers ---------- */
+const TIME_DEFS=[['pois','Poisson','global'],['nhpp','NHPP (piecewise)','global'],['hawk','Hawkes-exp','global'],['spois','Poisson · per sender','sender'],['shawk','Hawkes-exp · per sender','sender']];
+
+function hawkesLL(p,times,Ta,Tb,hist){
+  const {mu,eta,beta}=p;let A=0,prev=null,ll=0,comp=mu*(Tb-Ta);const c=eta*beta;
+  if(hist)for(const h of hist){if(prev!==null)A=Math.exp(-beta*(h-prev))*(A+1);prev=h;comp+=eta*(Math.exp(-beta*(Ta-h))-Math.exp(-beta*(Tb-h)));}
+  for(const t of times){if(prev!==null)A=Math.exp(-beta*(t-prev))*(A+1);ll+=Math.log(mu+c*A);prev=t;comp+=eta*(1-Math.exp(-beta*(Tb-t)));}
+  return ll-comp;
+}
+function fitHawkes(times,Ta,Tb,light){
+  const n=times.length,T=Tb-Ta;
+  if(n<3)return {mu:Math.max(n,0.5)/T,eta:0,beta:1,ll:NaN};
+  let g=0,c=0;for(let k=1;k<n;k++){const d=times[k]-times[k-1];if(d>0){g+=d;c++;}}g=c?g/c:T/n;
+  const dec=th=>({mu:Math.exp(clamp(th[0],-60,60)),eta:1/(1+Math.exp(-clamp(th[1],-14,14))),beta:Math.exp(clamp(th[2],-60,60))});
+  const f=th=>{const p=dec(th);if(!(p.mu>0)||!(p.beta>0)||!isFinite(p.beta))return 1e300;const v=-hawkesLL(p,times,Ta,Tb,null);return isFinite(v)?v:1e300;};
+  const bfs=light?[0.3,3]:[0.1,0.5,2,10],etas=light?[0.5]:[0.3,0.7];let best=null;
+  for(const bf of bfs)for(const e0 of etas){const r=nelderMead(f,[Math.log(n*(1-e0)/T),Math.log(e0/(1-e0)),Math.log(bf/g)],{maxIter:light?150:250,step:0.6});if(!best||r.f<best.f)best=r;}
+  const r2=nelderMead(f,best.x,{maxIter:light?120:300,step:0.15});if(r2.f<best.f)best=r2;
+  const p=dec(best.x);p.ll=-best.f;
+  // Degenerate corner (kernel longer than window or no gain over Poisson) -> Poisson limit
+  const llP=n*Math.log(n/T)-n;
+  if(p.beta*T<2||p.ll<llP+1e-6)return {mu:n/T,eta:0,beta:1/g,ll:llP,poissonLimit:true};
+  return p;
+}
+function hawkesTaus(p,times){const out=[];let S=0,prev=null;for(const t of times){if(prev!==null){const dt=t-prev,d=Math.exp(-p.beta*dt);out.push(p.mu*dt+p.eta*S*(1-d));S=S*d+1;}else S=1;prev=t;}return out;}
+function hawkesCompAt(p,times,edges,T0){const out=new Float64Array(edges.length);let idx=0,S=0,last=null;
+  for(let q=0;q<edges.length;q++){const e=edges[q];while(idx<times.length&&times[idx]<e){S=(last===null?0:S*Math.exp(-p.beta*(times[idx]-last)))+1;last=times[idx];idx++;}
+    const Se=last===null?0:S*Math.exp(-p.beta*(e-last));out[q]=p.mu*(e-T0)+p.eta*(idx-Se);}return out;}
+function simPoisson(rate,a,b,cap){const m=Math.min(randPois(rate*(b-a)),cap);const t=new Array(m);for(let k=0;k<m;k++)t[k]=a+rand()*(b-a);return t.sort((x,y)=>x-y);}
+function simHawkes(p,a,b,cap){let S=0,t=a;const out=[],c=p.eta*p.beta;
+  while(out.length<cap){const lb=p.mu+c*S;if(!(lb>0))break;const dt=randExp(lb);t+=dt;if(t>b)break;S*=Math.exp(-p.beta*dt);if(rand()*lb<=p.mu+c*S){out.push(t);S+=1;}}
+  return out;}
+function ksFromTaus(taus){const m=taus.length;if(m<5)return {D:NaN,p:NaN,m,u:[]};
+  const u=taus.map(x=>1-Math.exp(-x)).sort((a,b)=>a-b);let D=0;
+  for(let k=0;k<m;k++)D=Math.max(D,Math.abs(u[k]-k/m),Math.abs(u[k]-(k+1)/m));return {D,p:ksPValue(D,m),m,u};}
+
+function buildTimeLayers(S,opts,progress){
+  const tr=S.train.map(e=>e.time),te=S.test.map(e=>e.time);
+  const Ta=S.T0,Tb=S.Ts,Tc=S.T1,T=Tb-Ta,Tt=Tc-Tb,n=S.n,K=tr.length;
+  const L={};const avg=K/T;
+  const testPois=r=>te.length?te.length*Math.log(r)-r*Tt:0;
+  const diffs=(f)=>{const o=[];for(let k=1;k<tr.length;k++)o.push(f(tr[k-1],tr[k]));return o;};
+  // Poisson
+  L.pois={key:'pois',name:'Poisson',scope:'global',k:1,params:{rate:avg},
+    llTrain:K*Math.log(avg)-avg*T,llTest:testPois(avg),ks:ksFromTaus(diffs((a,b)=>avg*(b-a))),
+    sim:(a,b,cap)=>simPoisson(avg,a,b,cap)};
+  // NHPP piecewise constant on training window
+  {const Kb=Math.max(1,opts.bins|0),w=T/Kb,cnt=new Float64Array(Kb);
+    for(const t of tr)cnt[Math.min(Kb-1,Math.floor((t-Ta)/w))]++;
+    const pre=new Float64Array(Kb+1);for(let q=0;q<Kb;q++)pre[q+1]=pre[q]+cnt[q];
+    let ll=-K;for(const c of cnt)if(c>0)ll+=c*Math.log(c/w);
+    const cum=t=>{const q=Math.min(Kb-1,Math.max(0,Math.floor((t-Ta)/w)));return pre[q]+cnt[q]/w*(t-Ta-q*w);};
+    L.nhpp={key:'nhpp',name:'NHPP (piecewise)',scope:'global',k:Kb,params:{bins:Kb,rates:Array.from(cnt,c=>c/w),w},
+      llTrain:ll,llTest:testPois(avg),ks:ksFromTaus(diffs((a,b)=>cum(b)-cum(a))),
+      sim:(a,b,cap)=>{const o=[];for(let q=0;q<Kb;q++){const m=randPois(cnt[q]);for(let z=0;z<m;z++)o.push(Ta+(q+rand())*w);}o.sort((x,y)=>x-y);return o.slice(0,cap);}};
+  }
+  progress&&progress('Hawkes (global)…');
+  // Global Hawkes
+  {const p=fitHawkes(tr,Ta,Tb,false);
+    L.hawk={key:'hawk',name:'Hawkes-exp',scope:'global',k:3,params:p,
+      llTrain:hawkesLL(p,tr,Ta,Tb,null),llTest:te.length?hawkesLL(p,te,Tb,Tc,tr):0,ks:ksFromTaus(hawkesTaus(p,tr)),
+      sim:(a,b,cap)=>simHawkes(p,a,b,cap)};}
+  // Per-sender layers
+  const trG=groupBySender(n,S.train),teG=groupBySender(n,S.test);
+  {const r=trG.map(g=>g.length>0?g.length/T:0.5/T);let llTr=0,llTe=0,k=0,taus=[];
+    for(let i=0;i<n;i++){const c=trG[i].length;if(c>0)k++;llTr+=c*Math.log(r[i])-r[i]*T;llTe+=teG[i].length*Math.log(r[i])-(te.length?r[i]*Tt:0);
+      for(let q=1;q<c;q++)taus.push(r[i]*(trG[i][q]-trG[i][q-1]));}
+    L.spois={key:'spois',name:'Poisson · per sender',scope:'sender',k,params:{rates:r},llTrain:llTr,llTest:te.length?llTe:0,ks:ksFromTaus(taus),
+      simSender:(i,a,b,cap)=>simPoisson(r[i],a,b,cap)};}
+  progress&&progress('Hawkes per sender…');
+  {const P=[];let llTr=0,llTe=0,k=0,taus=[];
+    for(let i=0;i<n;i++){const g=trG[i];let p;
+      if(g.length>=8){p=fitHawkes(g,Ta,Tb,true);p.hawkes=true;k+=3;}
+      else{p={mu:(g.length>0?g.length:0.5)/T,eta:0,beta:1,hawkes:false};if(g.length>0)k+=1;}
+      p.n=g.length;P.push(p);
+      llTr+=hawkesLL(p,g,Ta,Tb,null);if(te.length)llTe+=hawkesLL(p,teG[i],Tb,Tc,g);
+      for(const x of hawkesTaus(p,g))taus.push(x);}
+    L.shawk={key:'shawk',name:'Hawkes-exp · per sender',scope:'sender',k,params:P,llTrain:llTr,llTest:te.length?llTe:0,ks:ksFromTaus(taus),
+      simSender:(i,a,b,cap)=>simHawkes(P[i],a,b,cap)};}
+  return L;
+}
+
+/* ---------- Fit everything ---------- */
+async function fitAll(S,opts,progress){
+  const t0=(typeof performance!=='undefined'?performance:Date).now();
+  const tick=()=>new Promise(r=>setTimeout(r,0));
+  progress&&progress('Detecting blocks (Louvain)…');await tick();
+  const Ntr=countMatrix(S.n,S.train);
+  const blocks=detectBlocks(S.n,Ntr,opts.gamma);
+  progress&&progress('Fitting MaxEnt mark layers (IPF)…');await tick();
+  const marks=buildMarkLayers(S,blocks,opts);
+  progress&&progress('Fitting time layers…');await tick();
+  const times=buildTimeLayers(S,opts,progress);
+  return {blocks,marks,times,ms:(typeof performance!=='undefined'?performance:Date).now()-t0};
+}
+function combined(R,S,tk,mk){const T=R.times[tk],M=R.marks.layers[mk],cond=T.scope==='sender';
+  const llTr=T.llTrain+(cond?M.llTrC:M.llTrJ),llTe=T.llTest+(cond?M.llTeC:M.llTeJ),k=T.k+(cond?M.kc:M.k);
+  return {llTr,llTe,k,aic:2*k-2*llTr,bic:k*Math.log(S.train.length)-2*llTr};}
+
+/* ---------- Simulation from a fitted time × mark model (training window) ---------- */
+function simulateModel(S,R,tk,mk,sd){
+  seed(sd);const n=S.n,T=R.times[tk],M=R.marks.layers[mk],Ta=S.T0,Tb=S.Ts,cap=5*S.train.length+1000,out=[];
+  if(T.scope==='global'){if(!M.sampler)M.sampler=cumSampler(M.W);const ts=T.sim(Ta,Tb,cap);
+    for(const t of ts){const k=M.sampler();out.push({i:(k/n)|0,j:k%n,time:t});}}
+  else{if(!M.rowS)M.rowS=[];
+    for(let i=0;i<n;i++){const ts=T.simSender(i,Ta,Tb,cap);if(!ts.length)continue;
+      if(!M.rowS[i]){const row=M.W.subarray(i*n,i*n+n);let s=0;for(const v of row)s+=v;
+        if(s>0)M.rowS[i]=cumSampler(row);else{const u=new Float64Array(n).fill(1);if(!S.selfLoops)u[i]=0;M.rowS[i]=cumSampler(u);}}
+      for(const t of ts)out.push({i,j:M.rowS[i](),time:t});}}
+  out.sort((a,b)=>a.time-b.time);return out;
+}
+
+/* ---------- Diagnostics ---------- */
+function motifRates(ev,delta,Tend){
+  const n=ev.length,c=[0,0,0,0];let elig=0;
+  for(let k=0;k<n;k++){const e=ev[k];if(e.time+delta>Tend)break;elig++;let r=0,b=0,v=0,p=0;
+    for(let l=k+1;l<n&&l<k+4000;l++){const f=ev[l];if(f.time>e.time+delta)break;
+      if(f.i===e.j&&f.j===e.i)r=1;else if(f.i===e.i&&f.j===e.j)p=1;else if(f.i===e.i)b=1;else if(f.j===e.j)v=1;
+      if(r&&b&&v&&p)break;}
+    c[0]+=r;c[1]+=b;c[2]+=v;c[3]+=p;}
+  return c.map(x=>elig?x/elig:0);
+}
+function burstiness(times){const g=[];for(let k=1;k<times.length;k++)g.push(times[k]-times[k-1]);const [m,s]=meanStd(g);
+  let M=NaN;if(g.length>3){const a=g.slice(0,-1),b=g.slice(1);const [ma,sa]=meanStd(a),[mb,sb]=meanStd(b);let c=0;for(let k=0;k<a.length;k++)c+=(a[k]-ma)*(b[k]-mb);M=c/a.length/(sa*sb);}
+  return {B:(s-m)/(s+m),M,mean:m};}
+function logHist(vals,nb,lo,hi){const L0=Math.log10(lo),L1=Math.log10(hi),d=(L1-L0)/nb,c=new Float64Array(nb);let tot=0;
+  for(const v of vals){if(!(v>0))continue;tot++;const q=Math.floor((Math.log10(v)-L0)/d);if(q>=0&&q<nb)c[q]++;}
+  const x=[],y=[];for(let q=0;q<nb;q++){const a=Math.pow(10,L0+q*d),b=Math.pow(10,L0+(q+1)*d);x.push(Math.sqrt(a*b));y.push(c[q]>0?c[q]/(tot*(b-a)):NaN);}return {x,y};}
+function gaps(evs){const o=[];for(let k=1;k<evs.length;k++)o.push(evs[k].time-evs[k-1].time);return o;}
+
+if(typeof module!=='undefined')module.exports={mulberry32,seed,rand,nelderMead,parseEdgeList,PRESETS,synthNetwork,makeSubset,countMatrix,detectBlocks,ipf,buildMarkLayers,buildTimeLayers,fitAll,combined,simulateModel,motifRates,burstiness,logHist,gaps,hawkesLL,fitHawkes,hawkesCompAt,TIME_DEFS,MARK_DEFS,ksFromTaus};
+
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   UI layer. To offer datasets hosted in this repository, list them here
+   (edge lists: source, target, timestamp).
+   ===================================================================== */
+const HOSTED_DATASETS=[
+  // {name:'Enron e-mail', url:'data/enron.csv'},
+];
+
+const $=id=>document.getElementById(id);
+const TCOL={pois:2,nhpp:5,hawk:1,spois:6,shawk:3},MCOL={unif:5,ep:2,me:3,bd:4,bm:1};
+const TNAME=Object.fromEntries(TIME_DEFS.map(d=>[d[0],d[1]])),MNAME=Object.fromEntries(MARK_DEFS.map(d=>[d[0],d[1]]));
+const state={ds:null,dsName:'',S:null,R:null,tab:'overview',dirty:new Set(),simCache:new Map(),busy:false,rasMode:'node'};
+const tick=()=>new Promise(r=>setTimeout(r,0));
+
+/* ---------- formatting ---------- */
+function fmt(x,d=3){if(x===undefined||x===null||Number.isNaN(x))return '—';if(!isFinite(x))return x>0?'∞':'−∞';const a=Math.abs(x);
+  let s=(a!==0&&(a<1e-3||a>=1e6))?x.toExponential(2):x.toFixed(d);return s.replace(/^-/,'−');}
+function fmtInt(x){return isFinite(x)?Math.round(x).toLocaleString('en-GB').replace(/^-/,'−'):'—';}
+function setStatus(msg,err){const el=$('status');el.textContent=msg;el.classList.toggle('err',!!err);}
+
+/* ---------- colours & canvas helpers ---------- */
+function cssv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function colors(){return {ink:cssv('--ink'),muted:cssv('--muted'),faint:cssv('--faint'),line:cssv('--line'),grid:cssv('--grid'),panel:cssv('--panel'),bg:cssv('--bg'),accent:cssv('--accent'),
+  s:[0,1,2,3,4,5,6].map(k=>cssv('--s'+k)),sans:cssv('--sans'),mono:cssv('--mono')};}
+function hexRGB(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [n>>16&255,n>>8&255,n&255];}
+function mixHex(a,b,t){const A=hexRGB(a),B=hexRGB(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')+')';}
+function isDark(){return matchMedia('(prefers-color-scheme: dark)').matches;}
+function blockColor(b,inactive){if(inactive)return cssv('--faint');const h=(b*137.508+188)%360;return isDark()?`hsl(${h},55%,63%)`:`hsl(${h},58%,40%)`;}
+function prep(cv,h){const dpr=Math.min(window.devicePixelRatio||1,2);cv.style.height=h+'px';const w=Math.max(160,cv.clientWidth||600);
+  const W=Math.round(w*dpr),H=Math.round(h*dpr);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);return {ctx,w,h};}
+function niceStep(r,c){const raw=r/c,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;return (f<1.5?1:f<3?2:f<7?5:10)*p;}
+function linTicks(lo,hi,c=5){if(!(hi>lo))return [lo];const s=niceStep(hi-lo,c),o=[];for(let q=Math.ceil(lo/s);q*s<=hi+1e-9*s;q++)o.push(+(q*s).toPrecision(12));return o;}
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function powLabel(v){return Number.isInteger(v)?(v===0?'1':v===1?'10':'10'+String(v).split('').map(c=>SUP[c]).join('')):tickLabel(Math.pow(10,v));}
+function tickLabel(v){const a=Math.abs(v);if(a===0)return '0';if(a>=1e5||a<1e-3)return v.toExponential(0).replace('e+','e').replace('-','−');return String(+v.toPrecision(4)).replace('-','−');}
+function legend(el,items){if(!el)return;el.innerHTML=items.filter(s=>s.label).map(s=>`<span><i style="background:${s.color}"></i>${s.label}</span>`).join('');}
+function noData(ctx,w,h,msg){const C=colors();ctx.fillStyle=C.muted;ctx.font='13px '+C.sans;ctx.textAlign='center';ctx.fillText(msg||'No data',w/2,h/2);}
+
+function plotXY(cv,cfg,leg){
+  const {ctx,w,h}=prep(cv,cfg.h||280),C=colors();ctx.font='11px '+C.sans;
+  const m={l:58,r:14,t:10,b:cfg.xlabel?42:26};
+  const okx=v=>isFinite(v)&&(!cfg.xlog||v>0),oky=v=>isFinite(v)&&(!cfg.ylog||v>0);
+  let xlo=Infinity,xhi=-Infinity,ylo=Infinity,yhi=-Infinity;
+  const take=(x,y)=>{if(okx(x)&&oky(y)){if(x<xlo)xlo=x;if(x>xhi)xhi=x;if(y<ylo)ylo=y;if(y>yhi)yhi=y;}};
+  for(const s of cfg.series)for(let k=0;k<s.x.length;k++)take(s.x[k],s.y[k]);
+  for(const b of cfg.bands||[])for(let k=0;k<b.x.length;k++){take(b.x[k],b.lo[k]);take(b.x[k],b.hi[k]);}
+  if(!isFinite(xlo)){noData(ctx,w,h);legend(leg,[]);return;}
+  if(cfg.xlim){if(cfg.xlim[0]!=null)xlo=cfg.xlim[0];if(cfg.xlim[1]!=null)xhi=cfg.xlim[1];}
+  if(cfg.ylim){if(cfg.ylim[0]!=null)ylo=cfg.ylim[0];if(cfg.ylim[1]!=null)yhi=cfg.ylim[1];}
+  if(xlo===xhi){xlo-=cfg.xlog?xlo/2:1;xhi+=cfg.xlog?xhi:1;}if(ylo===yhi){ylo-=cfg.ylog?ylo/2:1;yhi+=cfg.ylog?yhi:1;}
+  const fx=cfg.xlog?Math.log10:(v=>v),fy=cfg.ylog?Math.log10:(v=>v);
+  let X0=fx(xlo),X1=fx(xhi),Y0=fy(ylo),Y1=fy(yhi);
+  if(!(cfg.xlim&&cfg.xlim[0]!=null)){const p=(X1-X0)*0.03;X0-=p;X1+=p;}
+  if(!(cfg.ylim&&cfg.ylim[0]!=null)){const p=(Y1-Y0)*0.06;Y0-=p;Y1+=p;}
+  const pw=w-m.l-m.r,ph=h-m.t-m.b;
+  const X=v=>m.l+(fx(v)-X0)/(X1-X0)*pw,Y=v=>m.t+ph-(fy(v)-Y0)/(Y1-Y0)*ph;
+  const ticks=(a,b,log)=>{if(log){const o=[];for(let k=Math.ceil(a);k<=Math.floor(b);k++)o.push(k);return o.length>=2?o:linTicks(a,b,4);}return linTicks(a,b,cfg.nt||5);};
+  ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.fillStyle=C.muted;
+  ctx.textAlign='center';ctx.textBaseline='top';
+  for(const v of ticks(X0,X1,cfg.xlog)){const px=m.l+(v-X0)/(X1-X0)*pw;ctx.beginPath();ctx.moveTo(px,m.t);ctx.lineTo(px,m.t+ph);ctx.stroke();ctx.fillText(cfg.xlog?powLabel(v):tickLabel(v),px,m.t+ph+5);}
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  for(const v of ticks(Y0,Y1,cfg.ylog)){const py=m.t+ph-(v-Y0)/(Y1-Y0)*ph;ctx.beginPath();ctx.moveTo(m.l,py);ctx.lineTo(m.l+pw,py);ctx.stroke();ctx.fillText(cfg.ylog?powLabel(v):tickLabel(v),m.l-6,py);}
+  ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(m.l,m.t);ctx.lineTo(m.l,m.t+ph);ctx.lineTo(m.l+pw,m.t+ph);ctx.stroke();
+  ctx.fillStyle=C.muted;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  if(cfg.xlabel)ctx.fillText(cfg.xlabel,m.l+pw/2,h-6);
+  if(cfg.ylabel){ctx.save();ctx.translate(13,m.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(cfg.ylabel,0,0);ctx.restore();}
+  ctx.save();ctx.beginPath();ctx.rect(m.l,m.t,pw,ph);ctx.clip();
+  for(const b of cfg.bands||[]){ctx.fillStyle=b.color;ctx.globalAlpha=b.alpha||0.15;ctx.beginPath();
+    for(let k=0;k<b.x.length;k++){const px=X(b.x[k]),py=Y(b.hi[k]);k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+    for(let k=b.x.length-1;k>=0;k--)ctx.lineTo(X(b.x[k]),Y(b.lo[k]));ctx.closePath();ctx.fill();ctx.globalAlpha=1;}
+  if(cfg.diag){const a=Math.max(xlo,ylo),b=Math.min(xhi,yhi);ctx.strokeStyle=C.faint;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(X(a),Y(a));ctx.lineTo(X(b),Y(b));ctx.stroke();ctx.setLineDash([]);}
+  for(const l of cfg.hlines||[]){ctx.strokeStyle=l.color||C.faint;ctx.setLineDash(l.dash||[4,4]);ctx.beginPath();ctx.moveTo(m.l,Y(l.y));ctx.lineTo(m.l+pw,Y(l.y));ctx.stroke();ctx.setLineDash([]);}
+  for(const l of cfg.vlines||[]){ctx.strokeStyle=l.color||C.faint;ctx.setLineDash(l.dash||[5,4]);ctx.beginPath();ctx.moveTo(X(l.x),m.t);ctx.lineTo(X(l.x),m.t+ph);ctx.stroke();ctx.setLineDash([]);
+    if(l.label){ctx.fillStyle=C.muted;ctx.textAlign='left';ctx.fillText(l.label,X(l.x)+4,m.t+12);}}
+  for(const s of cfg.series){const mode=s.mode||'line';ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=s.width||1.8;ctx.globalAlpha=s.alpha||1;
+    if(s.dash)ctx.setLineDash(s.dash);
+    if(mode==='line'||mode==='linepoints'||mode==='step'){ctx.beginPath();let pen=false,py0=null;
+      for(let k=0;k<s.x.length;k++){if(!okx(s.x[k])||!oky(s.y[k])){pen=false;continue;}const px=X(s.x[k]),py=Y(s.y[k]);
+        if(!pen){ctx.moveTo(px,py);pen=true;}else{if(mode==='step')ctx.lineTo(px,py0);ctx.lineTo(px,py);}py0=py;}
+      ctx.stroke();}
+    ctx.setLineDash([]);
+    if(mode==='points'||mode==='linepoints'){const r=s.size||(mode==='points'?2.6:2.4);
+      for(let k=0;k<s.x.length;k++){if(!okx(s.x[k])||!oky(s.y[k]))continue;ctx.beginPath();ctx.arc(X(s.x[k]),Y(s.y[k]),r,0,7);ctx.fill();}}
+    ctx.globalAlpha=1;}
+  ctx.restore();
+  legend(leg,cfg.series.map(s=>({label:s.label,color:s.color})).concat((cfg.bands||[]).filter(b=>b.label).map(b=>({label:b.label,color:b.color}))));
+}
+
+function barChart(cv,cfg,leg){
+  const {ctx,w,h}=prep(cv,cfg.h||270),C=colors();ctx.font='11px '+C.sans;
+  const m={l:48,r:10,t:10,b:34},pw=w-m.l-m.r,ph=h-m.t-m.b,K=cfg.categories.length,Sn=cfg.series.length;
+  let ymax=0;for(const s of cfg.series)for(let k=0;k<K;k++)ymax=Math.max(ymax,s.values[k]+(s.err?s.err[k]:0));ymax=ymax>0?ymax*1.12:1;
+  const Y=v=>m.t+ph-v/ymax*ph;ctx.strokeStyle=C.grid;ctx.fillStyle=C.muted;ctx.textAlign='right';ctx.textBaseline='middle';
+  for(const v of linTicks(0,ymax,5)){ctx.beginPath();ctx.moveTo(m.l,Y(v));ctx.lineTo(m.l+pw,Y(v));ctx.stroke();ctx.fillText(tickLabel(v),m.l-6,Y(v));}
+  if(cfg.ylabel){ctx.save();ctx.translate(12,m.t+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText(cfg.ylabel,0,0);ctx.restore();}
+  const gw=pw/K,bw=gw*0.78/Sn;
+  for(let k=0;k<K;k++){ctx.fillStyle=C.ink;ctx.textAlign='center';ctx.textBaseline='top';ctx.font='12px '+C.sans;ctx.fillText(cfg.categories[k],m.l+(k+0.5)*gw,m.t+ph+8);ctx.font='11px '+C.sans;
+    for(let s=0;s<Sn;s++){const S=cfg.series[s],v=S.values[k],x=m.l+k*gw+gw*0.11+s*bw;ctx.fillStyle=S.color;ctx.fillRect(x+1,Y(v),Math.max(1,bw-2),Y(0)-Y(v));
+      if(S.err&&S.err[k]>0){const cx=x+bw/2;ctx.strokeStyle=C.ink;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,Y(v-S.err[k]));ctx.lineTo(cx,Y(v+S.err[k]));ctx.moveTo(cx-3,Y(v+S.err[k]));ctx.lineTo(cx+3,Y(v+S.err[k]));ctx.moveTo(cx-3,Y(v-S.err[k]));ctx.lineTo(cx+3,Y(v-S.err[k]));ctx.stroke();}}}
+  ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(m.l,Y(0));ctx.lineTo(m.l+pw,Y(0));ctx.stroke();
+  legend(leg,cfg.series.map(s=>({label:s.label,color:s.color})));
+}
+
+function heatmap(cv,cfg){
+  const M=cfg.M,R=M.length,Cn=R?M[0].length:0;const C=colors();
+  const w0=Math.max(160,cv.clientWidth||300);const h=cfg.h||Math.min(w0-30,cfg.maxH||420);
+  const {ctx,w}=prep(cv,h);if(!R){noData(ctx,w,h);return;}
+  const lab=cfg.labels&&R<=24;const m={l:lab?30:6,r:44,t:6,b:lab?20:6};
+  const cs=Math.min((w-m.l-m.r)/Cn,(h-m.t-m.b)/R);const ox=m.l+((w-m.l-m.r)-cs*Cn)/2,oy=m.t;
+  let vmin=Infinity,vmax=-Infinity;for(const r of M)for(const v of r){if(isFinite(v)){vmin=Math.min(vmin,v);vmax=Math.max(vmax,v);}}
+  if(cfg.div){const a=Math.max(Math.abs(vmin),Math.abs(vmax))||1;vmin=-a;vmax=a;}else{vmin=Math.min(0,vmin);if(cfg.vmax!=null)vmax=cfg.vmax;if(!(vmax>vmin))vmax=vmin+1;}
+  const col=v=>{if(!isFinite(v))return C.panel;if(cfg.div){const t=v/vmax;return t<0?mixHex(C.panel,C.s[2],Math.min(1,-t)):mixHex(C.panel,C.s[1],Math.min(1,t));}
+    const t=Math.pow(clamp((v-vmin)/(vmax-vmin),0,1),cfg.gamma||0.7);return mixHex(C.panel,C.accent,t);};
+  for(let r=0;r<R;r++)for(let c=0;c<Cn;c++){ctx.fillStyle=col(M[r][c]);ctx.fillRect(ox+c*cs,oy+r*cs,Math.ceil(cs)+0.5,Math.ceil(cs)+0.5);}
+  ctx.strokeStyle=C.line;ctx.strokeRect(ox,oy,cs*Cn,cs*R);
+  if(cfg.bounds){ctx.strokeStyle=C.muted;ctx.globalAlpha=0.6;ctx.lineWidth=1;for(const b of cfg.bounds){ctx.beginPath();ctx.moveTo(ox+b*cs,oy);ctx.lineTo(ox+b*cs,oy+R*cs);ctx.moveTo(ox,oy+b*cs);ctx.lineTo(ox+Cn*cs,oy+b*cs);ctx.stroke();}ctx.globalAlpha=1;}
+  if(lab){ctx.fillStyle=C.muted;ctx.font='10px '+C.sans;ctx.textAlign='right';ctx.textBaseline='middle';
+    for(let r=0;r<R;r++)ctx.fillText(cfg.labels[r],ox-4,oy+(r+0.5)*cs);ctx.textAlign='center';ctx.textBaseline='top';for(let c=0;c<Cn;c++)ctx.fillText(cfg.labels[c],ox+(c+0.5)*cs,oy+R*cs+4);}
+  if(cfg.showVals&&cs>=22){ctx.font='10px '+C.sans;ctx.textAlign='center';ctx.textBaseline='middle';for(let r=0;r<R;r++)for(let c=0;c<Cn;c++){const v=M[r][c];if(!isFinite(v)||Math.abs(v)<0.5)continue;const t=Math.abs(v)/Math.max(Math.abs(vmax),Math.abs(vmin));ctx.fillStyle=t>0.55?C.panel:C.ink;ctx.fillText(Math.round(v),ox+(c+0.5)*cs,oy+(r+0.5)*cs);}}
+  const bx=ox+cs*Cn+10,bh=cs*R,steps=40;
+  for(let q=0;q<steps;q++){const v=vmax-(q+0.5)/steps*(vmax-vmin);ctx.fillStyle=col(v);ctx.fillRect(bx,oy+q*bh/steps,9,bh/steps+0.6);}
+  ctx.fillStyle=C.muted;ctx.font='10px '+C.sans;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(cfg.fmtv?cfg.fmtv(vmax):tickLabel(+vmax.toPrecision(3)),bx+12,oy);
+  ctx.textBaseline='bottom';ctx.fillText(cfg.fmtv?cfg.fmtv(vmin):tickLabel(+vmin.toPrecision(3)),bx+12,oy+bh);
+}
+
+function drawRaster(cv,cfg){
+  const rows=cfg.labels.length,rowH=rows>14?11:14,gap=26;const h=2*rows*rowH+gap+30;
+  const {ctx,w}=prep(cv,h),C=colors();const m={l:88,r:10,t:4};const pw=w-m.l-m.r;
+  const X=t=>m.l+(t-cfg.Ta)/(cfg.Tb-cfg.Ta)*pw;
+  const panels=[['out',cfg.rowsOut],['in',cfg.rowsIn]];
+  ctx.font='10.5px '+C.sans;
+  panels.forEach(([nm,R],p)=>{const y0=m.t+p*(rows*rowH+gap);
+    ctx.fillStyle=C.muted;ctx.save();ctx.translate(10,y0+rows*rowH/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(nm==='out'?'outgoing':'incoming',0,0);ctx.restore();
+    for(let r=0;r<rows;r++){const y=y0+r*rowH;if(r%2===0){ctx.fillStyle=C.grid;ctx.globalAlpha=0.55;ctx.fillRect(m.l,y,pw,rowH);ctx.globalAlpha=1;}
+      ctx.fillStyle=cfg.rowColors?cfg.rowColors[r]:C.muted;ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(cfg.labels[r],m.l-6,y+rowH/2);
+      ctx.fillStyle=nm==='out'?C.s[1]:C.s[2];ctx.globalAlpha=0.8;
+      for(const t of R[r]){ctx.fillRect(Math.round(X(t)),y+1.5,1,rowH-3);}ctx.globalAlpha=1;}
+    ctx.strokeStyle=C.line;ctx.strokeRect(m.l+0.5,y0+0.5,pw,rows*rowH);});
+  const yb=m.t+2*rows*rowH+gap;ctx.fillStyle=C.muted;ctx.textAlign='center';ctx.textBaseline='top';
+  for(const v of linTicks(cfg.Ta,cfg.Tb,6)){const px=X(v);if(px<m.l-1||px>m.l+pw+1)continue;ctx.fillText(tickLabel(v),px,yb+4);}
+}
+
+/* ---------- controls ---------- */
+function buildSelects(){
+  const src=$('src');let h='<optgroup label="Synthetic">';for(const k in PRESETS)h+=`<option value="preset:${k}">${PRESETS[k].label}</option>`;h+='</optgroup>';
+  if(HOSTED_DATASETS.length){h+='<optgroup label="Hosted datasets">';HOSTED_DATASETS.forEach((d,k)=>h+=`<option value="hosted:${k}">${d.name}</option>`);h+='</optgroup>';}
+  h+='<optgroup label="Your data"><option value="upload">Upload a file…</option><option value="url">Load from URL…</option></optgroup>';src.innerHTML=h;src.value='preset:dept';
+  $('fTime').innerHTML=TIME_DEFS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join('');$('fTime').value='hawk';
+  $('fMark').innerHTML=MARK_DEFS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join('');$('fMark').value='bd';
+}
+function fillGen(P){$('g_n').value=P.n;$('g_B').value=P.B;$('g_K').value=P.K;$('g_seed').value=P.seed;$('g_eta').value=P.eta;$('g_beta').value=P.beta;
+  $('g_aff').value=P.affinity;$('g_het').value=P.hetero;$('g_reply').value=P.reply;$('g_repeat').value=P.repeat;$('g_bcast').value=P.broadcast;}
+function readGen(){const v=id=>parseFloat($(id).value);return {n:clamp(v('g_n')|0,3,400),B:clamp(v('g_B')|0,1,30),K:clamp(v('g_K')|0,100,40000),seed:v('g_seed')|0,eta:clamp(v('g_eta'),0,0.95),beta:Math.max(0.01,v('g_beta')),
+  affinity:Math.max(1,v('g_aff')),hetero:clamp(v('g_het'),0,3),reply:clamp(v('g_reply'),0,1),repeat:clamp(v('g_repeat'),0,1),broadcast:clamp(v('g_bcast'),0,1)};}
+function updateLabels(){let a=+$('from').value,b=+$('to').value;if(b<=a){if(document.activeElement===$('from'))$('to').value=b=Math.min(100,a+1);else $('from').value=a=Math.max(0,b-1);}
+  $('winVal').textContent=`${a}% – ${b}%`;$('trainVal').textContent=$('trainFrac').value+'%';$('binsVal').textContent=$('bins').value;$('gammaVal').textContent=(+$('gamma').value).toFixed(1);}
+function subsetOpts(){return {from:+$('from').value/100,to:+$('to').value/100,topN:Math.max(0,+$('topN').value|0),maxEvents:Math.max(0,+$('maxEv').value|0),
+  trainFrac:+$('trainFrac').value/100,jitter:$('jitter').checked,dedupe:$('dedupe').checked,selfLoops:$('selfLoops').checked};}
+function fitOpts(){return {bins:+$('bins').value,gamma:+$('gamma').value,kappa:+$('kappa').value};}
+
+/* ---------- data loading ---------- */
+function setDataset(ds,name){
+  state.ds=ds;state.dsName=name;const nN=ds.labels.length;
+  const span=ds.events.length?ds.events[ds.events.length-1].time-ds.events[0].time:0;
+  $('dsInfo').textContent=`${name}: ${fmtInt(nN)} nodes, ${fmtInt(ds.events.length)} events, span ${tickLabel(+span.toPrecision(4))}`+(ds.skipped?` · ${ds.skipped} lines skipped`:'');
+  if(nN>300&&!(+$('topN').value)){$('topN').value=150;setStatus(`Large network: Top-N set to 150 nodes for interactive speed.`);}
+  runPipeline();
+}
+function loadSource(){
+  const v=$('src').value;$('uploadBox').hidden=v!=='upload';$('urlBox').hidden=v!=='url';$('genBox').hidden=!v.startsWith('preset:');
+  if(v.startsWith('preset:')){const P=PRESETS[v.slice(7)];fillGen(P);setDataset(synthNetwork(P),P.label.split(' · ')[0]);}
+  else if(v.startsWith('hosted:')){const d=HOSTED_DATASETS[+v.slice(7)];fetchCSV(d.url,d.name);}
+}
+function fetchCSV(url,name){setStatus('Loading '+url+' …');
+  fetch(url).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(t=>{const ds=parseEdgeList(t);if(!ds.events.length)throw new Error('no events parsed');setDataset(ds,name||url.split('/').pop());})
+  .catch(e=>setStatus(`Could not load ${url} (${e.message}). Cross-site files need CORS; files in this repository load by relative path.`,true));}
+
+/* ---------- pipeline ---------- */
+async function runPipeline(){
+  if(!state.ds||state.busy)return;state.busy=true;$('fitBtn').disabled=true;dynStop();
+  try{
+    setStatus('Building subset…');await tick();
+    const S=makeSubset(state.ds,subsetOpts());
+    if(S.n>500)throw new Error(`Subset has ${S.n} nodes. Set Top-N ≤ 500 (mark layers are dense n×n).`);
+    const t0=performance.now();
+    const R=await fitAll(S,fitOpts(),msg=>setStatus(msg));
+    state.S=S;state.R=R;state.simCache.clear();dyn.layout=null;
+    setStatus(`Fitted ${TIME_DEFS.length}×${MARK_DEFS.length} models on ${fmtInt(S.train.length)} train / ${fmtInt(S.test.length)} test events, n = ${S.n}, in ${(performance.now()-t0).toFixed(0)} ms.`+(S.jittered?`\n${fmtInt(S.nTies)} tied timestamps jittered.`:''));
+    state.dirty=new Set(['overview','lik','diag','raster','dyn']);render();
+  }catch(e){console.error(e);setStatus(e.message||String(e),true);}
+  finally{state.busy=false;$('fitBtn').disabled=false;}
+}
+function getSim(tk,mk,sd){const key=tk+'|'+mk+'|'+sd;if(!state.simCache.has(key))state.simCache.set(key,simulateModel(state.S,state.R,tk,mk,sd));return state.simCache.get(key);}
+function featured(){return {tk:$('fTime').value,mk:$('fMark').value};}
+
+/* ---------- tabs ---------- */
+function showTab(t){state.tab=t;for(const b of document.querySelectorAll('.tabs button'))b.setAttribute('aria-selected',String(b.dataset.tab===t));
+  for(const p of document.querySelectorAll('.panel'))p.hidden=p.id!=='p-'+t;if(t!=='dyn')dynStop();render();}
+function render(){const t=state.tab;if(!state.R){return;}if(t==='method')return;
+  if(!state.dirty.has(t)&&t!=='dyn')return;state.dirty.delete(t);
+  try{({overview:renderOverview,lik:renderLik,diag:renderDiag,raster:renderRaster,dyn:renderDyn})[t]();}catch(e){console.error(e);setStatus('Render error: '+e.message,true);}}
+
+/* ---------- Overview ---------- */
+function renderOverview(){
+  const S=state.S,R=state.R,C=colors();const trT=S.train.map(e=>e.time);const b=burstiness(trT);
+  const H=R.times.hawk.params;const nAct=new Set(S.train.flatMap(e=>[e.i,e.j])).size;
+  const cards=[[fmtInt(S.n),'nodes ('+fmtInt(nAct)+' active in train)'],[fmtInt(S.train.length)+' / '+fmtInt(S.test.length),'train / test events'],
+    [fmtInt(R.marks.uTr),'distinct directed pairs (train)'],[tickLabel(+(S.T1-S.T0).toPrecision(4)),'time span'],
+    [fmt(b.mean,3),'mean inter-event time'],[fmt(b.B,3),'burstiness B=(σ−m)/(σ+m)'],[fmt(b.M,3),'memory coefficient M'],
+    [fmt(H.eta,3),'global branching ratio η'],[String(R.blocks.B)+(R.blocks.hasInactive?'*':''),'Louvain blocks, Q = '+fmt(R.blocks.Q,3)]];
+  $('cards').innerHTML=cards.map(c=>`<div class="card"><b>${c[0]}</b><span>${c[1]}</span></div>`).join('');
+  // activity
+  const nb=Math.min(120,Math.max(20,Math.round(S.events.length/25))),T0=S.T0,T1=S.T1,bw=(T1-T0)/nb;
+  const cnt=new Float64Array(nb);for(const e of S.events)cnt[Math.min(nb-1,Math.floor((e.time-T0)/bw))]++;
+  const xs=[],ys=[];for(let q=0;q<nb;q++){xs.push(T0+q*bw);ys.push(cnt[q]/bw);}xs.push(T1);ys.push(cnt[nb-1]/bw);
+  const edges=[];for(let q=0;q<=nb;q++)edges.push(T0+q*bw);
+  const allT=S.events.map(e=>e.time);const comp=hawkesCompAt(H,allT,edges,T0);const hx=[],hy=[];
+  for(let q=0;q<nb;q++){hx.push(T0+(q+0.5)*bw);hy.push((comp[q+1]-comp[q])/bw);}
+  plotXY($('cvActivity'),{h:250,xlabel:'time',ylabel:'events per unit time',series:[
+    {x:xs,y:ys,mode:'step',color:C.s[0],width:1.4,label:'Observed rate'},
+    {x:hx,y:hy,mode:'line',color:C.s[1],width:1.8,label:'Hawkes expected (one-step-ahead)'},
+    {x:[T0,T1],y:[R.times.pois.params.rate,R.times.pois.params.rate],color:C.s[2],dash:[6,4],width:1.4,label:'Poisson rate (train)'}],
+    vlines:S.test.length?[{x:S.Ts,label:'test →'}]:[],ylim:[0,null]},$('lgActivity'));
+  // adjacency
+  const cv=$('cvAdj');
+  if(S.n>300){const {ctx,w,h}=prep(cv,80);noData(ctx,w,h,'Adjacency view is shown for subsets of up to 300 nodes.');$('adjNote').textContent='';return;}
+  const blk=R.blocks.block,N=R.marks.Ntr,n=S.n;const act=new Float64Array(n);for(let i=0;i<n;i++)act[i]=R.marks.sout[i]+R.marks.sin[i];
+  const ord=[...Array(n).keys()].sort((a,b)=>blk[a]-blk[b]||act[b]-act[a]);const M=ord.map(i=>ord.map(j=>Math.log1p(N[i*n+j])));
+  const bounds=[];for(let k=1;k<n;k++)if(blk[ord[k]]!==blk[ord[k-1]])bounds.push(k);
+  heatmap(cv,{M,bounds,maxH:520,fmtv:v=>fmtInt(Math.expm1(v))});
+  $('adjNote').textContent=`Cells show log(1+N_ij) for sender i (rows) and receiver j (columns), with nodes grouped by Louvain block (resolution γ = ${fitOpts().gamma}). `+(R.blocks.hasInactive?'The last block (*) collects nodes inactive in training. ':'')+(S.truth?'Synthetic ground-truth blocks: '+new Set(S.truth).size+'.':'');
+}
+
+/* ---------- Likelihoods ---------- */
+function renderLik(){
+  const S=state.S,R=state.R,f=featured();const ntr=S.train.length,nte=Math.max(1,S.test.length),hasTest=S.test.length>0;
+  // time table
+  const T=TIME_DEFS.map(d=>R.times[d[0]]);
+  const tAIC=T.map(t=>2*t.k-2*t.llTrain),tBIC=T.map(t=>t.k*Math.log(ntr)-2*t.llTrain);
+  const best=(arr,max)=>arr.indexOf(max?Math.max(...arr):Math.min(...arr));
+  // per-sender and global time LLs are not comparable on their own (they describe different objects); compare within scope
+  let h='<thead><tr><th>Time layer</th><th>scope</th><th>k</th><th>ℓ/event train</th><th>ℓ/event test</th><th>AIC</th><th>BIC</th><th>KS D</th><th>KS p</th></tr></thead><tbody>';
+  const scopes=['global','sender'];const bestIn=(vals,max)=>{const o=new Set();for(const sc of scopes){let bi=-1;T.forEach((t,k)=>{if(t.scope!==sc)return;if(bi<0||(max?vals[k]>vals[bi]:vals[k]<vals[bi]))bi=k;});if(bi>=0)o.add(bi);}return o;};
+  const bTe=bestIn(T.map(t=>t.llTest),true),bA=bestIn(tAIC,false),bB=bestIn(tBIC,false);
+  T.forEach((t,k)=>{h+=`<tr${t.key===f.tk?' class="featrow"':''}><td>${t.name}</td><td>${t.scope}</td><td>${t.k}</td><td>${fmt(t.llTrain/ntr)}</td><td class="${bTe.has(k)&&hasTest?'best':''}">${hasTest?fmt(t.llTest/nte):'—'}</td><td class="${bA.has(k)?'best':''}">${fmtInt(tAIC[k])}</td><td class="${bB.has(k)?'best':''}">${fmtInt(tBIC[k])}</td><td>${fmt(t.ks.D)}</td><td>${fmt(t.ks.p)}</td></tr>`;});
+  $('tblTime').innerHTML=h+'</tbody>';
+  // mark table
+  const M=MARK_DEFS.map(d=>R.marks.layers[d[0]]);const mA=M.map(m=>2*m.k-2*m.llTrJ);
+  const bJ=best(M.map(m=>m.llTeJ),true),bC=best(M.map(m=>m.llTeC),true),bMA=best(mA,false);
+  h='<thead><tr><th>Mark layer</th><th>k</th><th>ℓ/event train (joint)</th><th>ℓ/event test (joint)</th><th>ℓ/event test (cond.)</th><th>AIC (joint)</th><th>𝔼[U] train</th><th>𝔼[U] test</th></tr></thead><tbody>';
+  M.forEach((m,k)=>{h+=`<tr><td>${m.name}</td><td>${fmtInt(m.k)}</td><td>${fmt(m.llTrJ/ntr)}</td><td class="${k===bJ&&hasTest?'best':''}">${hasTest?fmt(m.llTeJ/nte):'—'}</td><td class="${k===bC&&hasTest?'best':''}">${hasTest?fmt(m.llTeC/nte):'—'}</td><td class="${k===bMA?'best':''}">${fmtInt(mA[k])}</td><td>${fmtInt(m.EUtr)}</td><td>${hasTest?fmtInt(m.EUte):'—'}</td></tr>`;});
+  h+=`<tr><td><i>Observed</i></td><td></td><td></td><td></td><td></td><td></td><td>${fmtInt(R.marks.uTr)}</td><td>${hasTest?fmtInt(R.marks.uTe):'—'}</td></tr>`;
+  $('tblMark').innerHTML=h+'</tbody>';
+  // combined
+  const comb={};let bestTe=-Infinity,bestAIC=Infinity,bestBIC=Infinity;
+  for(const [tk] of TIME_DEFS)for(const [mk] of MARK_DEFS){const c=combined(R,S,tk,mk);comb[tk+mk]=c;bestTe=Math.max(bestTe,c.llTe);bestAIC=Math.min(bestAIC,c.aic);bestBIC=Math.min(bestBIC,c.bic);}
+  const head='<thead><tr><th>Time \\ Mark</th>'+MARK_DEFS.map(d=>`<th>${d[1]}</th>`).join('')+'</tr></thead><tbody>';
+  let h1=head,h2=head;
+  for(const [tk,tn] of TIME_DEFS){h1+=`<tr><td>${tn}</td>`;h2+=`<tr><td>${tn}</td>`;
+    for(const [mk] of MARK_DEFS){const c=comb[tk+mk],ft=(tk===f.tk&&mk===f.mk)?' feat':'';
+      h1+=`<td class="${hasTest&&c.llTe===bestTe?'best':''}${ft}">${hasTest?fmt(c.llTe/nte):'—'}</td>`;
+      h2+=`<td class="${c.aic===bestAIC?'best':''}${ft}">${fmtInt(c.aic-bestAIC)} / <span class="${c.bic===bestBIC?'best':''}">${fmtInt(c.bic-bestBIC)}</span></td>`;}
+    h1+='</tr>';h2+='</tr>';}
+  $('tblComb').innerHTML=h1+'</tbody>';$('tblAic').innerHTML=h2+'</tbody>';
+  // Hawkes box
+  const p=R.times.hawk.params,lr=2*(R.times.hawk.llTrain-R.times.pois.llTrain);const emp=ntr/(S.Ts-S.T0);
+  $('hawkesBox').innerHTML=p.poissonLimit?`No self-excitation detected: the likelihood is maximised in the Poisson limit (η = 0).<br>μ = ${fmt(p.mu)}`:
+   `μ (immigrant rate) = ${fmt(p.mu)}<br>η (branching ratio) = ${fmt(p.eta)}<br>β (decay rate) = ${fmt(p.beta)} · kernel half-life = ${fmt(Math.LN2/p.beta)}<br>`+
+   `stationary rate μ/(1−η) = ${fmt(p.mu/(1-p.eta))} · empirical = ${fmt(emp)}<br>`+
+   `LR vs Poisson 2Δℓ = ${fmt(lr,1)} (2 extra parameters; η = 0 on the boundary)<br>ΔAIC (Hawkes − Poisson) = ${fmt(tAIC[2]-tAIC[0],1)}`;
+  // per-sender eta scatter
+  const C=colors();const P=R.times.shawk.params.filter(q=>q.hawkes);
+  plotXY($('cvEta'),{h:240,xlog:true,xlabel:'training events of sender',ylabel:'η_i',ylim:[0,1],series:[
+    {x:P.map(q=>q.n),y:P.map(q=>q.eta),mode:'points',color:C.s[3],size:3,label:'per-sender Hawkes'},
+    {x:[Math.min(...P.map(q=>q.n),8),Math.max(...P.map(q=>q.n),10)],y:[p.eta,p.eta],color:C.s[1],dash:[6,4],label:'global η'}]},$('lgEta'));
+}
+
+/* ---------- Diagnostics ---------- */
+function deltaValue(){const g=burstiness(state.S.train.map(e=>e.time)).mean;const v=+$('delta').value;return g*Math.pow(10,-0.5+2.5*v/100);}
+function renderDiag(){
+  const S=state.S,R=state.R,C=colors(),f=featured(),nS=clamp(+$('nSims').value|0,1,30);
+  // IET
+  const emp=gaps(S.train).filter(x=>x>0);const lines=[{key:'emp',g:emp,color:C.s[0],label:'Empirical'}];
+  const tks=['pois','hawk'];if(!tks.includes(f.tk))tks.push(f.tk);
+  for(const tk of tks)lines.push({key:tk,g:gaps(getSim(tk,f.mk,101)).filter(x=>x>0),color:C.s[TCOL[tk]],label:TNAME[tk]+' (sim.)'});
+  let lo=Infinity,hi=0;for(const L of lines)for(const x of L.g){if(x<lo)lo=x;if(x>hi)hi=x;}
+  plotXY($('cvIET'),{h:270,xlog:true,ylog:true,xlabel:'inter-event time Δt',ylabel:'density',series:lines.map(L=>{const hh=logHist(L.g,36,lo,hi*1.0001);return {x:hh.x,y:hh.y,mode:'linepoints',color:L.color,label:L.label,width:L.key==='emp'?2.4:1.6};})},$('lgIET'));
+  // KS
+  const ksS=[];let mG=0;
+  for(const [tk] of TIME_DEFS){const k=R.times[tk].ks;if(!k.u.length)continue;if(R.times[tk].scope==='global')mG=k.m;
+    const step=Math.max(1,Math.floor(k.m/500)),x=[],y=[];for(let q=0;q<k.m;q+=step){const e=(q+0.5)/k.m;x.push(e);y.push(k.u[q]-e);}
+    ksS.push({x,y,color:C.s[TCOL[tk]],label:`${TNAME[tk]} (D=${fmt(k.D,3)})`,width:tk===f.tk?2.6:1.5});}
+  const band=1.36/Math.sqrt(Math.max(1,mG));
+  plotXY($('cvKS'),{h:270,xlabel:'uniform quantile',ylabel:'u₍ₖ₎ − quantile',xlim:[0,1],series:ksS,bands:[{x:[0,1],lo:[-band,-band],hi:[band,band],color:C.muted,alpha:0.13,label:'95% KS band'}],hlines:[{y:0}]},$('lgKS'));
+  // degree calibration
+  const M=R.marks.layers[f.mk],n=S.n,K=S.train.length,N=R.marks.Ntr;
+  const eo=new Float64Array(n),ei=new Float64Array(n),oo=new Float64Array(n),oi=new Float64Array(n);
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const k=i*n+j;if(!R.marks.full[k])continue;const u=1-Math.exp(-K*M.pg[k]);eo[i]+=u;ei[j]+=u;if(N[k]>0){oo[i]++;oi[j]++;}}
+  plotXY($('cvDeg'),{h:270,xlabel:'observed unique degree',ylabel:'expected unique degree',diag:true,series:[
+    {x:Array.from(oo),y:Array.from(eo),mode:'points',color:C.s[1],label:'out-degree',size:3},
+    {x:Array.from(oi),y:Array.from(ei),mode:'points',color:C.s[2],label:'in-degree',size:3,alpha:0.8}]},$('lgDeg'));
+  // block calibration
+  const B=R.blocks.B,blk=R.blocks.block;const Uo=Array.from({length:B},()=>new Array(B).fill(0)),Ue=Array.from({length:B},()=>new Array(B).fill(0));
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const k=i*n+j;if(!R.marks.full[k])continue;Ue[blk[i]][blk[j]]+=1-Math.exp(-K*M.pg[k]);if(N[k]>0)Uo[blk[i]][blk[j]]++;}
+  const labs=[...Array(B).keys()].map(b=>(R.blocks.hasInactive&&b===B-1)?'∗':String(b+1));
+  let vmax=0;for(const r of Uo.concat(Ue))for(const v of r)vmax=Math.max(vmax,v);
+  heatmap($('cvBObs'),{M:Uo,labels:labs,vmax,maxH:300,showVals:true});heatmap($('cvBExp'),{M:Ue,labels:labs,vmax,maxH:300,showVals:true});
+  heatmap($('cvBRes'),{M:Ue.map((r,a)=>r.map((v,b)=>v-Uo[a][b])),labels:labs,div:true,maxH:300,showVals:true});
+  renderMotifs();
+}
+function renderMotifs(){
+  const S=state.S,C=colors(),f=featured(),nS=clamp(+$('nSims').value|0,1,30);const d=deltaValue();$('deltaVal').textContent=fmt(d,3);
+  const cats=['Reciprocity','Broadcast','Convergence','Repeat'];
+  const empR=motifRates(S.train,d,S.Ts);
+  const scope=state.R.times[f.tk].scope;const poisLike=f.tk==='pois'||f.tk==='spois'||f.tk==='nhpp';
+  const alt=poisLike?(scope==='sender'?'shawk':'hawk'):(scope==='sender'?'spois':'pois');
+  const run=tk=>{const rs=[];for(let s=0;s<nS;s++)rs.push(motifRates(getSim(tk,f.mk,200+s),d,S.Ts));return {m:cats.map((_,k)=>meanStd(rs.map(r=>r[k]))[0]),sd:cats.map((_,k)=>meanStd(rs.map(r=>r[k]))[1])};};
+  const a=run(f.tk),b=run(alt);
+  barChart($('cvMotif'),{h:270,categories:cats,ylabel:'rate',series:[
+    {label:'Empirical',values:empR,color:C.s[0]},
+    {label:`${TNAME[f.tk]} × ${MNAME[f.mk]}`,values:a.m,err:a.sd,color:C.s[TCOL[f.tk]]},
+    {label:`${TNAME[alt]} × ${MNAME[f.mk]}`,values:b.m,err:b.sd,color:C.s[TCOL[alt]]}]},$('lgMotif'));
+}
+
+/* ---------- Rasters ---------- */
+function rasterRows(evs,S,R,mode,rows){
+  const n=S.n;if(mode==='node'){const act=new Float64Array(n);for(const e of S.train){act[e.i]++;act[e.j]++;}
+    const top=[...Array(n).keys()].sort((a,b)=>act[b]-act[a]).slice(0,rows);const pos=new Map(top.map((v,k)=>[v,k]));
+    const O=top.map(()=>[]),I=top.map(()=>[]);for(const e of evs){const a=pos.get(e.i),b=pos.get(e.j);if(a!==undefined)O[a].push(e.time);if(b!==undefined)I[b].push(e.time);}
+    return {O,I,labels:top.map(v=>S.labels[v].slice(0,12)),colors:top.map(v=>blockColor(R.blocks.block[v],R.blocks.hasInactive&&R.blocks.block[v]===R.blocks.B-1))};}
+  const B=R.blocks.B,blk=R.blocks.block;const k=Math.min(rows,B);
+  const O=Array.from({length:k},()=>[]),I=Array.from({length:k},()=>[]);
+  for(const e of evs){if(blk[e.i]<k)O[blk[e.i]].push(e.time);if(blk[e.j]<k)I[blk[e.j]].push(e.time);}
+  return {O,I,labels:[...Array(k).keys()].map(b=>(R.blocks.hasInactive&&b===B-1?'inactive':'B'+(b+1))+` (n=${R.blocks.sizes[b]})`),colors:[...Array(k).keys()].map(b=>blockColor(b,R.blocks.hasInactive&&b===B-1))};
+}
+function renderRaster(){
+  const S=state.S,R=state.R,f=featured(),rows=+$('rasRows').value;$('rasRowsVal').textContent=rows;
+  const sd=(+$('rasSeed').value|0)||1;const sim=getSim(f.tk,f.mk,sd);
+  const e=rasterRows(S.train,S,R,state.rasMode,rows),m=rasterRows(sim,S,R,state.rasMode,rows);
+  drawRaster($('cvRasEmp'),{rowsOut:e.O,rowsIn:e.I,labels:e.labels,rowColors:e.colors,Ta:S.T0,Tb:S.Ts});
+  drawRaster($('cvRasMod'),{rowsOut:m.O,rowsIn:m.I,labels:m.labels,rowColors:m.colors,Ta:S.T0,Tb:S.Ts});
+  $('rasModCap').textContent=`Model: ${TNAME[f.tk]} × ${MNAME[f.mk]} (one simulation, ${fmtInt(sim.length)} events)`;
+}
+
+/* ---------- Dynamics ---------- */
+const dyn={playing:false,raf:0,t:0,last:0,src:'emp',ev:null,times:null,Ta:0,Tb:1,layout:null,hover:-1,px:null,py:null,dragging:false};
+function layoutFR(S,R){
+  const n=S.n,N=R.marks.Ntr,blk=R.blocks.block,B=R.blocks.B;seed(99);
+  const E=[];let wmax=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const w=N[i*n+j]+N[j*n+i];if(w>0){const lw=Math.log1p(w);E.push([i,j,lw]);wmax=Math.max(wmax,lw);}}
+  const x=new Float64Array(n),y=new Float64Array(n);
+  for(let i=0;i<n;i++){const a=2*Math.PI*blk[i]/Math.max(1,B);const r=B>1?0.3:0;x[i]=0.5+r*Math.cos(a)+(rand()-0.5)*0.15;y[i]=0.5+r*Math.sin(a)+(rand()-0.5)*0.15;}
+  const k=0.9*Math.sqrt(1/n),it=n>150?160:300;let temp=0.08;const dx=new Float64Array(n),dy=new Float64Array(n);
+  for(let s=0;s<it;s++){dx.fill(0);dy.fill(0);
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){let ddx=x[i]-x[j],ddy=y[i]-y[j];let d=Math.hypot(ddx,ddy);if(d<1e-4){ddx=rand()*1e-3;ddy=rand()*1e-3;d=1e-3;}const f=k*k/d;dx[i]+=ddx/d*f;dy[i]+=ddy/d*f;dx[j]-=ddx/d*f;dy[j]-=ddy/d*f;}
+    for(const [i,j,w] of E){const ddx=x[i]-x[j],ddy=y[i]-y[j],d=Math.hypot(ddx,ddy)||1e-4;const f=d*d/k*(0.3+w/wmax);dx[i]-=ddx/d*f;dy[i]-=ddy/d*f;dx[j]+=ddx/d*f;dy[j]+=ddy/d*f;}
+    for(let i=0;i<n;i++){dx[i]-=(x[i]-0.5)*0.6*k;dy[i]-=(y[i]-0.5)*0.6*k;const l=Math.hypot(dx[i],dy[i])||1e-9;const st=Math.min(l,temp);x[i]+=dx[i]/l*st;y[i]+=dy[i]/l*st;}
+    temp*=0.985;}
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;for(let i=0;i<n;i++){x0=Math.min(x0,x[i]);x1=Math.max(x1,x[i]);y0=Math.min(y0,y[i]);y1=Math.max(y1,y[i]);}
+  const sx=x1-x0||1,sy=y1-y0||1;for(let i=0;i<n;i++){x[i]=(x[i]-x0)/sx;y[i]=(y[i]-y0)/sy;}return {x,y};
+}
+function dynPrepare(){
+  const S=state.S,R=state.R;if(!S)return;
+  if(S.n<=300&&!dyn.layout)dyn.layout=layoutFR(S,R);
+  const f=featured();
+  if(dyn.src==='emp'){dyn.ev=S.events;dyn.Ta=S.T0;dyn.Tb=S.T1;}else{dyn.ev=getSim(f.tk,f.mk,1);dyn.Ta=S.T0;dyn.Tb=S.Ts;}
+  dyn.times=Float64Array.from(dyn.ev,e=>e.time);
+  if(!(dyn.t>=dyn.Ta&&dyn.t<=dyn.Tb))dyn.t=dyn.Ta+winWidth();
+}
+function winWidth(){return (dyn.Tb-dyn.Ta)*Math.pow(10,-3.3+2.3*(+$('dynWin').value)/100);}
+function speedFrac(){return Math.pow(10,-3.2+2*(+$('dynSpeed').value)/100);}
+function renderDyn(){dynPrepare();dynDraw();}
+function dynDraw(){
+  const S=state.S,R=state.R,cv=$('dynCanvas');if(!S||!dyn.times)return;const C=colors();
+  const w0=cv.clientWidth||700,h=Math.round(clamp(w0*0.6,320,620));const {ctx,w}=prep(cv,h);
+  if(!dyn.layout){noData(ctx,w,h,`Animated view needs ≤ 300 nodes (this subset has ${S.n}). Lower Top-N in the Subset panel.`);drawStrip();return;}
+  const n=S.n,pad=28,L=dyn.layout,px=new Float64Array(n),py=new Float64Array(n);
+  for(let i=0;i<n;i++){px[i]=pad+L.x[i]*(w-2*pad);py[i]=pad+L.y[i]*(h-2*pad);}dyn.px=px;dyn.py=py;
+  const W=winWidth(),t=dyn.t,lo=lowerBound(dyn.times,t-W),hi=upperBound(dyn.times,t);
+  const act=new Float32Array(n);for(let k=lo;k<hi;k++){act[dyn.ev[k].i]++;act[dyn.ev[k].j]++;}
+  const blk=R.blocks.block,inact=b=>R.blocks.hasInactive&&b===R.blocks.B-1;
+  const rad=i=>3+2.2*Math.sqrt(act[i]);
+  ctx.lineCap='round';
+  for(let k=Math.max(lo,hi-900);k<hi;k++){const e=dyn.ev[k];if(e.i===e.j)continue;const age=(t-e.time)/W,a=Math.max(0.05,1-age);
+    const x1=px[e.i],y1=py[e.i],x2=px[e.j],y2=py[e.j],dx=x2-x1,dy=y2-y1,d=Math.hypot(dx,dy)||1;
+    const cx=(x1+x2)/2-dy*0.12,cy=(y1+y2)/2+dx*0.12;ctx.strokeStyle=blockColor(blk[e.i],inact(blk[e.i]));ctx.globalAlpha=0.85*a;ctx.lineWidth=1.2+1.2*a;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(cx,cy,x2,y2);ctx.stroke();
+    const ux=x2-cx,uy=y2-cy,ul=Math.hypot(ux,uy)||1,r=rad(e.j)+2,tx=x2-ux/ul*r,ty=y2-uy/ul*r,ang=Math.atan2(uy,ux);
+    ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-7*Math.cos(ang-0.4),ty-7*Math.sin(ang-0.4));ctx.lineTo(tx-7*Math.cos(ang+0.4),ty-7*Math.sin(ang+0.4));ctx.closePath();ctx.fill();}
+  ctx.globalAlpha=1;
+  const showLab=$('dynLabels').checked||n<=25;ctx.font='11px '+C.sans;ctx.textAlign='left';ctx.textBaseline='middle';
+  for(let i=0;i<n;i++){const r=rad(i);ctx.beginPath();ctx.arc(px[i],py[i],r,0,7);ctx.fillStyle=blockColor(blk[i],inact(blk[i]));ctx.globalAlpha=act[i]>0?1:0.35;ctx.fill();
+    ctx.globalAlpha=1;ctx.strokeStyle=C.panel;ctx.lineWidth=1;ctx.stroke();
+    if(showLab&&(act[i]>0||n<=25)){ctx.fillStyle=C.ink;ctx.fillText(S.labels[i].slice(0,14),px[i]+r+3,py[i]);}}
+  if(dyn.hover>=0){const i=dyn.hover;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px[i],py[i],rad(i)+3,0,7);ctx.stroke();}
+  $('dynTime').textContent=`t = ${tickLabel(+t.toPrecision(5))} · window ${tickLabel(+W.toPrecision(3))} · ${hi-lo} events`;
+  drawStrip();
+}
+function drawStrip(){
+  const cv=$('dynStrip'),{ctx,w,h}=prep(cv,64),C=colors();if(!dyn.times)return;
+  const nb=Math.max(40,Math.min(300,Math.floor(w/3))),T0=dyn.Ta,T1=dyn.Tb,bw=(T1-T0)/nb,cnt=new Float64Array(nb);
+  for(const t of dyn.times){const q=Math.floor((t-T0)/bw);if(q>=0&&q<nb)cnt[q]++;}let mx=0;for(const c of cnt)mx=Math.max(mx,c);
+  const X=t=>(t-T0)/(T1-T0)*w;ctx.fillStyle=C.s[1];ctx.globalAlpha=0.55;
+  for(let q=0;q<nb;q++){const hh=mx?cnt[q]/mx*(h-14):0;ctx.fillRect(q*w/nb,h-hh,Math.max(1,w/nb-0.5),hh);}ctx.globalAlpha=1;
+  if(dyn.src==='emp'&&state.S.test.length){ctx.strokeStyle=C.muted;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(X(state.S.Ts),0);ctx.lineTo(X(state.S.Ts),h);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=C.muted;ctx.font='10px '+C.sans;ctx.fillText('test',X(state.S.Ts)+4,10);}
+  const W=winWidth();ctx.fillStyle=C.accent;ctx.globalAlpha=0.18;ctx.fillRect(X(dyn.t-W),0,Math.max(2,X(dyn.t)-X(dyn.t-W)),h);ctx.globalAlpha=1;
+  ctx.fillStyle=C.accent;ctx.fillRect(X(dyn.t)-1,0,2,h);
+}
+function dynLoop(ts){if(!dyn.playing)return;const dt=dyn.last?Math.min(0.1,(ts-dyn.last)/1000):0;dyn.last=ts;
+  dyn.t+=dt*speedFrac()*(dyn.Tb-dyn.Ta);if(dyn.t>dyn.Tb)dyn.t=dyn.Ta+winWidth();dynDraw();dyn.raf=requestAnimationFrame(dynLoop);}
+function dynStop(){dyn.playing=false;cancelAnimationFrame(dyn.raf);dyn.last=0;const b=$('dynPlay');if(b)b.textContent='Play';}
+function dynToggle(){if(!state.S)return;if(dyn.playing){dynStop();return;}dynPrepare();dyn.playing=true;dyn.last=0;$('dynPlay').textContent='Pause';dyn.raf=requestAnimationFrame(dynLoop);}
+function stripSeek(ev){const r=$('dynStrip').getBoundingClientRect();const fr=clamp((ev.clientX-r.left)/r.width,0,1);dyn.t=dyn.Ta+fr*(dyn.Tb-dyn.Ta);dynDraw();}
+
+/* ---------- downloads ---------- */
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function exportCSV(){const S=state.S;if(!S)return;let s='source,target,timestamp,split\n';for(const e of S.train)s+=`${S.labels[e.i]},${S.labels[e.j]},${e.time},train\n`;for(const e of S.test)s+=`${S.labels[e.i]},${S.labels[e.j]},${e.time},test\n`;download('subset.csv',s,'text/csv');}
+function exportJSON(){const S=state.S,R=state.R;if(!R)return;const out={dataset:state.dsName,subset:subsetOpts(),estimation:fitOpts(),n:S.n,train:S.train.length,test:S.test.length,T0:S.T0,Ts:S.Ts,T1:S.T1,
+  blocks:{B:R.blocks.B,Q:R.blocks.Q,membership:Object.fromEntries(S.labels.map((l,i)=>[l,R.blocks.block[i]]))},
+  time:Object.fromEntries(TIME_DEFS.map(([k])=>{const t=R.times[k];return [k,{name:t.name,scope:t.scope,k:t.k,llTrain:t.llTrain,llTest:t.llTest,ks:{D:t.ks.D,p:t.ks.p,m:t.ks.m},params:k==='shawk'?t.params.map((p,i)=>({node:S.labels[i],...p})):k==='spois'?{rates:t.params.rates}:t.params}];})),
+  mark:Object.fromEntries(MARK_DEFS.map(([k])=>{const m=R.marks.layers[k];return [k,{name:m.name,k:m.k,kCond:m.kc,llTrainJoint:m.llTrJ,llTestJoint:m.llTeJ,llTrainCond:m.llTrC,llTestCond:m.llTeC,EUtrain:m.EUtr,EUtest:m.EUte,ipfIterations:m.iters,ipfError:m.err}];})),
+  combined:Object.fromEntries(TIME_DEFS.flatMap(([tk])=>MARK_DEFS.map(([mk])=>[tk+'×'+mk,combined(R,S,tk,mk)])))};
+  download('metn-results.json',JSON.stringify(out,null,1),'application/json');}
+
+/* ---------- wiring ---------- */
+function debounce(f,ms){let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>f(...a),ms);};}
+function markAll(){state.dirty=new Set(['overview','lik','diag','raster','dyn']);}
+function init(){
+  buildSelects();updateLabels();
+  for(const id of ['from','to','trainFrac','bins','gamma'])$(id).addEventListener('input',updateLabels);
+  $('src').addEventListener('change',loadSource);
+  $('genBtn').addEventListener('click',()=>{const P=readGen();setDataset(synthNetwork(P),'Synthetic (custom)');});
+  $('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;setStatus('Reading '+f.name+' …');const rd=new FileReader();
+    rd.onload=()=>{try{const ds=parseEdgeList(rd.result);if(!ds.events.length)throw new Error('No events parsed. Expected columns: source target timestamp.');setDataset(ds,f.name);}catch(err){setStatus(err.message,true);}};rd.readAsText(f);});
+  $('urlBtn').addEventListener('click',()=>{const u=$('url').value.trim();if(u)fetchCSV(u);});
+  $('fitBtn').addEventListener('click',runPipeline);
+  for(const id of ['fTime','fMark','nSims'])$(id).addEventListener('change',()=>{state.dirty=new Set(['lik','diag','raster','dyn']);if(state.tab==='dyn'){dynPrepare();}render();});
+  for(const b of document.querySelectorAll('.tabs button'))b.addEventListener('click',()=>showTab(b.dataset.tab));
+  $('delta').addEventListener('input',debounce(()=>{if(state.R)renderMotifs();},150));
+  for(const b of $('rasMode').querySelectorAll('button'))b.addEventListener('click',()=>{state.rasMode=b.dataset.v;for(const c of $('rasMode').querySelectorAll('button'))c.setAttribute('aria-pressed',String(c===b));state.dirty.add('raster');render();});
+  $('rasRows').addEventListener('input',()=>{state.dirty.add('raster');render();});$('rasSeed').addEventListener('change',()=>{state.dirty.add('raster');render();});
+  $('dynPlay').addEventListener('click',dynToggle);
+  for(const b of $('dynSrc').querySelectorAll('button'))b.addEventListener('click',()=>{dyn.src=b.dataset.v;for(const c of $('dynSrc').querySelectorAll('button'))c.setAttribute('aria-pressed',String(c===b));dyn.t=NaN;dynPrepare();dynDraw();});
+  for(const id of ['dynWin','dynSpeed','dynLabels'])$(id).addEventListener('input',()=>{if(!dyn.playing)dynDraw();});
+  const strip=$('dynStrip');strip.addEventListener('pointerdown',e=>{dyn.dragging=true;strip.setPointerCapture(e.pointerId);stripSeek(e);});
+  strip.addEventListener('pointermove',e=>{if(dyn.dragging)stripSeek(e);});strip.addEventListener('pointerup',()=>dyn.dragging=false);
+  const cv=$('dynCanvas'),tip=$('tip');
+  cv.addEventListener('mousemove',e=>{if(!dyn.px)return;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=-1,bd=144;
+    for(let i=0;i<dyn.px.length;i++){const d=(dyn.px[i]-mx)**2+(dyn.py[i]-my)**2;if(d<bd){bd=d;best=i;}}
+    if(best!==dyn.hover){dyn.hover=best;if(!dyn.playing)dynDraw();}
+    if(best>=0){const R=state.R,S=state.S;tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';
+      tip.textContent=`${S.labels[best]} · block ${R.blocks.block[best]+1} · out ${R.marks.sout[best]} / in ${R.marks.sin[best]} (train)`;}else tip.style.display='none';});
+  cv.addEventListener('mouseleave',()=>{tip.style.display='none';dyn.hover=-1;if(!dyn.playing)dynDraw();});
+  window.addEventListener('resize',debounce(()=>{markAll();render();},200));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{markAll();render();});
+  loadSource();
+}
+document.addEventListener('DOMContentLoaded',init);
+
+</script>
+</body>
+</html>
