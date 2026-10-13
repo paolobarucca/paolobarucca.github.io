@@ -7,6 +7,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <style>
+    .toc { display: flex; flex-wrap: wrap; gap: .4rem .6rem; margin: 1.2rem 0 0; padding: 0; list-style: none; }
+    .toc a { display: inline-block; padding: .3rem .8rem; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: .9rem; }
+    .toc a:hover { color: var(--accent); border-color: var(--accent); }
+
+    .course { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.3rem 1.4rem 1.1rem; margin-top: 1.4rem; }
+    .course h3 { margin-top: 0; font-size: 1.3rem; color: var(--accent); }
+    .course h4 { font-family: "Inter", system-ui, sans-serif; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 1.2rem 0 .4rem; }
+    .course p, .course ul { margin: .4rem 0; }
+    .course ul { padding-left: 1.2rem; }
+    .course li { margin: .2rem 0; }
+    .meta { display: flex; flex-wrap: wrap; gap: .35rem .5rem; margin: .2rem 0 .8rem; padding: 0; list-style: none; }
+    .course .meta { padding-left: 0; }
+    .meta li { margin: 0; font-size: .82rem; padding: .15rem .6rem; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+    .subtitle { color: var(--muted); font-style: italic; margin-top: -.2rem !important; }
+    .more { font-size: .92rem; margin-top: 1rem !important; }
+
+    .programmes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+    .programmes .card p.mods { margin-top: .5rem; font-size: .85rem; }
+  </style>
 </head>
 <body>
 <header class="site">
@@ -23,20 +43,171 @@
 
 <main>
   <h1>Teaching</h1>
-  <p class="lead">Modules I lead in the Department of Computer Science, UCL.</p>
+  <p class="lead">I lead two postgraduate modules in the Department of Computer Science at UCL, teach doctoral courses on the statistical physics of learning, and supervise industry projects through UCL IXN.</p>
 
-  <div class="grid">
-    <a class="card" href="https://ucl.reportlab.com/modules/COMP0051/pdf/">
-      <h3>Algorithmic Trading</h3>
-      <p>COMP0051 · since 2018/19</p>
+  <ul class="toc">
+    <li><a href="#modules">UCL modules</a></li>
+    <li><a href="#masters">Master's programmes</a></li>
+    <li><a href="#phd">PhD teaching</a></li>
+    <li><a href="#ixn">UCL IXN projects</a></li>
+    <li><a href="#supervision">Supervision</a></li>
+  </ul>
+
+  <!-- ============ UCL MODULES ============ -->
+  <h2 id="modules">UCL modules</h2>
+  <p>Both modules are 15-credit, Level 7 (postgraduate) modules taught in person in Term 2, and are assessed half through in-class activity and half through coursework.</p>
+
+  <article class="course" id="comp0051">
+    <h3>Algorithmic Trading</h3>
+    <ul class="meta">
+      <li>COMP0051</li>
+      <li>15 credits · Level 7</li>
+      <li>Term 2</li>
+      <li>Module leader since 2018/19</li>
+    </ul>
+    <p>An introduction to algorithmic trading and risk-premia strategies: why they work, what their statistical properties are, and how to design, implement and evaluate them. The module surveys the main families of strategies used in industry, points to open areas of research including recent machine-learning approaches, and gives students the tools to build strategies and to test their known and provable properties rigorously.</p>
+
+    <h4>Topics</h4>
+    <ul>
+      <li>The trading industry, market structure and data sources</li>
+      <li>Families of trading and risk-premia strategies</li>
+      <li>Limit order book dynamics</li>
+      <li>Portfolio theory and portfolio construction</li>
+      <li>Statistical analysis and evaluation of strategies</li>
+      <li>Sharpe ratio and other performance metrics</li>
+      <li>Backtest overfitting, multiple hypothesis testing and model validation</li>
+    </ul>
+
+    <h4>Learning outcomes</h4>
+    <ul>
+      <li>Analyse trading strategies statistically</li>
+      <li>Research, design and develop new strategies</li>
+    </ul>
+
+    <h4>Background expected</h4>
+    <p>Probability and statistics, mathematical analysis, and fluency in a scientific programming language (Python is used in class).</p>
+
+    <p class="more"><a href="https://www.ucl.ac.uk/module-catalogue/modules/algorithmic-trading-COMP0051">Full description in the UCL module catalogue →</a></p>
+  </article>
+
+  <article class="course" id="comp0162">
+    <h3>Advanced Machine Learning in Finance</h3>
+    <ul class="meta">
+      <li>COMP0162</li>
+      <li>15 credits · Level 7</li>
+      <li>Term 2</li>
+      <li>Module leader since 2021/22</li>
+    </ul>
+    <p>Modern machine-learning methods applied to the problems that matter in finance: derivatives pricing and model calibration, portfolio allocation and hedging, investment decisions, credit scoring, fraud detection and risk management. The module also introduces text mining as a source of alternative data. It is hands-on throughout: students implement models in Python with Keras/TensorFlow on real and simulated financial data, with an emphasis on noisy, non-stationary datasets.</p>
+
+    <h4>Topics</h4>
+    <ul>
+      <li>Neural network fundamentals, layer types and architectures</li>
+      <li>Optimisation: loss functions, regularisation, stochastic gradient descent, overfitting and generalisation</li>
+      <li>Supervised deep learning: CNNs, RNNs and LSTMs</li>
+      <li>Unsupervised learning: PCA and autoencoders</li>
+      <li>Reinforcement learning for dynamic control problems in finance</li>
+      <li>Graph neural networks and learning on financial networks</li>
+      <li>Text mining and sentiment analysis; time-series prediction</li>
+    </ul>
+
+    <h4>Example projects</h4>
+    <ul>
+      <li>Network filtering and anomaly detection</li>
+      <li>Link prediction in temporal networks</li>
+      <li>Autoencoders for payment-network analysis</li>
+      <li>Return forecasting with recurrent networks</li>
+      <li>Sentiment analysis of financial text</li>
+    </ul>
+
+    <h4>Learning outcomes</h4>
+    <ul>
+      <li>Describe the main advanced algorithms (CNNs, RNNs, reinforcement learning) and choose the right one for a financial problem</li>
+      <li>Speed up pricing and calibration, and formulate dynamic control problems in finance</li>
+      <li>Build flexible models for financial prediction and analyse textual data algorithmically</li>
+      <li>Write and adapt machine-learning code in Python with Keras and TensorFlow</li>
+    </ul>
+
+    <h4>Background expected</h4>
+    <p>Probability, linear algebra and multivariate calculus; programming in a numerical language; and Machine Learning with Applications in Finance (COMP0050 or COMP0198).</p>
+
+    <p class="more"><a href="https://www.ucl.ac.uk/module-catalogue/modules/advanced-machine-learning-in-finance-COMP0162">Full description in the UCL module catalogue →</a></p>
+  </article>
+
+  <!-- ============ MASTER'S ============ -->
+  <h2 id="masters">Master's programmes</h2>
+  <p>My modules are options on five one-year MSc programmes at UCL, so each class brings together students from computer science, quantitative finance, risk and data science.</p>
+
+  <div class="programmes">
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/computational-finance-msc">
+      <h3>MSc Computational Finance</h3>
+      <p>Mathematics, finance, computer science and statistics for quantitative roles.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
     </a>
-    <a class="card" href="https://ucl.reportlab.com/modules/COMP0162/pdf/">
-      <h3>Advanced Machine Learning in Finance</h3>
-      <p>COMP0162 · since 2021/22</p>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/financial-technology-msc">
+      <h3>MSc Financial Technology</h3>
+      <p>Technology, data and computation for the financial services industry.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
+    </a>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/data-science-and-machine-learning-msc">
+      <h3>MSc Data Science and Machine Learning</h3>
+      <p>Statistical and computational foundations of modern machine learning.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
+    </a>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/emerging-digital-technologies-msc">
+      <h3>MSc Emerging Digital Technologies</h3>
+      <p>AI, distributed ledgers and cloud computing in financial and business settings.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
+    </a>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/financial-risk-management-msc">
+      <h3>MSc Financial Risk Management</h3>
+      <p>Finance theory combined with data analytics and computational modelling.</p>
+      <p class="mods">COMP0051</p>
     </a>
   </div>
 
-  <h2>Supervision</h2>
+  <!-- ============ PHD ============ -->
+  <h2 id="phd">PhD teaching</h2>
+
+  <article class="course" id="statphys-ml">
+    <h3>Statistical Physics for Machine Learning</h3>
+    <p class="subtitle">Phase transitions, inference and high-dimensional landscapes</p>
+    <ul class="meta">
+      <li>PhD in Data Science · Sapienza University of Rome</li>
+      <li>DIAG</li>
+      <li>20 hours · 5 days × 4 h</li>
+      <li>25–29 May 2026</li>
+    </ul>
+    <p>A doctoral course delivered at the Department of Computer, Control and Management Engineering (DIAG) of Sapienza, my alma mater. It treats learning as a problem in statistical mechanics: starting from entropy, free energy and Bayesian inference, maximum likelihood, regularisation and posterior inference become instances of the same physics, and phase transitions explain when learning becomes hard. Each day mixes lectures, whiteboard derivations, exercises and open problems.</p>
+
+    <h4>Programme</h4>
+    <ul>
+      <li><strong>Foundations</strong> — entropy, free energy and Bayesian inference; learning as statistical mechanics</li>
+      <li><strong>Disordered systems</strong> — random-field Ising model, Sherrington–Kirkpatrick spin glass, p-spin model, random k-SAT</li>
+      <li><strong>Methods</strong> — replica, cavity and mean-field approaches</li>
+      <li><strong>Random matrix theory</strong> — semicircle law, Stieltjes transform, BBP transition</li>
+      <li><strong>Applications</strong> — PCA and community detection, Hopfield networks, loss-landscape Hessians and the edge of stability, diffusion models</li>
+      <li><strong>Open problems</strong> — overparameterised networks, implicit regularisation, the limits of high-dimensional generation</li>
+    </ul>
+
+    <h4>Background expected</h4>
+    <p>Linear algebra, probability and basic calculus. No prior knowledge of statistical physics or spin glasses is needed.</p>
+
+    <p class="more"><a href="https://phd.uniroma1.it/web/OffertaFormativaErogataCiclo.aspx?c=41&amp;i=3565&amp;l=EN">Listing in the Sapienza PhD course catalogue →</a></p>
+  </article>
+
+  <!-- ============ IXN ============ -->
+  <h2 id="ixn">UCL IXN industry projects</h2>
+  <p>The <a href="https://www.ucl.ac.uk/engineering/computer-science/collaborate/ucl-industry-exchange-network-ucl-ixn">UCL Industry Exchange Network (IXN)</a>, running in Computer Science since 2011, embeds real industry problems into the degree. Each project pairs a UCL academic supervisor with a technical mentor from the partner organisation, so students work on a live problem while partners prototype ideas at low risk.</p>
+  <ul>
+    <li><strong>Master's students</strong> spend three months full-time on an IXN dissertation or team project over the summer (June–September). Confidential and closed-source projects are possible under NDA.</li>
+    <li><strong>Undergraduates</strong> spend part of each year on industry projects during term, from team projects to final-year dissertations.</li>
+    <li><strong>Partners</strong> range from large technology firms and international banks to insurers, start-ups, the NHS and charities.</li>
+  </ul>
+  <p>I supervise IXN projects in quantitative finance, financial networks and machine learning. Organisations interested in proposing a project for next summer can <a href="contact.html">get in touch</a>; proposals for master's projects are usually collected between November and January.</p>
+
+  <!-- ============ SUPERVISION ============ -->
+  <h2 id="supervision">Supervision</h2>
   <p>I supervise PhD and MSc projects on complex networks, random matrix theory and physics-informed machine learning, often with applications in finance. Prospective students are welcome to <a href="contact.html">get in touch</a> with a short description of their interests.</p>
 </main>
 
