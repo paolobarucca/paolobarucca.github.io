@@ -45,7 +45,7 @@ aside.controls{position:sticky;top:64px;max-height:calc(100vh - 76px);overflow:a
 .controls h2:first-child{margin-top:2px;padding-top:0;border-top:0}
 label.f{display:block;font-size:13px;margin:9px 0 3px}
 .val{font:12px var(--mono);color:var(--muted);float:right}
-.hint{font-size:12px;color:var(--faint);margin:3px 0 0}
+.hint{font-size:12px;color:var(--muted);margin:3px 0 0}
 select,input[type=text],input[type=number],input[type=url]{width:100%;font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
 input[type=checkbox]{accent-color:var(--accent)}
@@ -110,6 +110,39 @@ pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;paddi
 .katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:2rem 16px;text-align:center}
 .empty{padding:40px 12px;text-align:center;color:var(--muted);font-size:14px}
+.hint b{color:var(--muted);font-weight:600}
+dl.gloss{margin:8px 0 0;font-size:12px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 8px}
+dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{margin:0}
+.sidelink{font-size:12.5px;margin:0 0 4px}
+.steps{max-width:1040px}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin-bottom:16px}
+.stepnum{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--panel);font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:10px}
+.stepbody{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px 10px;min-width:0}
+.stepbody h4{margin:2px 0 6px;font:600 18px/1.3 var(--serif)}
+.algo{font-size:14px;margin:4px 0 8px;max-width:900px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px;font-size:12px;color:var(--muted)}
+.chip{font:12px var(--mono);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:2px 9px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;margin:8px 0 6px}
+.kv div{font-size:12px;color:var(--muted)}.kv b{display:block;font:600 16px var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.stepbody .tablewrap{margin:8px 0;padding:2px 8px}
+.stepbody .t td.l{white-space:normal}
+.stepbody canvas{margin-top:4px}
+.usedby{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.glyphs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
+@media(max-width:1180px){.glyphs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.glyphs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.glyph{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);font-weight:400}
+.glyph[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.glyph svg{display:block;width:100%;height:54px}
+.glyph b{display:block;font-size:13.5px;margin-top:2px}.glyph span{display:block;font-size:11.5px;color:var(--muted)}
+.glyph .gv{font:600 15px var(--serif);color:var(--ink);margin-top:3px}
+.mcurves{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.mcurves{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mcurves div{border:1px solid transparent;border-radius:8px;padding:4px}.mcurves div.on{border-color:var(--accent)}
+.mcurves .ttl{font-size:12.5px;font-weight:600;display:flex;gap:6px;align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.t td.good{color:var(--accent);font-weight:600}.t td.bad{color:var(--warn);font-weight:600}
+.t td.l,.t th.l{text-align:left}
 </style>
 </head>
 <body>
@@ -134,9 +167,11 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
 
 <main class="wrap layout">
  <aside class="controls" aria-label="Controls">
+  <p class="sidelink">Every setting below says where it enters the analysis; the <a href="#" data-goto="fit">Fitting tab</a> shows each step on the current data.</p>
   <h2>1 · Dataset</h2>
   <label class="f" for="src">Source</label>
   <select id="src"></select>
+  <p class="hint">Synthetic presets have known ground truth (blocks, η, β, reply rates), so you can check that the fits recover it. Your own data: any edge list of source, target, timestamp.</p>
   <details class="gen" id="genBox">
    <summary>Synthetic generator parameters</summary>
    <div class="row2">
@@ -152,7 +187,18 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
     <div><label class="f" for="g_repeat">P(repeat)</label><input type="number" id="g_repeat" min="0" max="1" step="0.05"></div>
     <div><label class="f" for="g_bcast">P(broadcast)</label><input type="number" id="g_bcast" min="0" max="1" step="0.05"></div>
    </div>
-   <p class="hint">Offspring events reply, repeat, or broadcast with these probabilities, otherwise draw a fresh block-structured pair. The timeline is exactly Hawkes; the marks deliberately break time×mark factorisation.</p>
+   <dl class="gloss">
+    <dt>Nodes, Blocks</dt><dd>network size and number of planted communities</dd>
+    <dt>Events</dt><dd>target count; sets the window length T = K(1−η)/μ with μ = 1</dd>
+    <dt>Branching η</dt><dd>mean number of offspring per event (η = 0 gives Poisson)</dd>
+    <dt>Decay β</dt><dd>offspring follow after Exp(β) delays; 1/β is the burst timescale</dd>
+    <dt>Block affinity</dt><dd>weight multiplier for pairs inside the same block</dd>
+    <dt>Fitness σ</dt><dd>log-normal spread of node activity and popularity</dd>
+    <dt>P(reply)</dt><dd>offspring of i→j is j→i (reciprocity)</dd>
+    <dt>P(repeat)</dt><dd>offspring is i→j again (repetition)</dd>
+    <dt>P(broadcast)</dt><dd>offspring is i→k from the same sender</dd>
+   </dl>
+   <p class="hint">Other offspring draw a fresh block-structured pair. The timeline is exactly Hawkes; reply, repeat and broadcast deliberately break the time × mark factorisation, so the motif analysis has something to find.</p>
    <div class="btnrow"><button id="genBtn" class="ghost">Generate</button></div>
   </details>
   <div id="uploadBox" hidden>
@@ -171,31 +217,40 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
   <label class="f" for="from">Time window <span class="val" id="winVal"></span></label>
   <input type="range" id="from" min="0" max="99" value="0" aria-label="Window start (%)">
   <input type="range" id="to" min="1" max="100" value="100" aria-label="Window end (%)">
+  <p class="hint">Keeps only events in this slice of the full time span. Every fit, table and plot uses this subset.</p>
   <div class="row2">
    <div><label class="f" for="topN">Top-N nodes <small>(0 = all)</small></label><input type="number" id="topN" min="0" max="500" value="0"></div>
    <div><label class="f" for="maxEv">Max events</label><input type="number" id="maxEv" min="100" step="500" value="20000"></div>
   </div>
+  <p class="hint"><b>Top-N</b> keeps the N most active nodes and the events among them; mark layers are n × n matrices, so large networks need N ≤ 500. <b>Max events</b> keeps the first N events of the window.</p>
   <label class="f" for="trainFrac">Train fraction <span class="val" id="trainVal"></span></label>
   <input type="range" id="trainFrac" min="50" max="95" step="5" value="75">
+  <p class="hint">The first share of events, in time order, fits every model. The rest is the test window, used for held-out likelihoods and motif forecasts.</p>
   <label class="check"><input type="checkbox" id="jitter" checked> Jitter tied timestamps within clock resolution</label>
   <label class="check"><input type="checkbox" id="dedupe"> Drop exact duplicate events</label>
   <label class="check"><input type="checkbox" id="selfLoops"> Keep self-loops</label>
+  <p class="hint">Hawkes likelihoods need distinct times: jitter spreads tied events (one e-mail to many recipients) uniformly within one clock tick. Duplicates are identical (source, target, time) rows.</p>
 
   <h2>3 · Estimation</h2>
   <label class="f" for="bins">NHPP bins <span class="val" id="binsVal"></span></label>
   <input type="range" id="bins" min="2" max="120" value="20">
+  <p class="hint">Bins of the piecewise-constant NHPP time layer; each bin's rate is count ÷ width. More bins track cycles in training, add parameters and cannot forecast.</p>
   <label class="f" for="gamma">Louvain resolution γ <span class="val" id="gammaVal"></span></label>
   <input type="range" id="gamma" min="0.2" max="3" step="0.1" value="1">
+  <p class="hint">Louvain modularity resolution on the symmetrised training counts; higher γ gives more, smaller blocks. Blocks set the block-pair constraints of Block-DWCM and Block-Mask and the block views.</p>
   <label class="f" for="kappa">Mark smoothing κ <small>(mixture with uniform)</small></label>
   <select id="kappa"><option>0.0001</option><option selected>0.001</option><option>0.01</option><option>0.05</option></select>
+  <p class="hint">Every mark distribution is mixed with the uniform one, p → (1−κ)p + κ/|S|, so pairs never seen in training keep a finite test likelihood. It changes scores, not fitted weights.</p>
   <div class="btnrow"><button id="fitBtn">Apply subset &amp; fit</button></div>
 
   <h2>4 · Featured model</h2>
   <label class="f" for="fTime">Time layer \(\varphi\)</label><select id="fTime"></select>
   <label class="f" for="fMark">Mark layer \(w\)</label><select id="fMark"></select>
-  <label class="f" for="nSims">Simulations for diagnostics</label>
-  <input type="number" id="nSims" min="1" max="30" value="5">
-  <p class="hint">Used by diagnostics, rasters and dynamics.</p>
+  <label class="check" style="margin-top:10px"><input type="checkbox" id="recip" checked> Add reciprocity \(\rho\) (reply kernel)</label>
+  <p class="hint">The featured model is simulated in Diagnostics, Motifs, Rasters and Dynamics and shaded in the likelihood tables. Reciprocity adds a reply kernel: each i→j raises the rate of j→i.</p>
+  <label class="f" for="nSims">Simulations</label>
+  <input type="number" id="nSims" min="1" max="30" value="8">
+  <p class="hint">Independent runs of the fitted model behind every band, error bar and test-window forecast. More runs are smoother and slower.</p>
   <div class="btnrow"><button id="dlCsv" class="ghost">Subset CSV</button><button id="dlJson" class="ghost">Results JSON</button></div>
   <div class="status" id="status" role="status" aria-live="polite"></div>
  </aside>
@@ -203,8 +258,10 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
  <div class="content">
   <nav class="tabs" role="tablist">
    <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+   <button role="tab" data-tab="fit" aria-selected="false">Fitting</button>
    <button role="tab" data-tab="lik" aria-selected="false">Likelihoods</button>
    <button role="tab" data-tab="diag" aria-selected="false">Diagnostics</button>
+   <button role="tab" data-tab="motif" aria-selected="false">Motifs</button>
    <button role="tab" data-tab="raster" aria-selected="false">Rasters</button>
    <button role="tab" data-tab="dyn" aria-selected="false">Dynamics</button>
    <button role="tab" data-tab="method" aria-selected="false">Method</button>
@@ -216,6 +273,11 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
     <p class="note">Observed event rate per bin over the whole subset, with the expected rate per bin from the global Hawkes fit (compensator increments conditioned on the observed history) and the Poisson rate. The dashed line separates training and test windows.</p></figure>
    <figure class="chart"><figcaption>Training adjacency ordered by detected blocks</figcaption><canvas id="cvAdj"></canvas>
     <p class="note" id="adjNote"></p></figure>
+  </section>
+
+  <section class="panel" id="p-fit" role="tabpanel" hidden>
+   <p class="secnote">What happens when you press <i>Apply subset &amp; fit</i>, step by step, with the numbers from the current data. Chips show the settings each step uses.</p>
+   <div class="steps" id="fitSteps"></div>
   </section>
 
   <section class="panel" id="p-lik" role="tabpanel" hidden>
@@ -230,6 +292,10 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
    <div class="tablewrap"><table class="t" id="tblComb"></table></div>
    <h3 class="sec">Full model: training ΔAIC / ΔBIC</h3>
    <div class="tablewrap"><table class="t" id="tblAic"></table></div>
+   <h3 class="sec">Reciprocity extension</h3>
+   <p class="secnote">Each event \(i\to j\) raises the intensity of the reverse pair: \(\lambda_{ij}(t)=c\,G_{r(i,j)}(t)\,p_{ij}+\rho\,\beta_\rho\sum_{t_k<t,\;m_k=j\to i}e^{-\beta_\rho(t-t_k)}\), so \(\rho\) is the expected number of replies per event, and \(\rho=0\) recovers the factorised model. Cells show test \(\ell\)/event, with the change versus \(\rho=0\) and the fitted \(\rho\) in brackets.</p>
+   <div class="tablewrap"><table class="t" id="tblRecip"></table></div>
+   <div class="tablewrap"><table class="t" id="tblRecipPar"></table></div>
    <div class="grid2">
     <figure class="chart"><figcaption>Global Hawkes estimate</figcaption><div id="hawkesBox" class="mono" style="padding:6px 2px;line-height:1.75"></div></figure>
     <figure class="chart"><figcaption>Per-sender branching ratios</figcaption><div class="legend" id="lgEta"></div><canvas id="cvEta"></canvas>
@@ -247,13 +313,47 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
    <div class="grid2">
     <figure class="chart"><figcaption>Unique-degree calibration (featured mark layer)</figcaption><div class="legend" id="lgDeg"></div><canvas id="cvDeg"></canvas>
      <p class="note">Expected distinct out/in-neighbours \(\sum_j(1-e^{-Kp_{ij}})\) vs. observed, training window.</p></figure>
-    <figure class="chart"><figcaption>Temporal motifs within a window δ</figcaption><div class="legend" id="lgMotif"></div><canvas id="cvMotif"></canvas>
-     <div class="toolbar" style="margin:8px 0 0"><label>δ = <input type="range" id="delta" min="0" max="100" value="50"> <span class="mono" id="deltaVal"></span></label></div>
-     <p class="note">Fraction of events \(i\to j\) followed within δ by \(j\to i\) (reciprocity), \(i\to k\) (broadcast), \(k\to j\) (convergence), or \(i\to j\) (repeat). Bars are means over simulations; whiskers are ±1 s.d.</p></figure>
+    <figure class="chart"><figcaption>Temporal motifs within δ (summary)</figcaption><div class="legend" id="lgMotif"></div><canvas id="cvMotif"></canvas>
+     <p class="note">Share of training events followed within δ = <span class="mono" id="deltaVal"></span> by each of the six two-event motifs. Bars are means over simulations; whiskers are ±1 s.d. <a href="#" data-goto="motif">Full motif analysis →</a></p></figure>
    </div>
    <figure class="chart"><figcaption>Block–block unique-edge calibration (featured mark layer, training)</figcaption>
     <div class="grid3"><div><canvas id="cvBObs"></canvas><div class="sub">Observed \(U_{a\to b}\)</div></div><div><canvas id="cvBExp"></canvas><div class="sub">Expected \(\mathbb E[U_{a\to b}]\)</div></div><div><canvas id="cvBRes"></canvas><div class="sub">Residual expected − observed</div></div></div>
    </figure>
+  </section>
+
+  <section class="panel" id="p-motif" role="tabpanel" hidden>
+   <p class="secnote">A temporal motif is a pair of events sharing a node: an event \(i\to j\) at time \(t\) followed by a second event within a window \(\delta\). The second event's source and target fall into exactly one of six types. Click a type to focus on it. In each diagram the dark arrow is the first event and the coloured arrow its follow-up. Rates are the share of events followed by that type within \(\delta\).</p>
+   <div class="glyphs" id="mGlyphs"></div>
+   <div class="toolbar"><label>Window δ <input type="range" id="mDelta" min="0" max="100" value="50"></label><span class="mono" id="mDeltaVal"></span></div>
+
+   <h3 class="sec">Which motifs are over-represented?</h3>
+   <p class="secnote">Observed rates in the training window against two simulated references: the <b>featured model</b> and a <b>structure-only null</b> (Poisson clock × the same mark layer, so degrees and blocks are kept but timing is random). The z-score is (observed − simulated mean) ÷ simulated s.d.</p>
+   <figure class="chart"><figcaption>Motif rates at the current δ</figcaption><div class="legend" id="lgMWhich"></div><canvas id="cvMWhich"></canvas></figure>
+   <div class="tablewrap"><table class="t" id="tblMotifZ"></table></div>
+   <p class="secnote">Over-represented (z &gt; 2 vs the null): the motif appears more often than degrees and blocks alone imply, so it needs a temporal mechanism. Reproduced (|z| ≤ 2 vs the featured model): the model accounts for it.</p>
+
+   <h3 class="sec">At what timescale?</h3>
+   <p class="secnote">Each panel shows a motif's rate as the window δ grows. The lag at which the empirical curve leaves the null shows the motif's characteristic response time; the vertical line marks the current δ.</p>
+   <figure class="chart"><div class="legend" id="lgMCurves"></div><div class="mcurves" id="mCurves"></div></figure>
+   <figure class="chart"><figcaption id="mDelayCap">Response delays</figcaption><div class="legend" id="lgMDelay"></div><canvas id="cvMDelay"></canvas>
+    <p class="note">Distribution of the delay from an event to its first follow-up of the focused type (log bins). A peak shows the typical response time.</p></figure>
+
+   <h3 class="sec">When do motifs appear?</h3>
+   <figure class="chart"><figcaption>Motif activity over time</figcaption><canvas id="cvMTime"></canvas>
+    <p class="note">Rows: motif types; columns: time bins over the whole subset. Colour is the share of events in the bin followed by that motif within δ, scaled within each row so you can see when each type peaks (hover for values). The top strip is the event count per bin; the dashed line separates training and test windows.</p></figure>
+   <figure class="chart"><figcaption id="mFcCap">Focused motif over time, with forecast</figcaption><div class="legend" id="lgMFc"></div><canvas id="cvMFc"></canvas>
+    <p class="note">Left of the dashed line: the featured model simulated on the training window (in-sample). Right: forecasts for the test window from the training fit, conditioned on the training history (bands: ±1 s.d. over simulations).</p></figure>
+
+   <h3 class="sec">Predicting motifs on the test window</h3>
+   <p class="secnote">Each model is fitted on the training window only, then simulated forward over the test window, starting from the excitation left by training events. A forecast passes if the observed rate falls inside its 95% interval.</p>
+   <div class="tablewrap"><table class="t" id="tblMPred"></table></div>
+
+   <h3 class="sec">Who drives the focused motif?</h3>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Per-node rate: observed vs model</figcaption><div class="legend" id="lgMNode"></div><canvas id="cvMNode"></canvas>
+     <p class="note">For each node with at least 10 eligible training events: the share of its outgoing events followed by the focused motif. Points above the diagonal: the model expects more than observed.</p></figure>
+    <figure class="chart"><figcaption>Most active initiators</figcaption><div class="tablewrap" style="border:0;padding:0;margin:0"><table class="t" id="tblMNode"></table></div></figure>
+   </div>
   </section>
 
   <section class="panel" id="p-raster" role="tabpanel" hidden>
@@ -287,8 +387,8 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
    $$\ell(\{\lambda_{ij}\})=\sum_k \log\lambda_{i_kj_k}(t_k)-\sum_{(i,j)}\int_0^T\lambda_{ij}(t)\,dt .$$
    <h3>Maximum-entropy factorisation</h3>
    <p>Maximising the path entropy \(-\sum_{ij}\int(\lambda_{ij}\log\lambda_{ij}-\lambda_{ij})\,dt\) subject to time-dependent constraints on partition totals \(\sum_{(i,j)\in E_r}\lambda_{ij}(t)=G_r(t)\) and time-independent linear constraints on the integrated intensities gives</p>
-   $$\lambda_{ij}(t)=\varphi_{r(i,j)}(t)\,w_{ij},\qquad w_{ij}=M_{ij}\,e^{\Theta_{ij}+\theta^{\rm out}_i+\theta^{\rm in}_j+\zeta_{g(i)g(j)}-1}.$$
-   <p>The likelihood then splits exactly into a time part and a mark part, \(\ell=\ell_{\rm time}[G]+\sum_k\log p_{m_k}\), so each layer can be fitted and compared independently.</p>
+   $$\lambda_{ij}(t)=\varphi_{r(i,j)}(t)\,w_{ij},\qquad w_{ij}=M_{ij}\,e^{\Theta_{ij}+\theta^{\rm out}_i+\theta^{\rm in}_j+\zeta_{g(i)g(j)}}.$$
+   <p>Stationarity of the Lagrangian gives \(-\log\lambda_{ij}(t)+\alpha_{r(i,j)}(t)+\Psi_{ij}=0\), since \(\partial_\lambda(\lambda\log\lambda-\lambda)=\log\lambda\); hence \(\varphi_r=e^{\alpha_r}\) and \(w_{ij}=e^{\Psi_{ij}}\). The likelihood then splits exactly into a time part and a mark part, \(\ell=\ell_{\rm time}[G]+\sum_k\log p_{m_k}\), so each layer can be fitted and compared independently.</p>
    <h3>Layers implemented here</h3>
    <ul>
     <li><b>Poisson</b> and <b>NHPP</b> (piecewise constant, user-set bins) global profiles.</li>
@@ -299,10 +399,29 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padd
     <li><b>Block-DWCM</b>: \(w_{ij}=x_iy_jz_{g(i)g(j)}\) on the full support, which also matches block-pair totals \(C_{ab}\). Blocks come from Louvain on the symmetrised training counts.</li>
     <li><b>Block-Mask</b>: the same constraints restricted to the support observed in training, \(M_{ij}=\mathbb 1[N_{ij}>0]\). The mask is selected from data and is not penalised in AIC.</li>
    </ul>
-   <p>For out-of-sample evaluation every mark distribution is mixed with the uniform one, \(p\to(1-\kappa)p+\kappa/|S|\), so that pairs unseen in training have finite likelihood. Parameter counts subtract gauge freedoms (one for DWCM, \(2B-1\) for block factors).</p>
+   <p>For out-of-sample evaluation every mark distribution is mixed with the uniform one, \(p\to(1-\kappa)p+\kappa/|S|\), so that pairs unseen in training have finite likelihood. Parameter counts are for the normalised mark distribution: DWCM has \(a_{\rm out}+a_{\rm in}-2\) free parameters (one gauge, one normalisation; \(a\) = number of active senders/receivers), block factors add the non-empty block cells minus \(2B-1\) gauges, and conditional marks drop the \(a_{\rm out}-1\) sender marginals now carried by the time layer. Per-sender time layers give senders with no training events a regularising rate \(0.5/T\) (not counted as a parameter), so test likelihoods stay finite. A Hawkes fit whose maximum is not above the Poisson likelihood, or whose kernel is longer than half the training window (\(\beta T<2\)), is reported in the Poisson limit \(\eta=0\).</p>
+   <h3>Reciprocity</h3>
+   <p>The factorised models cannot express that a message \(i\to j\) makes a reply \(j\to i\) more likely soon after. The extension adds a reply kernel to every pair,</p>
+   $$\lambda_{ij}(t)=c\,G_{r(i,j)}(t)\,p_{ij}+\rho\,\beta_\rho\!\!\sum_{t_k<t,\;m_k=j\to i}\!\!e^{-\beta_\rho(t-t_k)},$$
+   <p>i.e. a superposition of the MaxEnt process with a reply cascade. Every event spawns on average \(\rho\) replies on the reversed pair, with delays \(\sim{\rm Exp}(\beta_\rho)\). Replies feed back into the global Hawkes excitation, and replies to replies are allowed. The model is stable if \(c\,\eta+\rho<1\) (per-sender: \(c\max_i\eta_i+\rho<1\)). The log-likelihood keeps an \(O(n)\) recursion along pair chains,</p>
+   $$\ell=\sum_k\log\!\Big(c\,G(t_k)\,p_{m_k}+\rho\beta_\rho R_{m_k}(t_k)\Big)-c\!\int\! G\,dt-\rho\sum_k\big(1-e^{-\beta_\rho(T-t_k)}\big),$$
+   <p>where \(R_{ij}(t)\) is the decayed count of past \(j\to i\) events. With the global Hawkes layer, \((\mu,\eta,\beta,\rho,\beta_\rho)\) are fitted jointly by maximum likelihood. For the other layers the fitted time profile is kept and \((c,\rho,\beta_\rho)\) are profiled, so those fits are conditional on the first-stage estimate. Simulations use the exact branching representation. On a generator whose only mark effect is replying, the estimator recovers \(\rho\), \(\beta_\rho\), \(\eta\) and \(\beta\) without detectable bias. When other mark effects are present (repeats, broadcasts), \(\rho\) absorbs part of them.</p>
+   <p>The additive form leaves the time × mark factorisation, but keeps the mark layer's MaxEnt weights and has a branching interpretation. The strict maximum-entropy alternative constrains \(\mathbb E\int\lambda_{ij}h_{ij}\,dt\) with \(h_{ij}(t)=\sum_{m_k=j\to i}e^{-\beta_\rho(t-t_k)}\). It gives a log-linear coupling \(\lambda_{ij}=\varphi(t)\,w_{ij}\,e^{\theta h_{ij}(t)}\), whose compensator needs numerical integration and which can explode for \(\theta>0\).</p>
+   <h3>How the models are fitted</h3>
+   <ul>
+    <li><b>Blocks</b>: Louvain modularity maximisation (resolution \(\gamma\)) on the symmetrised training counts.</li>
+    <li><b>Mark layers</b>: closed form (Uniform, Edge-Poisson) or iterative proportional fitting, which alternately rescales rows, columns and block cells of \(w\) until every constraint is met to a relative error of \(10^{-7}\).</li>
+    <li><b>Time layers</b>: closed form (Poisson, NHPP) or maximum likelihood by multi-start Nelder–Mead on transformed parameters, with an \(O(K)\) likelihood recursion (Hawkes).</li>
+    <li><b>Reciprocity</b>: joint maximum likelihood of all five parameters for the global Hawkes layer; for the other layers a profile fit of a scale \(c\), \(\rho\) and \(\beta_\rho\) on top of the fitted time profile.</li>
+   </ul>
+   <p>The Fitting tab shows each step, its iterations and convergence on the current data.</p>
+   <h3>Temporal motifs</h3>
+   <p>For an event \(i\to j\) at \(t\), its first follow-up of type \(m\) is the earliest later event whose (source, target) is \((i,j)\) for repetition, \((j,i)\) for reciprocity, \((i,k)\) for broadcast, \((k,j)\) for convergence, \((j,k)\) for chain or \((k,i)\) for reverse chain, with \(k\notin\{i,j\}\). The motif rate is</p>
+   $$r_m(\delta)=\frac{\#\{k:\ t_k+\delta\le T,\ d_m(k)\le\delta\}}{\#\{k:\ t_k+\delta\le T\}},$$
+   <p>where \(d_m(k)\) is the delay to that follow-up. Only events whose whole window fits inside the data count. Models are compared through simulations: the featured model, a structure-only null (Poisson clock with the same marks), and forecasts on the test window. Forecasts are exact for these linear models: each training event still to fire contributes \(\mathrm{Poisson}(\eta e^{-\beta(T_s-t_k)})\) offspring after the split, at delays \(\mathrm{Exp}(\beta)\), and likewise for replies.</p>
    <h3>Diagnostics</h3>
    <ul>
-    <li><b>Time rescaling</b>: \(\Delta\Lambda_k=\int_{t_{k-1}}^{t_k}G\,dt\) are i.i.d. Exp(1) under the true model, so a KS test on \(1-e^{-\Delta\Lambda_k}\) checks the time layer.</li>
+    <li><b>Time rescaling</b>: \(\Delta\Lambda_k=\int_{t_{k-1}}^{t_k}G\,dt\) are i.i.d. Exp(1) under the true model, so a KS test on \(1-e^{-\Delta\Lambda_k}\) checks the time layer. Parameters are estimated on the same data, so the reported p-values are conservative (in tests with a fitted Poisson rate, about 0.5% rejections at nominal 5%): a rejection is meaningful, an acceptance is weak evidence.</li>
     <li><b>Unique edges and degrees</b> under Poissonisation: \(\mathbb E[U]=\sum_{i\ne j}(1-e^{-Kp_{ij}})\).</li>
     <li><b>Motifs</b> are compared against simulations of the fitted model and of the same mark layer with a Poisson clock, isolating the role of temporal clustering.</li>
    </ul>
@@ -349,10 +468,12 @@ function ksPValue(D,m){if(!(m>0)||!isFinite(D))return NaN;const en=Math.sqrt(m);
 
 function nelderMead(f,x0,o={}){
   const maxIter=o.maxIter||300,step=o.step||0.5,tol=o.tol||1e-8,n=x0.length;
+  if(o.stats){const f0=f;o.stats.evals=o.stats.evals||0;f=x=>{o.stats.evals++;return f0(x);};}
   let S=[x0.slice()];for(let i=0;i<n;i++){const x=x0.slice();x[i]+=step;S.push(x);}
   let F=S.map(f);
   for(let it=0;it<maxIter;it++){
     const idx=[...Array(n+1).keys()].sort((a,b)=>F[a]-F[b]);S=idx.map(i=>S[i]);F=idx.map(i=>F[i]);
+    if(o.trace)o.trace.push(F[0]);if(o.stats)o.stats.iters=it+1;
     if(Math.abs(F[n]-F[0])<=tol*(1+Math.abs(F[0])))break;
     const c=new Array(n).fill(0);for(let i=0;i<n;i++)for(let j=0;j<n;j++)c[j]+=S[i][j]/n;
     const xr=c.map((v,j)=>v+(v-S[n][j])),fr=f(xr);
@@ -501,7 +622,7 @@ function detectBlocks(n,N,gamma){
 function ipf(n,M,sout,sin,blk,B,C,maxIt,tol){
   const nn=n*n,W=new Float64Array(nn);for(let k=0;k<nn;k++)W[k]=M[k];
   const c=new Float64Array(n);let err=Infinity,it=0;
-  const cur=blk?new Float64Array(B*B):null;
+  const cur=blk?new Float64Array(B*B):null;const trace=[];const every=n<=200?1:5;
   for(it=1;it<=maxIt;it++){
     for(let i=0;i<n;i++){const o=i*n;let s=0;for(let j=0;j<n;j++)s+=W[o+j];if(s>0){const f=sout[i]/s;for(let j=0;j<n;j++)W[o+j]*=f;}}
     c.fill(0);for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++)c[j]+=W[o+j];}
@@ -510,16 +631,16 @@ function ipf(n,M,sout,sin,blk,B,C,maxIt,tol){
     if(blk){cur.fill(0);for(let i=0;i<n;i++){const o=i*n,bi=blk[i]*B;for(let j=0;j<n;j++)cur[bi+blk[j]]+=W[o+j];}
       for(let q=0;q<B*B;q++)cur[q]=cur[q]>0?C[q]/cur[q]:1;
       for(let i=0;i<n;i++){const o=i*n,bi=blk[i]*B;for(let j=0;j<n;j++)W[o+j]*=cur[bi+blk[j]];}}
-    if(it%5===0||it===maxIt){
+    if(it%every===0||it===maxIt){
       err=0;const r=new Float64Array(n),cc=new Float64Array(n);
       for(let i=0;i<n;i++){const o=i*n;for(let j=0;j<n;j++){r[i]+=W[o+j];cc[j]+=W[o+j];}}
       for(let i=0;i<n;i++){err=Math.max(err,Math.abs(r[i]-sout[i])/Math.max(1,sout[i]),Math.abs(cc[i]-sin[i])/Math.max(1,sin[i]));}
       if(blk){const bs=new Float64Array(B*B);for(let i=0;i<n;i++){const o=i*n,bi=blk[i]*B;for(let j=0;j<n;j++)bs[bi+blk[j]]+=W[o+j];}
         for(let q=0;q<B*B;q++)err=Math.max(err,Math.abs(bs[q]-C[q])/Math.max(1,C[q]));}
-      if(err<tol)break;
+      trace.push([it,err]);if(err<tol)break;
     }
   }
-  return {W,it:Math.min(it,maxIt),err};
+  return {W,it:Math.min(it,maxIt),err,trace};
 }
 
 const MARK_DEFS=[['unif','Uniform'],['ep','Edge-Poisson'],['me','ME-Strength (DWCM)'],['bd','Block-DWCM'],['bm','Block-Mask']];
@@ -538,13 +659,14 @@ function buildMarkLayers(S,blocks,opts){
   let uTr=0,uTe=0;for(let k=0;k<nn;k++){if(Ntr[k]>0)uTr++;if(Nte[k]>0)uTe++;}
   let aOut=0,aIn=0;for(let i=0;i<n;i++){if(sout[i]>0)aOut++;if(sin[i]>0)aIn++;}
   let cNZ=0;for(let q=0;q<B*B;q++)if(C[q]>0)cNZ++;
-  const kDW=aOut+aIn-1,kBlk=kDW+Math.max(0,cNZ-(2*B-1));
+  // p_ij = x_i y_j / W: one gauge (x->cx, y->y/c) plus normalisation => aOut+aIn-2 free parameters
+  const kDW=Math.max(0,aOut+aIn-2),kBlk=kDW+Math.max(0,cNZ-(2*B-1));
   const fit={
     unif:()=>{const W=new Float64Array(nn),v=Ktr/nAllowed;for(let k=0;k<nn;k++)if(full[k])W[k]=v;return {W,k:0};},
     ep:()=>({W:Float64Array.from(Ntr),k:Math.max(0,uTr-1)}),
-    me:()=>{const r=ipf(n,full,sout,sin,null,0,null,400,1e-7);return {W:r.W,k:kDW,iters:r.it,err:r.err};},
-    bd:()=>{const r=ipf(n,full,sout,sin,block,B,C,500,1e-7);return {W:r.W,k:kBlk,iters:r.it,err:r.err};},
-    bm:()=>{const r=ipf(n,supp,sout,sin,block,B,C,500,1e-7);return {W:r.W,k:kBlk,iters:r.it,err:r.err,maskSize:uTr};}
+    me:()=>{const r=ipf(n,full,sout,sin,null,0,null,400,1e-7);return {W:r.W,k:kDW,iters:r.it,err:r.err,trace:r.trace};},
+    bd:()=>{const r=ipf(n,full,sout,sin,block,B,C,500,1e-7);return {W:r.W,k:kBlk,iters:r.it,err:r.err,trace:r.trace};},
+    bm:()=>{const r=ipf(n,supp,sout,sin,block,B,C,500,1e-7);return {W:r.W,k:kBlk,iters:r.it,err:r.err,trace:r.trace,maskSize:uTr};}
   };
   const out={};
   for(const [key,name] of MARK_DEFS){
@@ -556,11 +678,11 @@ function buildMarkLayers(S,blocks,opts){
       pc[k]=(1-kappa)*(rs[i]>0?W[k]/rs[i]:1/perRow)+kappa/perRow;}}
     const ll=(evs,p)=>{let s=0;for(const e of evs)s+=Math.log(p[e.i*n+e.j]);return s;};
     const EU=K=>{let s=0;for(let k=0;k<nn;k++)if(full[k])s+=1-Math.exp(-K*pg[k]);return s;};
-    out[key]={key,name,W,pg,pc,k:f.k,kc:Math.max(0,f.k-(aOut-1)),iters:f.iters,err:f.err,
+    out[key]={key,name,W,pg,pc,k:f.k,kc:Math.max(0,f.k-(aOut-1)),iters:f.iters,err:f.err,trace:f.trace,
       llTrJ:ll(S.train,pg),llTeJ:ll(S.test,pg),llTrC:ll(S.train,pc),llTeC:ll(S.test,pc),
       EUtr:EU(Ktr),EUte:EU(Kte)};
   }
-  return {layers:out,Ntr,Nte,sout,sin,uTr,uTe,full,C,nAllowed};
+  return {layers:out,Ntr,Nte,sout,sin,uTr,uTe,full,C,nAllowed,aOut,aIn,cNZ,kappa};
 }
 
 /* ---------- Time layers ---------- */
@@ -578,13 +700,17 @@ function fitHawkes(times,Ta,Tb,light){
   let g=0,c=0;for(let k=1;k<n;k++){const d=times[k]-times[k-1];if(d>0){g+=d;c++;}}g=c?g/c:T/n;
   const dec=th=>({mu:Math.exp(clamp(th[0],-60,60)),eta:1/(1+Math.exp(-clamp(th[1],-14,14))),beta:Math.exp(clamp(th[2],-60,60))});
   const f=th=>{const p=dec(th);if(!(p.mu>0)||!(p.beta>0)||!isFinite(p.beta))return 1e300;const v=-hawkesLL(p,times,Ta,Tb,null);return isFinite(v)?v:1e300;};
-  const bfs=light?[0.3,3]:[0.1,0.5,2,10],etas=light?[0.5]:[0.3,0.7];let best=null;
-  for(const bf of bfs)for(const e0 of etas){const r=nelderMead(f,[Math.log(n*(1-e0)/T),Math.log(e0/(1-e0)),Math.log(bf/g)],{maxIter:light?150:250,step:0.6});if(!best||r.f<best.f)best=r;}
-  const r2=nelderMead(f,best.x,{maxIter:light?120:300,step:0.15});if(r2.f<best.f)best=r2;
-  const p=dec(best.x);p.ll=-best.f;
+  const bfs=light?[0.3,3]:[0.1,0.5,2,10],etas=light?[0.5]:[0.3,0.7];let best=null;const info={starts:[],evals:0,meanGap:g};
+  for(const bf of bfs)for(const e0 of etas){const x0=[Math.log(n*(1-e0)/T),Math.log(e0/(1-e0)),Math.log(bf/g)],st={},tr=[];
+    const r=nelderMead(f,x0,{maxIter:light?150:250,step:0.6,stats:st,trace:light?null:tr});info.evals+=st.evals;
+    if(!light)info.starts.push({x0:dec(x0),x:dec(r.x),nll:r.f,iters:st.iters,trace:tr});
+    if(!best||r.f<best.f){best=r;info.bestStart=info.starts.length-1;}}
+  {const st={},tr=[];const r2=nelderMead(f,best.x,{maxIter:light?120:300,step:0.15,stats:st,trace:light?null:tr});info.evals+=st.evals;
+    info.polish={iters:st.iters,trace:tr,nll:r2.f};if(r2.f<best.f)best=r2;}
+  const p=dec(best.x);p.ll=-best.f;if(!light)p.fitInfo=info;
   // Degenerate corner (kernel longer than window or no gain over Poisson) -> Poisson limit
   const llP=n*Math.log(n/T)-n;
-  if(p.beta*T<2||p.ll<llP+1e-6)return {mu:n/T,eta:0,beta:1/g,ll:llP,poissonLimit:true};
+  if(p.beta*T<2||p.ll<llP+1e-6)return {mu:n/T,eta:0,beta:1/g,ll:llP,poissonLimit:true,fitInfo:light?undefined:{...info,limitReason:p.beta*T<2?'kernel longer than half the window':'no likelihood gain over Poisson'}};
   return p;
 }
 function hawkesTaus(p,times){const out=[];let S=0,prev=null;for(const t of times){if(prev!==null){const dt=t-prev,d=Math.exp(-p.beta*dt);out.push(p.mu*dt+p.eta*S*(1-d));S=S*d+1;}else S=1;prev=t;}return out;}
@@ -640,9 +766,110 @@ function buildTimeLayers(S,opts,progress){
       p.n=g.length;P.push(p);
       llTr+=hawkesLL(p,g,Ta,Tb,null);if(te.length)llTe+=hawkesLL(p,teG[i],Tb,Tc,g);
       for(const x of hawkesTaus(p,g))taus.push(x);}
-    L.shawk={key:'shawk',name:'Hawkes-exp · per sender',scope:'sender',k,params:P,llTrain:llTr,llTest:te.length?llTe:0,ks:ksFromTaus(taus),
+    L.shawk={key:'shawk',name:'Hawkes-exp · per sender',scope:'sender',k,params:P,nHawkes:P.filter(p=>p.hawkes&&!p.poissonLimit).length,nActive:trG.filter(g=>g.length>0).length,llTrain:llTr,llTest:te.length?llTe:0,ks:ksFromTaus(taus),
       simSender:(i,a,b,cap)=>simHawkes(P[i],a,b,cap)};}
   return L;
+}
+
+
+/* ---------- Reciprocity extension ----------
+   lambda_ij(t) = c * G_{r(i,j)}(t) * p_ij  +  rho * b * sum_{t_k<t, m_k = j->i} exp(-b (t - t_k))
+   rho = expected number of replies per event, b = reply decay rate. rho = 0 recovers the factorised model.
+   For the global Hawkes layer (mu, eta, beta, rho, b) are fitted jointly (exact MLE); for the other layers
+   the time-layer shape is kept and (c, rho, b) are profiled. */
+function pairChains(evs){const n=evs.length,prevSame=new Int32Array(n).fill(-1),lastRev=new Int32Array(n).fill(-1),last=new Map();
+  for(let k=0;k<n;k++){const e=evs[k],key=e.i*8192+e.j,rk=e.j*8192+e.i;const a=last.get(key),b=last.get(rk);
+    if(a!==undefined)prevSame[k]=a;if(b!==undefined)lastRev[k]=b;last.set(key,k);}
+  return {prevSame,lastRev};}
+function fillReplyKernel(t,ch,b,to,Q,R){for(let k=0;k<to;k++){const ps=ch.prevSame[k];Q[k]=ps<0?0:Math.exp(-b*(t[k]-t[ps]))*(1+Q[ps]);
+  const lr=ch.lastRev[k];R[k]=lr<0?0:Math.exp(-b*(t[k]-t[lr]))*(1+Q[lr]);}}
+function replyComp(t,b,from,to,Ta,Tb){let s=0;for(let l=0;l<to;l++)s+=l<from?Math.exp(-b*(Ta-t[l]))-Math.exp(-b*(Tb-t[l])):1-Math.exp(-b*(Tb-t[l]));return s;}
+// profiled layers: Gq[k-from] = G(t_k) * p(mark_k), GI = integral of G over the window
+function recipLL(c,rho,b,t,ch,from,to,Gq,GI,Ta,Tb,Q,R){fillReplyKernel(t,ch,b,to,Q,R);let ll=0;
+  for(let k=from;k<to;k++)ll+=Math.log(c*Gq[k-from]+rho*b*R[k]);return ll-c*GI-rho*replyComp(t,b,from,to,Ta,Tb);}
+// joint global Hawkes + reply kernel; q[k-from] = p(mark_k)
+function hawkRecipLL(p,t,ch,from,to,q,Ta,Tb,Q,R){fillReplyKernel(t,ch,p.b,to,Q,R);let A=0,ll=0,comp=p.mu*(Tb-Ta);const c=p.eta*p.beta;
+  for(let k=0;k<to;k++){if(k>0)A=Math.exp(-p.beta*(t[k]-t[k-1]))*(A+1);if(k>=from)ll+=Math.log(q[k-from]*(p.mu+c*A)+p.rho*p.b*R[k]);
+    comp+=k<from?p.eta*(Math.exp(-p.beta*(Ta-t[k]))-Math.exp(-p.beta*(Tb-t[k]))):p.eta*(1-Math.exp(-p.beta*(Tb-t[k])));}
+  return ll-comp-p.rho*replyComp(t,p.b,from,to,Ta,Tb);}
+function hawkesGArr(p,times,hist){const out=new Float64Array(times.length);let A=0,prev=null;const c=p.eta*p.beta;
+  if(hist)for(const h of hist){if(prev!==null)A=Math.exp(-p.beta*(h-prev))*(A+1);prev=h;}
+  for(let k=0;k<times.length;k++){const t=times[k];if(prev!==null)A=Math.exp(-p.beta*(t-prev))*(A+1);out[k]=p.mu+c*A;prev=t;}return out;}
+function hawkesComp(p,times,Ta,Tb,hist){let s=p.mu*(Tb-Ta);if(hist)for(const h of hist)s+=p.eta*(Math.exp(-p.beta*(Ta-h))-Math.exp(-p.beta*(Tb-h)));
+  for(const t of times)s+=p.eta*(1-Math.exp(-p.beta*(Tb-t)));return s;}
+// base time-layer intensity at every train/test event, and its integral over each window
+function baseG(S,R,tk){const T=R.times[tk],Ta=S.T0,Tb=S.Ts,Tc=S.T1,ntr=S.train.length,nte=S.test.length;
+  const trT=S.train.map(e=>e.time),teT=S.test.map(e=>e.time);
+  if(tk==='pois'){const r=T.params.rate;return {Gtr:new Float64Array(ntr).fill(r),Gte:new Float64Array(nte).fill(r),GItr:r*(Tb-Ta),GIte:r*(Tc-Tb),etaMax:0};}
+  if(tk==='nhpp'){const {rates,w,bins}=T.params,avg=ntr/(Tb-Ta);const Gtr=Float64Array.from(trT,t=>rates[Math.min(bins-1,Math.floor((t-Ta)/w))]);
+    return {Gtr,Gte:new Float64Array(nte).fill(avg),GItr:ntr,GIte:avg*(Tc-Tb),etaMax:0};}
+  if(tk==='hawk'){const p=T.params;return {Gtr:hawkesGArr(p,trT,null),Gte:hawkesGArr(p,teT,trT),GItr:hawkesComp(p,trT,Ta,Tb,null),GIte:teT.length?hawkesComp(p,teT,Tb,Tc,trT):0,etaMax:p.eta};}
+  const n=S.n,P=tk==='spois'?T.params.rates.map(r=>({mu:r,eta:0,beta:1})):T.params;
+  const idx=(evs)=>{const g=Array.from({length:n},()=>[]);evs.forEach((e,k)=>g[e.i].push(k));return g;};
+  const it=idx(S.train),ie=idx(S.test),Gtr=new Float64Array(ntr),Gte=new Float64Array(nte);let GItr=0,GIte=0,etaMax=0;
+  for(let i=0;i<n;i++){const a=it[i].map(k=>S.train[k].time),b=ie[i].map(k=>S.test[k].time);etaMax=Math.max(etaMax,P[i].eta);
+    const g1=hawkesGArr(P[i],a,null);it[i].forEach((k,q)=>Gtr[k]=g1[q]);GItr+=hawkesComp(P[i],a,Ta,Tb,null);
+    const g2=hawkesGArr(P[i],b,a);ie[i].forEach((k,q)=>Gte[k]=g2[q]);if(nte)GIte+=hawkesComp(P[i],b,Tb,Tc,a);}
+  return {Gtr,Gte,GItr,GIte,etaMax};}
+const sigm=x=>1/(1+Math.exp(-clamp(x,-14,14))),logit=p=>Math.log(p/(1-p));
+async function fitRecipAll(S,R,progress){
+  const tick=()=>new Promise(r=>setTimeout(r,0));
+  const all=S.train.concat(S.test),t=Float64Array.from(all,e=>e.time),ch=pairChains(all),ntr=S.train.length,N=all.length,n=S.n;
+  const Ta=S.T0,Tb=S.Ts,Tc=S.T1,Q=new Float64Array(N),RR=new Float64Array(N);
+  let g=0;for(let k=1;k<ntr;k++)g+=t[k]-t[k-1];g/=Math.max(1,ntr-1);
+  const out={};
+  for(const [tk,tname,scope] of TIME_DEFS){out[tk]={};progress&&progress('Reciprocity: '+tname+'…');await tick();
+    const B=baseG(S,R,tk);
+    for(const [mk] of MARK_DEFS){const M=R.marks.layers[mk],P=scope==='sender'?M.pc:M.pg;
+      const qtr=Float64Array.from(S.train,e=>P[e.i*n+e.j]),qte=Float64Array.from(S.test,e=>P[e.i*n+e.j]);
+      const base=combined(R,S,tk,mk);let res;
+      const profile=()=>{const Gq=B.Gtr.map((v,k)=>v*qtr[k]),Gqe=B.Gte.map((v,k)=>v*qte[k]);
+        const dec=th=>({c:Math.exp(clamp(th[0],-30,30)),rho:sigm(th[1]),b:Math.exp(clamp(th[2],-60,60))});
+        const f=th=>{const p=dec(th);if(p.c*B.etaMax+p.rho>=0.999)return 1e300;const v=-recipLL(p.c,p.rho,p.b,t,ch,0,ntr,Gq,B.GItr,Ta,Tb,Q,RR);return isFinite(v)?v:1e300;};
+        let best=null;for(const b0 of [0.3/g,3/g]){const r=nelderMead(f,[Math.log(0.85),logit(0.12),Math.log(b0)],{maxIter:160,step:0.5});if(!best||r.f<best.f)best=r;}
+        const r2=nelderMead(f,best.x,{maxIter:200,step:0.12});if(r2.f<best.f)best=r2;
+        const p=dec(best.x);return {params:p,llTr:-best.f,llTe:S.test.length?recipLL(p.c,p.rho,p.b,t,ch,ntr,N,Gqe,B.GIte,Tb,Tc,Q,RR):0,k:base.k+(tk==='pois'?2:3)};};
+      if(tk==='hawk'&&R.times.hawk.params.poissonLimit){res=profile();res.k=base.k+2;res.method='profile';}
+      else if(tk==='hawk'){const h=R.times.hawk.params;
+        const dec=th=>({mu:Math.exp(clamp(th[0],-60,60)),eta:sigm(th[1]),beta:Math.exp(clamp(th[2],-60,60)),rho:sigm(th[3]),b:Math.exp(clamp(th[4],-60,60))});
+        const f=th=>{const p=dec(th);if(p.eta+p.rho>=0.999)return 1e300;const v=-hawkRecipLL(p,t,ch,0,ntr,qtr,Ta,Tb,Q,RR);return isFinite(v)?v:1e300;};
+        let best=null;for(const b0 of [h.beta,0.3/g,3/g])for(const r0 of [0.1,0.3]){const e0=Math.min(Math.max(h.eta,0.05)*(1-r0),0.9-r0);
+          const r=nelderMead(f,[Math.log(h.mu),logit(Math.max(0.02,e0)),Math.log(h.beta),logit(r0),Math.log(b0)],{maxIter:220,step:0.5});if(!best||r.f<best.f)best=r;}
+        const r2=nelderMead(f,best.x,{maxIter:400,step:0.15});if(r2.f<best.f)best=r2;
+        const p=dec(best.x);res={params:p,llTr:-best.f,llTe:S.test.length?hawkRecipLL(p,t,ch,ntr,N,qte,Tb,Tc,Q,RR):0,k:5};
+        res.method='joint';if(p.beta*(Tb-Ta)<2){res=profile();res.k=base.k+2;res.method='profile';}}
+      else{res=profile();res.method='profile';}
+      if(false){const Gq=B.Gtr.map((v,k)=>v*qtr[k]),Gqe=B.Gte.map((v,k)=>v*qte[k]);
+        const dec=th=>({c:Math.exp(clamp(th[0],-30,30)),rho:sigm(th[1]),b:Math.exp(clamp(th[2],-60,60))});
+        const f=th=>{const p=dec(th);if(p.c*B.etaMax+p.rho>=0.999)return 1e300;const v=-recipLL(p.c,p.rho,p.b,t,ch,0,ntr,Gq,B.GItr,Ta,Tb,Q,RR);return isFinite(v)?v:1e300;};
+        let best=null;for(const b0 of [0.3/g,3/g]){const r=nelderMead(f,[Math.log(0.85),logit(0.12),Math.log(b0)],{maxIter:160,step:0.5});if(!best||r.f<best.f)best=r;}
+        const r2=nelderMead(f,best.x,{maxIter:200,step:0.12});if(r2.f<best.f)best=r2;
+        const p=dec(best.x);res={params:p,llTr:-best.f,llTe:S.test.length?recipLL(p.c,p.rho,p.b,t,ch,ntr,N,Gqe,B.GIte,Tb,Tc,Q,RR):0,k:base.k+(tk==='pois'?2:3)};
+        if(tk==='pois')res.k=base.k+2;}
+      // never worse than the nested rho = 0 model (optimiser safeguard)
+      if(res.llTr<base.llTr){res={params:tk==='hawk'?{...R.times.hawk.params,rho:0,b:1/g}:{c:1,rho:0,b:1/g},llTr:base.llTr,llTe:base.llTe,k:res.k,nested:true,method:'nested'};}
+      if(tk==='hawk')res.k=base.k+2;
+      res.aic=2*res.k-2*res.llTr;res.bic=res.k*Math.log(ntr)-2*res.llTr;out[tk][mk]=res;}}
+  return out;
+}
+// branching (cluster) simulation of the reciprocal model on the training window
+function simulateRecip(S,R,tk,mk,sd){
+  seed(sd);const n=S.n,Ta=S.T0,Tb=S.Ts,T=Tb-Ta,cap=5*S.train.length+1000,TL=R.times[tk],M=R.marks.layers[mk],fp=R.recip[tk][mk].params;
+  if(!M.sampler)M.sampler=cumSampler(M.W);if(!M.rowS)M.rowS=[];
+  const rowDraw=i=>{if(!M.rowS[i]){const row=M.W.subarray(i*n,i*n+n);let s=0;for(const v of row)s+=v;
+    if(s>0)M.rowS[i]=cumSampler(row);else{const u=new Float64Array(n).fill(1);if(!S.selfLoops)u[i]=0;M.rowS[i]=cumSampler(u);}}return M.rowS[i]();};
+  const gdraw=()=>{const k=M.sampler();return [(k/n)|0,k%n];};
+  const stack=[],out=[];const push=(i,j,time)=>{if(time<=Tb)stack.push({i,j,time});};
+  const hp=tk==='hawk'?(fp.mu!==undefined?fp:{mu:fp.c*TL.params.mu,eta:fp.c*TL.params.eta,beta:TL.params.beta}):null;
+  if(tk==='hawk'){const m0=randPois(hp.mu*T);for(let k=0;k<m0;k++){const [i,j]=gdraw();push(i,j,Ta+rand()*T);}}
+  else if(tk==='pois'){for(const x of simPoisson(fp.c*TL.params.rate,Ta,Tb,cap)){const [i,j]=gdraw();push(i,j,x);}}
+  else if(tk==='nhpp'){const {rates,w,bins}=TL.params;for(let q=0;q<bins;q++){const m=randPois(fp.c*rates[q]*w);for(let z=0;z<m;z++){const [i,j]=gdraw();push(i,j,Ta+(q+rand())*w);}}}
+  else{for(let i=0;i<n;i++){const mu=tk==='spois'?TL.params.rates[i]:TL.params[i].mu;const m=randPois(fp.c*mu*T);for(let z=0;z<m;z++)push(i,rowDraw(i),Ta+rand()*T);}}
+  while(stack.length&&out.length<cap){const e=stack.pop();out.push(e);
+    if(tk==='hawk'){const c=randPois(hp.eta);for(let q=0;q<c;q++){const [i,j]=gdraw();push(i,j,e.time+randExp(hp.beta));}}
+    else if(tk==='shawk'){const P=TL.params[e.i];if(P.eta>0){const c=randPois(fp.c*P.eta);for(let q=0;q<c;q++)push(e.i,rowDraw(e.i),e.time+randExp(P.beta));}}
+    const r=randPois(fp.rho);for(let q=0;q<r;q++)push(e.j,e.i,e.time+randExp(fp.b));}
+  out.sort((a,b)=>a.time-b.time);return out;
 }
 
 /* ---------- Fit everything ---------- */
@@ -656,7 +883,9 @@ async function fitAll(S,opts,progress){
   const marks=buildMarkLayers(S,blocks,opts);
   progress&&progress('Fitting time layers…');await tick();
   const times=buildTimeLayers(S,opts,progress);
-  return {blocks,marks,times,ms:(typeof performance!=='undefined'?performance:Date).now()-t0};
+  const R0={blocks,marks,times};
+  R0.recip=await fitRecipAll(S,R0,progress);
+  return {blocks,marks,times,recip:R0.recip,ms:(typeof performance!=='undefined'?performance:Date).now()-t0};
 }
 function combined(R,S,tk,mk){const T=R.times[tk],M=R.marks.layers[mk],cond=T.scope==='sender';
   const llTr=T.llTrain+(cond?M.llTrC:M.llTrJ),llTe=T.llTest+(cond?M.llTeC:M.llTeJ),k=T.k+(cond?M.kc:M.k);
@@ -674,6 +903,68 @@ function simulateModel(S,R,tk,mk,sd){
       for(const t of ts)out.push({i,j:M.rowS[i](),time:t});}}
   out.sort((a,b)=>a.time-b.time);return out;
 }
+
+/* ---------- Forecast simulation: branching on [Ta,Tb] conditioned on the history before Ta ----------
+   Exact for these linear models: each past event t_k still to "fire" contributes Poisson(eta e^{-beta(Ta-t_k)})
+   offspring at Ta + Exp(beta) (memorylessness), and likewise Poisson(rho e^{-b(Ta-t_k)}) replies. */
+function simulateWindow(S,R,tk,mk,rec,Ta,Tb,hist,sd){
+  seed(sd);const n=S.n,T=Tb-Ta,TL=R.times[tk],M=R.marks.layers[mk],cap=6*Math.max(S.train.length,1000);
+  const fp=rec?R.recip[tk][mk].params:{c:1,rho:0,b:1};const c=fp.c!==undefined?fp.c:1,rho=fp.rho||0,b=fp.b||1;
+  if(!M.sampler)M.sampler=cumSampler(M.W);if(!M.rowS)M.rowS=[];
+  const rowDraw=i=>{if(!M.rowS[i]){const row=M.W.subarray(i*n,i*n+n);let s=0;for(const v of row)s+=v;
+    if(s>0)M.rowS[i]=cumSampler(row);else{const u=new Float64Array(n).fill(1);if(!S.selfLoops)u[i]=0;M.rowS[i]=cumSampler(u);}}return M.rowS[i]();};
+  const gdraw=()=>{const k=M.sampler();return [(k/n)|0,k%n];};
+  const stack=[],out=[];const push=(i,j,time)=>{if(time>=Ta&&time<=Tb)stack.push({i,j,time});};
+  let hp=null;
+  if(tk==='hawk'){const p0=TL.params;hp=(rec&&fp.mu!==undefined)?fp:{mu:c*p0.mu,eta:c*(p0.eta||0),beta:p0.beta};}
+  const avg=S.train.length/(S.Ts-S.T0);
+  if(tk==='pois'||tk==='nhpp'){const r=c*(tk==='pois'?TL.params.rate:avg);for(const x of simPoisson(r,Ta,Tb,cap)){const [i,j]=gdraw();push(i,j,x);}}
+  else if(tk==='hawk'){const m0=randPois(hp.mu*T);for(let k=0;k<m0;k++){const [i,j]=gdraw();push(i,j,Ta+rand()*T);}}
+  else{for(let i=0;i<n;i++){const mu=tk==='spois'?TL.params.rates[i]:TL.params[i].mu;const m=randPois(c*mu*T);for(let z=0;z<m;z++)push(i,rowDraw(i),Ta+rand()*T);}}
+  if(hist)for(const e of hist){const age=Ta-e.time;if(age<0)continue;
+    if(tk==='hawk'&&hp.eta>0){const m=randPois(hp.eta*Math.exp(-hp.beta*age));for(let q=0;q<m;q++){const [i,j]=gdraw();push(i,j,Ta+randExp(hp.beta));}}
+    if(tk==='shawk'){const P=TL.params[e.i];if(P.eta>0){const m=randPois(c*P.eta*Math.exp(-P.beta*age));for(let q=0;q<m;q++)push(e.i,rowDraw(e.i),Ta+randExp(P.beta));}}
+    if(rho>0){const m=randPois(rho*Math.exp(-b*age));for(let q=0;q<m;q++)push(e.j,e.i,Ta+randExp(b));}}
+  while(stack.length&&out.length<cap){const e=stack.pop();out.push(e);
+    if(tk==='hawk'&&hp.eta>0){const m=randPois(hp.eta);for(let q=0;q<m;q++){const [i,j]=gdraw();push(i,j,e.time+randExp(hp.beta));}}
+    else if(tk==='shawk'){const P=TL.params[e.i];if(P.eta>0){const m=randPois(c*P.eta);for(let q=0;q<m;q++)push(e.i,rowDraw(e.i),e.time+randExp(P.beta));}}
+    if(rho>0){const m=randPois(rho);for(let q=0;q<m;q++)push(e.j,e.i,e.time+randExp(b));}}
+  out.sort((x,y)=>x.time-y.time);return out;
+}
+
+/* ---------- Temporal motifs ----------
+   A two-event motif: an event i→j at t followed, within delta, by an event sharing a node with it.
+   The six types are exhaustive and mutually exclusive by the follow-up's (source, target). */
+const MOTIF_DEFS=[['rep','Repetition','i→j, then i→j'],['rec','Reciprocity','i→j, then j→i'],['bro','Broadcast','i→j, then i→k'],
+  ['con','Convergence','i→j, then k→j'],['cha','Chain','i→j, then j→k'],['rch','Reverse chain','i→j, then k→i']];
+// For every event, the delay to its first follow-up of each motif type (Infinity if none).
+function motifFirstDelays(ev){
+  const K=ev.length,out=MOTIF_DEFS.map(()=>new Float64Array(K).fill(Infinity));const t=Float64Array.from(ev,e=>e.time);
+  const outL=new Map(),inL=new Map(),pairL=new Map();const add=(m,key,k)=>{let a=m.get(key);if(!a){a=[];m.set(key,a);}a.push(k);};
+  for(let k=0;k<K;k++){const e=ev[k];add(outL,e.i,k);add(inL,e.j,k);add(pairL,e.i*65536+e.j,k);}
+  const firstAfter=(arr,k)=>{if(!arr)return -1;let lo=0,hi=arr.length;while(lo<hi){const m=(lo+hi)>>1;if(arr[m]<=k)lo=m+1;else hi=m;}return lo<arr.length?lo:-1;};
+  const scan=(arr,k,skip)=>{let p=firstAfter(arr,k);if(p<0)return -1;let lim=0;while(p<arr.length&&lim<2000){const l=arr[p];if(!skip(ev[l]))return l;p++;lim++;}return -1;};
+  for(let k=0;k<K;k++){const a=ev[k].i,b=ev[k].j,tk=t[k];let l;
+    l=scan(pairL.get(a*65536+b),k,()=>false);if(l>=0)out[0][k]=t[l]-tk;
+    l=scan(pairL.get(b*65536+a),k,()=>false);if(l>=0)out[1][k]=t[l]-tk;
+    l=scan(outL.get(a),k,f=>f.j===b);if(l>=0)out[2][k]=t[l]-tk;
+    l=scan(inL.get(b),k,f=>f.i===a);if(l>=0)out[3][k]=t[l]-tk;
+    l=scan(outL.get(b),k,f=>f.j===a);if(l>=0)out[4][k]=t[l]-tk;
+    l=scan(inL.get(a),k,f=>f.i===b);if(l>=0)out[5][k]=t[l]-tk;}
+  return {fd:out,t,src:Int32Array.from(ev,e=>e.i),dst:Int32Array.from(ev,e=>e.j)};
+}
+// Fraction of eligible events (t_k + delta <= Tend) followed within delta by each motif type.
+function motifRatesFD(F,delta,Tend){const m=upperBound(F.t,Tend-delta);return F.fd.map(a=>{let c=0;for(let k=0;k<m;k++)if(a[k]<=delta)c++;return m?c/m:NaN;});}
+function motifCountsFD(F,delta,Tend){const m=upperBound(F.t,Tend-delta);return {elig:m,counts:F.fd.map(a=>{let c=0;for(let k=0;k<m;k++)if(a[k]<=delta)c++;return c;})};}
+function motifCurvesFD(F,deltas,Tend){return deltas.map(d=>motifRatesFD(F,d,Tend));}
+// Per time bin: motif rate among the eligible events that start in the bin.
+function motifTimelineFD(F,delta,Tend,edges){const nb=edges.length-1,E=new Float64Array(nb),C=MOTIF_DEFS.map(()=>new Float64Array(nb));
+  for(let k=0;k<F.t.length;k++){const t=F.t[k];if(t+delta>Tend)break;const q=Math.min(nb-1,Math.floor((t-edges[0])/(edges[nb]-edges[0])*nb));if(q<0)continue;E[q]++;
+    for(let m=0;m<C.length;m++)if(F.fd[m][k]<=delta)C[m][q]++;}
+  return {elig:E,rate:C.map(c=>Array.from(c,(v,q)=>E[q]>0?v/E[q]:NaN)),counts:C};}
+// Per initiating node: eligible events sent and how many were followed by motif m within delta.
+function motifByNodeFD(F,m,delta,Tend,n){const sent=new Float64Array(n),hit=new Float64Array(n),lim=upperBound(F.t,Tend-delta);
+  for(let k=0;k<lim;k++){sent[F.src[k]]++;if(F.fd[m][k]<=delta)hit[F.src[k]]++;}return {sent,hit};}
 
 /* ---------- Diagnostics ---------- */
 function motifRates(ev,delta,Tend){
@@ -693,7 +984,7 @@ function logHist(vals,nb,lo,hi){const L0=Math.log10(lo),L1=Math.log10(hi),d=(L1-
   const x=[],y=[];for(let q=0;q<nb;q++){const a=Math.pow(10,L0+q*d),b=Math.pow(10,L0+(q+1)*d);x.push(Math.sqrt(a*b));y.push(c[q]>0?c[q]/(tot*(b-a)):NaN);}return {x,y};}
 function gaps(evs){const o=[];for(let k=1;k<evs.length;k++)o.push(evs[k].time-evs[k-1].time);return o;}
 
-if(typeof module!=='undefined')module.exports={mulberry32,seed,rand,nelderMead,parseEdgeList,PRESETS,synthNetwork,makeSubset,countMatrix,detectBlocks,ipf,buildMarkLayers,buildTimeLayers,fitAll,combined,simulateModel,motifRates,burstiness,logHist,gaps,hawkesLL,fitHawkes,hawkesCompAt,TIME_DEFS,MARK_DEFS,ksFromTaus};
+if(typeof module!=='undefined')module.exports={mulberry32,seed,rand,nelderMead,parseEdgeList,PRESETS,synthNetwork,makeSubset,countMatrix,detectBlocks,ipf,buildMarkLayers,buildTimeLayers,fitAll,combined,simulateModel,motifRates,burstiness,logHist,gaps,hawkesLL,fitHawkes,hawkesCompAt,TIME_DEFS,MARK_DEFS,ksFromTaus,fitRecipAll,simulateRecip,recipLL,hawkRecipLL,pairChains,simulateWindow,MOTIF_DEFS,motifFirstDelays,motifRatesFD,motifCountsFD,motifCurvesFD,motifTimelineFD,motifByNodeFD};
 
 </script>
 <script>
@@ -709,7 +1000,7 @@ const HOSTED_DATASETS=[
 const $=id=>document.getElementById(id);
 const TCOL={pois:2,nhpp:5,hawk:1,spois:6,shawk:3},MCOL={unif:5,ep:2,me:3,bd:4,bm:1};
 const TNAME=Object.fromEntries(TIME_DEFS.map(d=>[d[0],d[1]])),MNAME=Object.fromEntries(MARK_DEFS.map(d=>[d[0],d[1]]));
-const state={ds:null,dsName:'',S:null,R:null,tab:'overview',dirty:new Set(),simCache:new Map(),busy:false,rasMode:'node'};
+const state={ds:null,dsName:'',S:null,R:null,tab:'overview',dirty:new Set(),simCache:new Map(),mFD:new Map(),mFocus:1,busy:false,rasMode:'node',fitSettings:null};
 const tick=()=>new Promise(r=>setTimeout(r,0));
 
 /* ---------- formatting ---------- */
@@ -885,21 +1176,22 @@ async function runPipeline(){
     if(S.n>500)throw new Error(`Subset has ${S.n} nodes. Set Top-N ≤ 500 (mark layers are dense n×n).`);
     const t0=performance.now();
     const R=await fitAll(S,fitOpts(),msg=>setStatus(msg));
-    state.S=S;state.R=R;state.simCache.clear();dyn.layout=null;
+    state.S=S;state.R=R;state.simCache.clear();state.mFD.clear();state.fitSettings={subset:subsetOpts(),est:fitOpts()};dyn.layout=null;
     setStatus(`Fitted ${TIME_DEFS.length}×${MARK_DEFS.length} models on ${fmtInt(S.train.length)} train / ${fmtInt(S.test.length)} test events, n = ${S.n}, in ${(performance.now()-t0).toFixed(0)} ms.`+(S.jittered?`\n${fmtInt(S.nTies)} tied timestamps jittered.`:''));
-    state.dirty=new Set(['overview','lik','diag','raster','dyn']);render();
+    state.dirty=new Set(ALL_TABS);render();
   }catch(e){console.error(e);setStatus(e.message||String(e),true);}
   finally{state.busy=false;$('fitBtn').disabled=false;}
 }
-function getSim(tk,mk,sd){const key=tk+'|'+mk+'|'+sd;if(!state.simCache.has(key))state.simCache.set(key,simulateModel(state.S,state.R,tk,mk,sd));return state.simCache.get(key);}
-function featured(){return {tk:$('fTime').value,mk:$('fMark').value};}
+function getSim(tk,mk,sd,rec){const key=tk+'|'+mk+'|'+sd+'|'+(rec?1:0);if(!state.simCache.has(key))state.simCache.set(key,rec?simulateRecip(state.S,state.R,tk,mk,sd):simulateModel(state.S,state.R,tk,mk,sd));return state.simCache.get(key);}
+function featured(){return {tk:$('fTime').value,mk:$('fMark').value,rec:$('recip').checked};}
+function modelName(tk,mk,rec){return `${TNAME[tk]} × ${MNAME[mk]}`+(rec?' + ρ':'');}
 
 /* ---------- tabs ---------- */
 function showTab(t){state.tab=t;for(const b of document.querySelectorAll('.tabs button'))b.setAttribute('aria-selected',String(b.dataset.tab===t));
   for(const p of document.querySelectorAll('.panel'))p.hidden=p.id!=='p-'+t;if(t!=='dyn')dynStop();render();}
 function render(){const t=state.tab;if(!state.R){return;}if(t==='method')return;
   if(!state.dirty.has(t)&&t!=='dyn')return;state.dirty.delete(t);
-  try{({overview:renderOverview,lik:renderLik,diag:renderDiag,raster:renderRaster,dyn:renderDyn})[t]();}catch(e){console.error(e);setStatus('Render error: '+e.message,true);}}
+  try{({overview:renderOverview,fit:renderFit,lik:renderLik,diag:renderDiag,motif:renderMotif,raster:renderRaster,dyn:renderDyn})[t]();}catch(e){console.error(e);setStatus('Render error: '+e.message,true);}}
 
 /* ---------- Overview ---------- */
 function renderOverview(){
@@ -908,7 +1200,7 @@ function renderOverview(){
   const cards=[[fmtInt(S.n),'nodes ('+fmtInt(nAct)+' active in train)'],[fmtInt(S.train.length)+' / '+fmtInt(S.test.length),'train / test events'],
     [fmtInt(R.marks.uTr),'distinct directed pairs (train)'],[tickLabel(+(S.T1-S.T0).toPrecision(4)),'time span'],
     [fmt(b.mean,3),'mean inter-event time'],[fmt(b.B,3),'burstiness B=(σ−m)/(σ+m)'],[fmt(b.M,3),'memory coefficient M'],
-    [fmt(H.eta,3),'global branching ratio η'],[String(R.blocks.B)+(R.blocks.hasInactive?'*':''),'Louvain blocks, Q = '+fmt(R.blocks.Q,3)]];
+    [fmt(H.eta,3),'global branching ratio η'],[String(R.blocks.B)+(R.blocks.hasInactive?'*':''),'Louvain blocks, Q = '+fmt(R.blocks.Q,3)],[fmt(R.recip.hawk[$('fMark').value].params.rho,3),'reciprocity ρ (Hawkes × '+MNAME[$('fMark').value]+')']];
   $('cards').innerHTML=cards.map(c=>`<div class="card"><b>${c[0]}</b><span>${c[1]}</span></div>`).join('');
   // activity
   const nb=Math.min(120,Math.max(20,Math.round(S.events.length/25))),T0=S.T0,T1=S.T1,bw=(T1-T0)/nb;
@@ -963,12 +1255,22 @@ function renderLik(){
       h2+=`<td class="${c.aic===bestAIC?'best':''}${ft}">${fmtInt(c.aic-bestAIC)} / <span class="${c.bic===bestBIC?'best':''}">${fmtInt(c.bic-bestBIC)}</span></td>`;}
     h1+='</tr>';h2+='</tr>';}
   $('tblComb').innerHTML=h1+'</tbody>';$('tblAic').innerHTML=h2+'</tbody>';
+  // reciprocity extension
+  {let bt=-Infinity,ba=Infinity;for(const [tk] of TIME_DEFS)for(const [mk] of MARK_DEFS){const r=R.recip[tk][mk];bt=Math.max(bt,r.llTe);ba=Math.min(ba,r.aic);}
+   let h3=head;for(const [tk,tn] of TIME_DEFS){h3+=`<tr><td>${tn}</td>`;for(const [mk] of MARK_DEFS){const r=R.recip[tk][mk],c=comb[tk+mk],ft=(tk===f.tk&&mk===f.mk)?' feat':'';
+     h3+=`<td class="${hasTest&&r.llTe===bt?'best':''}${ft}">${hasTest?fmt(r.llTe/nte):'—'} <span style="color:var(--muted);font-size:11.5px">(${hasTest?(r.llTe>=c.llTe?'+':'')+fmt((r.llTe-c.llTe)/nte,2):''}; ρ ${fmt(r.params.rho,2)})</span></td>`;}h3+='</tr>';}
+   $('tblRecip').innerHTML=h3+'</tbody>';
+   let h4='<thead><tr><th>Time layer (× '+MNAME[f.mk]+')</th><th>ρ̂ (replies / event)</th><th>β̂<sub>ρ</sub> (reply decay)</th><th>reply half-life</th><th>base scale</th><th>Δℓ/event test</th><th>ΔAIC vs ρ = 0</th><th>ΔBIC vs ρ = 0</th></tr></thead><tbody>';
+   for(const [tk,tn] of TIME_DEFS){const r=R.recip[tk][f.mk],c=comb[tk+f.mk],p=r.params;
+     const sc=p.c!==undefined?'c = '+fmt(p.c):'μ = '+fmt(p.mu)+', η = '+fmt(p.eta);
+     h4+=`<tr${tk===f.tk?' class="featrow"':''}><td>${tn}</td><td>${fmt(p.rho)}</td><td>${p.rho>1e-4?fmt(p.b):'—'}</td><td>${p.rho>1e-4?fmt(Math.LN2/p.b):'—'}</td><td>${sc}</td><td>${hasTest?fmt((r.llTe-c.llTe)/nte):'—'}</td><td class="${r.aic<c.aic?'best':''}">${fmtInt(r.aic-c.aic)}</td><td class="${r.bic<c.bic?'best':''}">${fmtInt(r.bic-c.bic)}</td></tr>`;}
+   $('tblRecipPar').innerHTML=h4+'</tbody>';}
   // Hawkes box
   const p=R.times.hawk.params,lr=2*(R.times.hawk.llTrain-R.times.pois.llTrain);const emp=ntr/(S.Ts-S.T0);
   $('hawkesBox').innerHTML=p.poissonLimit?`No self-excitation detected: the likelihood is maximised in the Poisson limit (η = 0).<br>μ = ${fmt(p.mu)}`:
    `μ (immigrant rate) = ${fmt(p.mu)}<br>η (branching ratio) = ${fmt(p.eta)}<br>β (decay rate) = ${fmt(p.beta)} · kernel half-life = ${fmt(Math.LN2/p.beta)}<br>`+
    `stationary rate μ/(1−η) = ${fmt(p.mu/(1-p.eta))} · empirical = ${fmt(emp)}<br>`+
-   `LR vs Poisson 2Δℓ = ${fmt(lr,1)} (2 extra parameters; η = 0 on the boundary)<br>ΔAIC (Hawkes − Poisson) = ${fmt(tAIC[2]-tAIC[0],1)}`;
+   `LR vs Poisson 2Δℓ = ${fmt(lr,1)} (non-standard: η = 0 is on the boundary and β is unidentified under the null, so χ²₂ does not apply)<br>ΔAIC (Hawkes − Poisson) = ${fmt(tAIC[2]-tAIC[0],1)}`;
   // per-sender eta scatter
   const C=colors();const P=R.times.shawk.params.filter(q=>q.hawkes);
   plotXY($('cvEta'),{h:240,xlog:true,xlabel:'training events of sender',ylabel:'η_i',ylim:[0,1],series:[
@@ -977,13 +1279,12 @@ function renderLik(){
 }
 
 /* ---------- Diagnostics ---------- */
-function deltaValue(){const g=burstiness(state.S.train.map(e=>e.time)).mean;const v=+$('delta').value;return g*Math.pow(10,-0.5+2.5*v/100);}
 function renderDiag(){
   const S=state.S,R=state.R,C=colors(),f=featured(),nS=clamp(+$('nSims').value|0,1,30);
   // IET
   const emp=gaps(S.train).filter(x=>x>0);const lines=[{key:'emp',g:emp,color:C.s[0],label:'Empirical'}];
   const tks=['pois','hawk'];if(!tks.includes(f.tk))tks.push(f.tk);
-  for(const tk of tks)lines.push({key:tk,g:gaps(getSim(tk,f.mk,101)).filter(x=>x>0),color:C.s[TCOL[tk]],label:TNAME[tk]+' (sim.)'});
+  for(const tk of tks)lines.push({key:tk,g:gaps(getSim(tk,f.mk,101,f.rec)).filter(x=>x>0),color:C.s[TCOL[tk]],label:TNAME[tk]+(f.rec?' + ρ':'')+' (sim.)'});
   let lo=Infinity,hi=0;for(const L of lines)for(const x of L.g){if(x<lo)lo=x;if(x>hi)hi=x;}
   plotXY($('cvIET'),{h:270,xlog:true,ylog:true,xlabel:'inter-event time Δt',ylabel:'density',series:lines.map(L=>{const hh=logHist(L.g,36,lo,hi*1.0001);return {x:hh.x,y:hh.y,mode:'linepoints',color:L.color,label:L.label,width:L.key==='emp'?2.4:1.6};})},$('lgIET'));
   // KS
@@ -1009,18 +1310,210 @@ function renderDiag(){
   heatmap($('cvBRes'),{M:Ue.map((r,a)=>r.map((v,b)=>v-Uo[a][b])),labels:labs,div:true,maxH:300,showVals:true});
   renderMotifs();
 }
+/* ===================== Shared motif data ===================== */
+const ALL_TABS=['overview','fit','lik','diag','motif','raster','dyn'];
+const MSHORT=['Repeat','Recip.','Broad.','Conv.','Chain','Rev. chain'];
+const MCOLIDX=[5,2,1,3,4,6];
+function mColor(m){return colors().s[MCOLIDX[m]];}
+function meanGap(){const S=state.S;return (S.Ts-S.T0)/Math.max(1,S.train.length);}
+function mDelta(){return meanGap()*Math.pow(10,-1+3*(+$('mDelta').value)/100);}
+function nSims(){return clamp(+$('nSims').value|0,1,30);}
+function fdOf(key,evsFn){if(!state.mFD.has(key))state.mFD.set(key,motifFirstDelays(evsFn()));return state.mFD.get(key);}
+function forecastSim(tk,mk,rec,s){const key='fc|'+tk+'|'+mk+'|'+(rec?1:0)+'|'+s;const S=state.S;
+  if(!state.simCache.has(key))state.simCache.set(key,simulateWindow(S,state.R,tk,mk,rec,S.Ts,S.T1,S.train,600+s));return state.simCache.get(key);}
+function motifBundle(){
+  const S=state.S,f=featured(),nS=nSims(),B={f,nS};
+  B.emp={tr:fdOf('emp|tr',()=>S.train),te:fdOf('emp|te',()=>S.test),all:fdOf('emp|all',()=>S.events)};
+  const sims=(tk,rec)=>{const o=[];for(let s=0;s<nS;s++)o.push(fdOf(`tr|${tk}|${f.mk}|${s}|${rec?1:0}`,()=>getSim(tk,f.mk,300+s,rec)));return o;};
+  const fcs=(tk,rec)=>{const o=[];if(!S.test.length)return o;for(let s=0;s<nS;s++)o.push(fdOf(`fc|${tk}|${f.mk}|${s}|${rec?1:0}`,()=>forecastSim(tk,f.mk,rec,s)));return o;};
+  B.mod=sims(f.tk,f.rec);B.mod0=f.rec?sims(f.tk,false):null;B.nul=sims('pois',false);
+  B.fc=fcs(f.tk,f.rec);B.fcNul=fcs('pois',false);
+  B.names={mod:modelName(f.tk,f.mk,f.rec),mod0:modelName(f.tk,f.mk,false),nul:'Null: '+modelName('pois',f.mk,false)};
+  return B;}
+function statsOf(rows){const K=rows[0].length;return Array.from({length:K},(_,m)=>{const v=rows.map(r=>r[m]).filter(Number.isFinite);const [mu,sd]=meanStd(v);
+  const s=v.slice().sort((a,b)=>a-b);const q=p=>s.length?s[Math.min(s.length-1,Math.max(0,Math.round(p*(s.length-1))))]:NaN;return {mean:mu,sd,lo:q(0.025),hi:q(0.975),n:v.length};});}
+function zOf(obs,st,p,m){const sdB=Math.sqrt(Math.max(p*(1-p),1e-12)/Math.max(m,1));const sd=st.n>=3?Math.max(st.sd,sdB*0.5):sdB;return (obs-st.mean)/sd;}
+
+/* ---------- motif glyphs ---------- */
+function glyphSVG(m,col,ink){
+  const P={i:[16,30],j:[84,30],k:[50,9]},r=7.5,id='gm'+m+Math.random().toString(36).slice(2,7);
+  const shorten=(a,b,c)=>{const [x1,y1]=a,[x2,y2]=b;const cx=c?c[0]:x1,cy=c?c[1]:y1;let dx=x2-cx,dy=y2-cy,L=Math.hypot(dx,dy)||1;const e=[x2-dx/L*(r+2.5),y2-dy/L*(r+2.5)];
+    dx=(c?c[0]:x2)-x1;dy=(c?c[1]:y2)-y1;L=Math.hypot(dx,dy)||1;const s=[x1+dx/L*(r+1),y1+dy/L*(r+1)];return [s,e];};
+  const arrow=(a,b,color,curve,mk)=>{const c=curve?[(a[0]+b[0])/2,(a[1]+b[1])/2+curve]:null;const [s,e]=shorten(a,b,c);
+    return c?`<path d="M${s[0]},${s[1]} Q${c[0]},${c[1]} ${e[0]},${e[1]}" fill="none" stroke="${color}" stroke-width="2" marker-end="url(#${mk})"/>`
+            :`<path d="M${s[0]},${s[1]} L${e[0]},${e[1]}" fill="none" stroke="${color}" stroke-width="2" marker-end="url(#${mk})"/>`;};
+  const sec={0:['i','j',16],1:['j','i',16],2:['i','k',0],3:['k','j',0],4:['j','k',0],5:['k','i',0]}[m];
+  const nodes=m<2?['i','j']:['i','j','k'];
+  return `<svg viewBox="0 0 100 56" role="img" aria-label="${MOTIF_DEFS[m][1]}: ${MOTIF_DEFS[m][2]}"><defs>
+   <marker id="${id}a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${ink}"/></marker>
+   <marker id="${id}b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${col}"/></marker></defs>
+   ${arrow(P.i,P.j,ink,m<2?-12:0,id+'a')}${arrow(P[sec[0]],P[sec[1]],col,sec[2],id+'b')}
+   ${nodes.map(v=>`<circle cx="${P[v][0]}" cy="${P[v][1]}" r="${r}" fill="var(--panel)" stroke="${ink}" stroke-width="1.2"/><text x="${P[v][0]}" y="${P[v][1]+3.2}" text-anchor="middle" font-size="9" font-style="italic" fill="${ink}">${v}</text>`).join('')}
+</svg>`;}
+
+/* ---------- motif timeline heatmap ---------- */
+function drawMotifTimeline(cv,TL,edges,cnt,Ts){
+  const C=colors(),rows=MOTIF_DEFS.length,nb=edges.length-1,rowH=22,strip=34,top=8;const h=top+strip+8+rows*rowH+30;
+  const {ctx,w}=prep(cv,h);const m={l:96,r:12};const pw=w-m.l-m.r,cw=pw/nb;const T0=edges[0],T1=edges[nb];const X=t=>m.l+(t-T0)/(T1-T0)*pw;
+  ctx.font='11px '+C.sans;let cmax=0;for(const c of cnt)cmax=Math.max(cmax,c);
+  ctx.fillStyle=C.faint;for(let q=0;q<nb;q++){const hh=cmax?cnt[q]/cmax*strip:0;ctx.fillRect(m.l+q*cw+0.5,top+strip-hh,Math.max(1,cw-1),hh);}
+  ctx.fillStyle=C.muted;ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('events',m.l-8,top+strip/2);
+  const y0=top+strip+8;
+  for(let r=0;r<rows;r++){const vals=TL.rate[r];let mx=0;for(const v of vals)if(Number.isFinite(v))mx=Math.max(mx,v);const col=mColor(r);
+    for(let q=0;q<nb;q++){const v=vals[q];ctx.fillStyle=Number.isFinite(v)&&mx>0?mixHex(C.panel,col,Math.pow(v/mx,0.8)):C.grid;ctx.fillRect(m.l+q*cw,y0+r*rowH+1,Math.ceil(cw)+0.3,rowH-2);}
+    ctx.fillStyle=col;ctx.fillRect(8,y0+r*rowH+rowH/2-4,8,8);ctx.fillStyle=C.ink;ctx.textAlign='left';ctx.fillText(MOTIF_DEFS[r][1],20,y0+r*rowH+rowH/2);}
+  const yb=y0+rows*rowH;ctx.strokeStyle=C.muted;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(X(Ts),top);ctx.lineTo(X(Ts),yb);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=C.muted;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('test →',X(Ts)+4,top);
+  ctx.textAlign='center';for(const v of linTicks(T0,T1,7)){const px=X(v);if(px<m.l||px>m.l+pw)continue;ctx.fillRect(px,yb,1,4);ctx.fillText(tickLabel(v),px,yb+6);}
+  ctx.fillText('time',m.l+pw/2,yb+18);
+  cv._geom={m,cw,y0,rowH,rows,nb,edges,TL,cnt};}
+
+/* ===================== Motifs tab ===================== */
+function renderMotif(){
+  const S=state.S,R=state.R,C=colors(),B=motifBundle(),f=B.f,d=mDelta(),g=meanGap(),fm=state.mFocus;
+  $('mDeltaVal').textContent=`δ = ${fmt(d,3)} time units = ${fmt(d/g,2)} × mean gap`;
+  const empR=motifRatesFD(B.emp.tr,d,S.Ts),elig=upperBound(B.emp.tr.t,S.Ts-d);
+  const sMod=statsOf(B.mod.map(F=>motifRatesFD(F,d,S.Ts))),sNul=statsOf(B.nul.map(F=>motifRatesFD(F,d,S.Ts)));
+  const sMod0=B.mod0?statsOf(B.mod0.map(F=>motifRatesFD(F,d,S.Ts))):null;
+  // glyph cards
+  $('mGlyphs').innerHTML=MOTIF_DEFS.map((D,m)=>`<button class="glyph" data-m="${m}" aria-pressed="${m===fm}">${glyphSVG(m,mColor(m),C.ink)}<b>${D[1]}</b><span>${D[2]}</span><div class="gv">${fmt(empR[m],3)}</div><span>observed rate (train)</span></button>`).join('');
+  for(const b of $('mGlyphs').querySelectorAll('.glyph'))b.addEventListener('click',()=>{state.mFocus=+b.dataset.m;state.dirty.add('motif');render();});
+  // which
+  const series=[{label:'Empirical',values:empR,color:C.s[0]},{label:B.names.mod,values:sMod.map(s=>s.mean),err:sMod.map(s=>s.sd),color:C.s[4]}];
+  if(sMod0)series.push({label:B.names.mod0,values:sMod0.map(s=>s.mean),err:sMod0.map(s=>s.sd),color:C.s[TCOL[f.tk]===4?1:TCOL[f.tk]]});
+  series.push({label:B.names.nul,values:sNul.map(s=>s.mean),err:sNul.map(s=>s.sd),color:C.s[2]});
+  barChart($('cvMWhich'),{h:290,categories:MSHORT,ylabel:'rate',series},$('lgMWhich'));
+  let h='<thead><tr><th class="l">Motif</th><th>observed</th><th>featured model</th><th>z</th><th>null</th><th>z</th><th class="l">reading</th></tr></thead><tbody>';
+  MOTIF_DEFS.forEach((D,m)=>{const zm=zOf(empR[m],sMod[m],sMod[m].mean,elig),zn=zOf(empR[m],sNul[m],sNul[m].mean,elig);
+    const rn=zn>2?'over-represented':zn<-2?'under-represented':'explained by structure';const rm=Math.abs(zm)<=2?'reproduced':(zm>0?'model too low':'model too high');
+    h+=`<tr><td class="l"><span class="sw" style="background:${mColor(m)}"></span> ${D[1]}</td><td>${fmt(empR[m],3)}</td><td>${fmt(sMod[m].mean,3)} ± ${fmt(sMod[m].sd,3)}</td><td class="${Math.abs(zm)<=2?'good':'bad'}">${fmt(zm,1)}</td><td>${fmt(sNul[m].mean,3)}</td><td>${fmt(zn,1)}</td><td class="l" style="white-space:normal">${rn}; ${rm}</td></tr>`;});
+  $('tblMotifZ').innerHTML=h+'</tbody>';
+  // timescale curves
+  const dmax=Math.min(300*g,(S.Ts-S.T0)/3),dmin=Math.max(0.03*g,1e-9),NG=26,deltas=Array.from({length:NG},(_,q)=>dmin*Math.pow(dmax/dmin,q/(NG-1)));
+  const cE=motifCurvesFD(B.emp.tr,deltas,S.Ts),cM=B.mod.map(F=>motifCurvesFD(F,deltas,S.Ts)),cN=B.nul.map(F=>motifCurvesFD(F,deltas,S.Ts));
+  const box=$('mCurves');box.innerHTML=MOTIF_DEFS.map((D,m)=>`<div class="${m===fm?'on':''}" data-m="${m}"><div class="ttl"><span class="sw" style="background:${mColor(m)}"></span>${D[1]}</div><canvas></canvas></div>`).join('');
+  MOTIF_DEFS.forEach((D,m)=>{const el=box.children[m],cv=el.querySelector('canvas');el.style.cursor='pointer';el.addEventListener('click',()=>{state.mFocus=m;state.dirty.add('motif');render();});
+    const st=deltas.map((_,q)=>meanStd(cM.map(c=>c[q][m])));const nu=deltas.map((_,q)=>meanStd(cN.map(c=>c[q][m]))[0]);
+    plotXY(cv,{h:180,xlog:true,xlabel:'δ',ylim:[0,null],nt:4,series:[
+      {x:deltas,y:nu,color:C.s[2],dash:[5,4],width:1.3,label:'Null (Poisson × marks)'},
+      {x:deltas,y:st.map(s=>s[0]),color:C.s[4],width:1.8,label:B.names.mod},
+      {x:deltas,y:cE.map(r=>r[m]),mode:'linepoints',color:C.s[0],width:1.6,size:2.2,label:'Empirical'}],
+      bands:[{x:deltas,lo:st.map(s=>s[0]-s[1]),hi:st.map(s=>s[0]+s[1]),color:C.s[4],alpha:0.18}],vlines:[{x:d}]},m===0?$('lgMCurves'):null);});
+  // response delays for the focused motif
+  const fin=a=>Array.from(a).filter(x=>Number.isFinite(x)&&x>0);const de=fin(B.emp.tr.fd[fm]),dm=[].concat(...B.mod.map(F=>fin(F.fd[fm]))),dn=[].concat(...B.nul.map(F=>fin(F.fd[fm])));
+  const med=a=>{if(!a.length)return NaN;const s=a.slice().sort((x,y)=>x-y);return s[s.length>>1];};
+  $('mDelayCap').textContent=`Response delays: ${MOTIF_DEFS[fm][1]} (${MOTIF_DEFS[fm][2]})`;
+  if(de.length>3){let lo=Infinity,hi=0;for(const a of [de,dm,dn])for(const x of a){if(x<lo)lo=x;if(x>hi)hi=x;}
+    const H=(a)=>logHist(a,34,lo,hi*1.0001);const he=H(de),hm=H(dm),hn=H(dn);
+    plotXY($('cvMDelay'),{h:260,xlog:true,ylog:true,xlabel:'delay to first follow-up',ylabel:'density',series:[
+      {x:hn.x,y:hn.y,color:C.s[2],dash:[5,4],width:1.3,label:`Null (median ${fmt(med(dn),3)})`},
+      {x:hm.x,y:hm.y,color:C.s[4],label:`${B.names.mod} (median ${fmt(med(dm),3)})`},
+      {x:he.x,y:he.y,mode:'linepoints',color:C.s[0],size:2.4,label:`Empirical (median ${fmt(med(de),3)})`}],vlines:[{x:d,label:'δ'}]},$('lgMDelay'));}
+  else{const {ctx,w,h}=prep($('cvMDelay'),120);noData(ctx,w,h,'Too few follow-ups of this type.');$('lgMDelay').innerHTML='';}
+  // when: heatmap over the whole subset
+  const K=S.events.length,nb=clamp(Math.round(K/60),20,90),edges=Array.from({length:nb+1},(_,q)=>S.T0+(S.T1-S.T0)*q/nb);
+  const cnt=new Float64Array(nb);for(const e of S.events)cnt[Math.min(nb-1,Math.floor((e.time-S.T0)/(S.T1-S.T0)*nb))]++;
+  drawMotifTimeline($('cvMTime'),motifTimelineFD(B.emp.all,d,S.T1,edges),edges,cnt,S.Ts);
+  // focused motif over time, with forecast
+  const nb2=clamp(Math.round(K/120),12,60),e2=Array.from({length:nb2+1},(_,q)=>S.T0+(S.T1-S.T0)*q/nb2),xc=e2.slice(0,-1).map((v,q)=>(v+e2[q+1])/2);
+  const trTL=motifTimelineFD(B.emp.tr,d,S.Ts,e2).rate[fm],teTL=S.test.length?motifTimelineFD(B.emp.te,d,S.T1,e2).rate[fm]:[];
+  const empY=xc.map((x,q)=>x<S.Ts?trTL[q]:teTL[q]);
+  const agg=(Fs,Tend)=>{const R_=Fs.map(F=>motifTimelineFD(F,d,Tend,e2).rate[fm]);return xc.map((_,q)=>meanStd(R_.map(r=>r[q]).filter(Number.isFinite)));};
+  const aM=agg(B.mod,S.Ts),aF=B.fc.length?agg(B.fc,S.T1):null,aN=B.fcNul.length?agg(B.fcNul,S.T1):null;
+  const idxTr=xc.map((x,q)=>x<S.Ts?q:-1).filter(q=>q>=0&&Number.isFinite(aM[q][0])),idxTe=xc.map((x,q)=>x>=S.Ts?q:-1).filter(q=>q>=0&&aF&&Number.isFinite(aF[q][0]));
+  const pick=(idx,a,k)=>idx.map(q=>a[q][k]);
+  $('mFcCap').textContent=`${MOTIF_DEFS[fm][1]} over time, with forecast`;
+  plotXY($('cvMFc'),{h:270,xlabel:'time',ylabel:`${MOTIF_DEFS[fm][1].toLowerCase()} rate`,ylim:[0,null],series:[
+    {x:idxTr.map(q=>xc[q]),y:pick(idxTr,aM,0),color:C.s[4],label:'Featured model (in-sample)'},
+    ...(aF?[{x:idxTe.map(q=>xc[q]),y:pick(idxTe,aF,0),color:C.s[4],dash:[6,3],width:2,label:'Forecast from training fit'}]:[]),
+    ...(aN?[{x:idxTe.map(q=>xc[q]),y:pick(idxTe,aN,0),color:C.s[2],dash:[4,4],width:1.3,label:'Null forecast'}]:[]),
+    {x:xc,y:empY,mode:'linepoints',color:C.s[0],size:2.4,width:1.5,label:'Empirical'}],
+    bands:[{x:idxTr.map(q=>xc[q]),lo:idxTr.map(q=>aM[q][0]-aM[q][1]),hi:idxTr.map(q=>aM[q][0]+aM[q][1]),color:C.s[4],alpha:0.16},
+      ...(aF?[{x:idxTe.map(q=>xc[q]),lo:idxTe.map(q=>aF[q][0]-aF[q][1]),hi:idxTe.map(q=>aF[q][0]+aF[q][1]),color:C.s[4],alpha:0.24}]:[])],
+    vlines:[{x:S.Ts,label:'forecast →'}]},$('lgMFc'));
+  // prediction table
+  if(S.test.length){const ob=motifCountsFD(B.emp.te,d,S.T1),oR=ob.counts.map(c=>ob.elig?c/ob.elig:NaN);
+    const sF=statsOf(B.fc.map(F=>motifRatesFD(F,d,S.T1))),sFN=statsOf(B.fcNul.map(F=>motifRatesFD(F,d,S.T1)));let pass=0;
+    let t=`<thead><tr><th class="l">Motif</th><th>observed rate (events)</th><th>forecast, featured model [95% interval]</th><th>z</th><th>inside?</th><th>null forecast</th><th>z</th></tr></thead><tbody>`;
+    MOTIF_DEFS.forEach((D,m)=>{const st=sF[m],lo=st.n>=10?st.lo:st.mean-1.96*st.sd,hi=st.n>=10?st.hi:st.mean+1.96*st.sd,inside=oR[m]>=lo&&oR[m]<=hi;if(inside)pass++;
+      t+=`<tr><td class="l"><span class="sw" style="background:${mColor(m)}"></span> ${D[1]}</td><td>${fmt(oR[m],3)} (${fmtInt(ob.counts[m])} / ${fmtInt(ob.elig)})</td><td>${fmt(st.mean,3)} [${fmt(lo,3)}, ${fmt(hi,3)}]</td><td>${fmt(zOf(oR[m],st,st.mean,ob.elig),1)}</td><td class="${inside?'good':'bad'}">${inside?'yes':'no'}</td><td>${fmt(sFN[m].mean,3)}</td><td>${fmt(zOf(oR[m],sFN[m],sFN[m].mean,ob.elig),1)}</td></tr>`;});
+    t+=`<tr><td class="l" colspan="7" style="color:var(--muted);white-space:normal">${pass} of 6 motif rates inside the 95% forecast interval · test window: ${fmtInt(S.test.length)} events, ${B.nS} forecast simulations of ${B.names.mod}${B.nS<10?' (interval from mean ± 1.96 s.d.; use ≥ 10 simulations for percentiles)':''}</td></tr>`;
+    $('tblMPred').innerHTML=t+'</tbody>';}
+  else $('tblMPred').innerHTML='<tbody><tr><td class="l">No test window: lower the train fraction.</td></tr></tbody>';
+  // who
+  const eN=motifByNodeFD(B.emp.tr,fm,d,S.Ts,S.n),mS=new Float64Array(S.n),mH=new Float64Array(S.n);
+  for(const F of B.mod){const r=motifByNodeFD(F,fm,d,S.Ts,S.n);for(let i=0;i<S.n;i++){mS[i]+=r.sent[i];mH[i]+=r.hit[i];}}
+  const nodes=[...Array(S.n).keys()].filter(i=>eN.sent[i]>=10);const mr=i=>mS[i]>0?mH[i]/mS[i]:NaN;
+  let mxN=0.05;for(const i of nodes){mxN=Math.max(mxN,eN.hit[i]/eN.sent[i],mr(i)||0);}mxN=Math.min(1,mxN*1.08);
+  plotXY($('cvMNode'),{h:280,xlabel:'observed rate',ylabel:'model rate',diag:true,xlim:[0,mxN],ylim:[0,mxN],series:[
+    {x:nodes.map(i=>eN.hit[i]/eN.sent[i]),y:nodes.map(mr),mode:'points',size:3.4,color:mColor(fm),label:`${MOTIF_DEFS[fm][1]}, one point per node`}]},$('lgMNode'));
+  const top=[...Array(S.n).keys()].filter(i=>eN.sent[i]>0).sort((a,b)=>eN.hit[b]-eN.hit[a]).slice(0,10);
+  let tn='<thead><tr><th class="l">node</th><th>block</th><th>events sent</th><th>followed by motif</th><th>observed rate</th><th>model rate</th></tr></thead><tbody>';
+  for(const i of top)tn+=`<tr><td class="l">${S.labels[i]}</td><td>${R.blocks.block[i]+1}</td><td>${fmtInt(eN.sent[i])}</td><td>${fmtInt(eN.hit[i])}</td><td>${fmt(eN.hit[i]/eN.sent[i],3)}</td><td>${fmt(mr(i),3)}</td></tr>`;
+  $('tblMNode').innerHTML=tn+'</tbody>';
+}
+// Diagnostics summary (same definitions and δ as the Motifs tab)
 function renderMotifs(){
-  const S=state.S,C=colors(),f=featured(),nS=clamp(+$('nSims').value|0,1,30);const d=deltaValue();$('deltaVal').textContent=fmt(d,3);
-  const cats=['Reciprocity','Broadcast','Convergence','Repeat'];
-  const empR=motifRates(S.train,d,S.Ts);
-  const scope=state.R.times[f.tk].scope;const poisLike=f.tk==='pois'||f.tk==='spois'||f.tk==='nhpp';
-  const alt=poisLike?(scope==='sender'?'shawk':'hawk'):(scope==='sender'?'spois':'pois');
-  const run=tk=>{const rs=[];for(let s=0;s<nS;s++)rs.push(motifRates(getSim(tk,f.mk,200+s),d,S.Ts));return {m:cats.map((_,k)=>meanStd(rs.map(r=>r[k]))[0]),sd:cats.map((_,k)=>meanStd(rs.map(r=>r[k]))[1])};};
-  const a=run(f.tk),b=run(alt);
-  barChart($('cvMotif'),{h:270,categories:cats,ylabel:'rate',series:[
-    {label:'Empirical',values:empR,color:C.s[0]},
-    {label:`${TNAME[f.tk]} × ${MNAME[f.mk]}`,values:a.m,err:a.sd,color:C.s[TCOL[f.tk]]},
-    {label:`${TNAME[alt]} × ${MNAME[f.mk]}`,values:b.m,err:b.sd,color:C.s[TCOL[alt]]}]},$('lgMotif'));
+  const S=state.S,C=colors(),B=motifBundle(),d=mDelta();$('deltaVal').textContent=`${fmt(d,3)} (${fmt(d/meanGap(),2)} × mean gap)`;
+  const empR=motifRatesFD(B.emp.tr,d,S.Ts),sM=statsOf(B.mod.map(F=>motifRatesFD(F,d,S.Ts))),sN=statsOf(B.nul.map(F=>motifRatesFD(F,d,S.Ts)));
+  barChart($('cvMotif'),{h:270,categories:MSHORT,ylabel:'rate',series:[{label:'Empirical',values:empR,color:C.s[0]},
+    {label:B.names.mod,values:sM.map(s=>s.mean),err:sM.map(s=>s.sd),color:C.s[4]},{label:B.names.nul,values:sN.map(s=>s.mean),err:sN.map(s=>s.sd),color:C.s[2]}]},$('lgMotif'));
+}
+
+/* ===================== Fitting tab ===================== */
+function renderFit(){
+  const S=state.S,R=state.R,C=colors(),FS=state.fitSettings||{subset:subsetOpts(),est:fitOpts()},so=FS.subset,es=FS.est,f=featured();
+  const chip=(k,v)=>`<span class="chip">${k} = ${v}</span>`,kv=(a)=>`<div class="kv">${a.map(([l,v])=>`<div>${l}<b>${v}</b></div>`).join('')}</div>`;
+  const step=(n,title,body)=>`<div class="step"><div class="stepnum">${n}</div><div class="stepbody"><h4>${title}</h4>${body}</div></div>`;
+  const ML=R.marks.layers,H=R.times.hawk.params,FI=H.fitInfo||{starts:[]},sh=R.times.shawk;
+  const etas=sh.params.filter(p=>p.hawkes&&!p.poissonLimit).map(p=>p.eta).sort((a,b)=>a-b);
+  let html='';
+  html+=step(1,'Build the subset and split it in time',`<p class="algo">Events are filtered to the time window, restricted to the top-N most active nodes and truncated to the first N events, then sorted in time. The first share of events forms the training window \\([T_0,T_s]\\); the rest is the test window \\([T_s,T_1]\\). With jitter on, tied timestamps are spread uniformly within one clock tick.</p>
+   <div class="chips">settings: ${chip('window',Math.round(so.from*100)+'–'+Math.round(so.to*100)+'%')}${chip('Top-N',so.topN||'all')}${chip('max events',fmtInt(so.maxEvents))}${chip('train',Math.round(so.trainFrac*100)+'%')}${chip('jitter',so.jitter?'on':'off')}${chip('dedupe',so.dedupe?'on':'off')}${chip('self-loops',so.selfLoops?'kept':'dropped')}</div>
+   ${kv([['dataset',state.dsName],['events in subset',fmtInt(S.events.length)+' of '+fmtInt(state.ds.events.length)],['nodes n',fmtInt(S.n)],['train events',fmtInt(S.train.length)],['test events',fmtInt(S.test.length)],['train window',tickLabel(+(S.Ts-S.T0).toPrecision(4))+' time units'],['ties jittered',fmtInt(S.jittered?S.nTies:0)]])}`);
+  const bs=R.blocks.sizes.map((z,b)=>(R.blocks.hasInactive&&b===R.blocks.B-1?'inactive ':'')+z).join(' · ');
+  html+=step(2,'Detect blocks with Louvain',`<p class="algo">Louvain maximises the modularity \\(Q=\\sum_b\\big[\\tfrac{\\text{in}_b}{2m}-\\gamma\\big(\\tfrac{\\text{tot}_b}{2m}\\big)^2\\big]\\) of the symmetrised training counts \\(N_{ij}+N_{ji}\\). It moves single nodes to the neighbouring block that raises \\(Q\\) most, merges blocks into super-nodes, and repeats until nothing improves. Nodes with no training events go to an extra inactive block.</p>
+   <div class="chips">settings: ${chip('γ',es.gamma)}</div>${kv([['blocks B',R.blocks.B],['modularity Q',fmt(R.blocks.Q,3)],['block sizes',bs],...(S.truth?[['planted blocks',new Set(S.truth).size]]:[])])}
+   <p class="usedby">Used by: Block-DWCM and Block-Mask constraints \\(C_{ab}\\), block rasters, block calibration maps, node colours in Dynamics.</p>`);
+  const rowsM=[['unif','none','\\(w_{ij}=\\text{const}\\)','closed form'],['ep','every pair total \\(N_{ij}\\)','\\(w_{ij}=N_{ij}\\)','closed form'],
+    ['me','out- and in-strengths \\(s_i^{\\rm out},s_j^{\\rm in}\\)','\\(x_i\\,y_j\\)','IPF'],['bd','strengths + block totals \\(C_{ab}\\)','\\(x_i\\,y_j\\,z_{g(i)g(j)}\\)','IPF'],
+    ['bm','strengths + block totals, observed pairs only','\\(\\mathbb 1[N_{ij}>0]\\,x_i\\,y_j\\,z_{g(i)g(j)}\\)','IPF']];
+  html+=step(3,'Fit the maximum-entropy mark layers',`<p class="algo">Each mark layer is the maximum-entropy distribution over directed pairs that matches chosen training totals, so its weights take a product form. Iterative proportional fitting (IPF) finds them: rescale every row to its out-strength, every column to its in-strength, every block cell to its block total, and repeat until the largest relative error is below \\(10^{-7}\\). The fitted weights do not depend on κ; κ only mixes in a uniform floor when scoring.</p>
+   <div class="chips">settings: ${chip('γ (blocks)',es.gamma)}${chip('κ (scoring)',es.kappa)}</div>
+   <div class="tablewrap"><table class="t"><thead><tr><th class="l">layer</th><th class="l">constraints</th><th class="l">solution</th><th class="l">algorithm</th><th>iterations</th><th>max rel. error</th><th>free params k</th></tr></thead><tbody>
+   ${rowsM.map(([k,c,s,a])=>`<tr><td class="l">${MNAME[k]}</td><td class="l">${c}</td><td class="l">${s}</td><td class="l">${a}</td><td>${ML[k].iters||'—'}</td><td>${ML[k].err!==undefined?ML[k].err.toExponential(1).replace('-','−'):'0'}</td><td>${fmtInt(ML[k].k)}</td></tr>`).join('')}</tbody></table></div>
+   <div class="legend" id="lgFitIPF"></div><canvas id="cvFitIPF"></canvas>`);
+  const startRows=FI.starts.map((st,q)=>`<tr${q===FI.bestStart?' style="background:var(--accent-soft)"':''}><td>${q+1}</td><td>${fmt(st.x0.mu,3)}</td><td>${fmt(st.x0.eta,2)}</td><td>${fmt(st.x0.beta,3)}</td><td>${fmt(st.x.mu,3)}</td><td>${fmt(st.x.eta,3)}</td><td>${fmt(st.x.beta,3)}</td><td>${fmt(st.nll,2)}</td><td>${st.iters}</td></tr>`).join('');
+  html+=step(4,'Fit the time layers',`<p class="algo"><b>Poisson</b>: \\(\\hat\\lambda=K/T\\). <b>NHPP</b>: one rate per bin, count ÷ width. <b>Hawkes</b>: maximise \\(\\ell(\\mu,\\eta,\\beta)=\\sum_k\\log\\big(\\mu+\\eta\\beta A_k\\big)-\\mu T-\\eta\\sum_k\\big(1-e^{-\\beta(T-t_k)}\\big)\\) with \\(A_k=e^{-\\beta(t_k-t_{k-1})}(A_{k-1}+1)\\), so each evaluation costs \\(O(K)\\). Nelder–Mead runs on \\((\\log\\mu,\\operatorname{logit}\\eta,\\log\\beta)\\) from 8 starts (η₀ ∈ {0.3, 0.7}, β₀ ∈ {0.1, 0.5, 2, 10} ÷ mean gap), and the best one is polished. If the best fit beats Poisson by nothing, or its kernel is longer than half the window, the Poisson limit η = 0 is reported. <b>Per sender</b>: the same, on each sender's own events (senders with fewer than 8 events get a Poisson rate).</p>
+   <div class="chips">settings: ${chip('NHPP bins',es.bins)}${chip('train window',tickLabel(+(S.Ts-S.T0).toPrecision(4)))}</div>
+   ${kv([['Poisson rate',fmt(R.times.pois.params.rate,3)],['Hawkes μ̂',fmt(H.mu,3)],['Hawkes η̂',fmt(H.eta,3)],['Hawkes β̂ (half-life)',H.poissonLimit?'—':fmt(H.beta,3)+' ('+fmt(Math.LN2/H.beta,3)+')'],['likelihood evaluations',fmtInt(FI.evals||0)],['senders with own Hawkes fit',`${sh.nHawkes} of ${sh.nActive}`],['median per-sender η̂',etas.length?fmt(etas[etas.length>>1],3):'—']])}
+   ${H.poissonLimit?`<p class="note warn">Global Hawkes fit reported in the Poisson limit: ${FI.limitReason||''}.</p>`:''}
+   ${FI.starts.length?`<div class="tablewrap"><table class="t"><thead><tr><th>start</th><th>μ₀</th><th>η₀</th><th>β₀</th><th>μ̂</th><th>η̂</th><th>β̂</th><th>−ℓ</th><th>iterations</th></tr></thead><tbody>${startRows}</tbody></table></div>
+   <div class="legend" id="lgFitNM"></div><canvas id="cvFitNM"></canvas><p class="note">Distance of −ℓ from its final minimum for each start (thin) and for the best start followed by the polish (thick).</p>`:''}`);
+  const rr=TIME_DEFS.map(([tk,tn])=>{const r=R.recip[tk][f.mk],c=combined(R,S,tk,f.mk),p=r.params;
+    const meth=r.method==='joint'?'joint MLE of (μ, η, β, ρ, β<sub>ρ</sub>)':r.method==='profile'?'profile: c, ρ, β<sub>ρ</sub> on the fitted profile':'ρ̂ = 0 (nested model kept)';
+    return `<tr${tk===f.tk?' style="background:var(--accent-soft)"':''}><td class="l">${tn}</td><td class="l">${meth}</td><td>${fmt(p.rho,3)}</td><td>${p.rho>1e-4?fmt(Math.LN2/p.b,3):'—'}</td><td>${p.c!==undefined?'c = '+fmt(p.c,3):'η = '+fmt(p.eta,3)}</td><td>${fmt(r.llTr-c.llTr,1)}</td><td>${fmtInt(r.aic-c.aic)}</td></tr>`;}).join('');
+  html+=step(5,'Add the reciprocity kernel',`<p class="algo">The reply term \\(\\rho\\,\\beta_\\rho\\sum_{m_k=j\\to i}e^{-\\beta_\\rho(t-t_k)}\\) is added to every pair. Its sum is updated recursively along each pair's own event chain and its reverse chain, so a likelihood evaluation still costs \\(O(K)\\). With the global Hawkes layer all five parameters are maximised jointly (6 Nelder–Mead starts plus a polish). With the other layers the fitted time profile \\(G(t)\\) is kept and only a scale \\(c\\), \\(\\rho\\) and \\(\\beta_\\rho\\) are maximised. If a fit does not beat \\(\\rho=0\\), the nested model is kept.</p>
+   <div class="chips">settings: ${chip('mark layer',MNAME[f.mk])}${chip('reciprocity in featured model',f.rec?'on':'off')}</div>
+   <div class="tablewrap"><table class="t"><thead><tr><th class="l">time layer (× ${MNAME[f.mk]})</th><th class="l">method</th><th>ρ̂</th><th>reply half-life</th><th>scale</th><th>Δℓ train</th><th>ΔAIC</th></tr></thead><tbody>${rr}</tbody></table></div>`);
+  let best={te:-Infinity},bestA={a:Infinity};
+  for(const [tk] of TIME_DEFS)for(const [mk] of MARK_DEFS){const c=combined(R,S,tk,mk),r=R.recip[tk][mk];
+    for(const [v,nm] of [[c,modelName(tk,mk,false)],[r,modelName(tk,mk,true)]]){const te=v.llTe,a=v.aic;if(S.test.length&&te>best.te)best={te,nm};if(a<bestA.a)bestA={a,nm};}}
+  html+=step(6,'Score and compare',`<p class="algo">Every model is scored on the test window with its parameters frozen at the training values. Hawkes intensities carry over the training history, the NHPP falls back to the mean training rate, and mark probabilities include the κ floor. In-sample, \\(\\text{AIC}=2k-2\\ell_{\\rm train}\\) and \\(\\text{BIC}=k\\log K-2\\ell_{\\rm train}\\) use the parameter counts above. Simulations of the fitted models (exact branching) drive Diagnostics, Motifs, Rasters and Dynamics.</p>
+   <div class="chips">settings: ${chip('κ',es.kappa)}${chip('simulations',nSims())}</div>
+   ${kv([['best held-out model',best.nm||'—'],['test ℓ per event',S.test.length?fmt(best.te/S.test.length,3):'—'],['best by AIC',bestA.nm]])}
+   <p class="usedby">Full tables in <a href="#" data-goto="lik">Likelihoods</a>; goodness of fit in <a href="#" data-goto="diag">Diagnostics</a> and <a href="#" data-goto="motif">Motifs</a>.</p>`);
+  $('fitSteps').innerHTML=html;
+  for(const a of $('fitSteps').querySelectorAll('[data-goto]'))a.addEventListener('click',e=>{e.preventDefault();showTab(a.dataset.goto);});
+  if(window.renderMathInElement)renderMathInElement($('fitSteps'),{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false});
+  // IPF convergence
+  const ipfS=['me','bd','bm'].filter(k=>ML[k].trace&&ML[k].trace.length).map(k=>({x:ML[k].trace.map(p=>p[0]),y:ML[k].trace.map(p=>Math.max(p[1],1e-16)),mode:'linepoints',size:2.2,color:C.s[MCOL[k]],label:MNAME[k]}));
+  plotXY($('cvFitIPF'),{h:200,ylog:true,xlabel:'IPF iteration',ylabel:'max relative error',series:ipfS,hlines:[{y:1e-7}]},$('lgFitIPF'));
+  if(FI.starts.length){const fmin=Math.min(...FI.starts.map(s=>s.nll),FI.polish?FI.polish.nll:Infinity);
+    const ser=FI.starts.map((st,q)=>({x:st.trace.map((_,k)=>k+1),y:st.trace.map(v=>Math.max(v-fmin,1e-6)),color:C.faint,width:1,label:q===0?'other starts':''}));
+    const bs_=FI.starts[FI.bestStart];if(bs_){const pt=FI.polish?FI.polish.trace:[];const y=bs_.trace.concat(pt).map(v=>Math.max(v-fmin,1e-6));
+      ser.push({x:y.map((_,k)=>k+1),y,color:C.s[1],width:2.4,label:'best start + polish'});}
+    plotXY($('cvFitNM'),{h:220,ylog:true,xlabel:'Nelder–Mead iteration',ylabel:'−ℓ − min',series:ser.filter(s=>s.x.length)},$('lgFitNM'));}
 }
 
 /* ---------- Rasters ---------- */
@@ -1036,11 +1529,11 @@ function rasterRows(evs,S,R,mode,rows){
 }
 function renderRaster(){
   const S=state.S,R=state.R,f=featured(),rows=+$('rasRows').value;$('rasRowsVal').textContent=rows;
-  const sd=(+$('rasSeed').value|0)||1;const sim=getSim(f.tk,f.mk,sd);
+  const sd=(+$('rasSeed').value|0)||1;const sim=getSim(f.tk,f.mk,sd,f.rec);
   const e=rasterRows(S.train,S,R,state.rasMode,rows),m=rasterRows(sim,S,R,state.rasMode,rows);
   drawRaster($('cvRasEmp'),{rowsOut:e.O,rowsIn:e.I,labels:e.labels,rowColors:e.colors,Ta:S.T0,Tb:S.Ts});
   drawRaster($('cvRasMod'),{rowsOut:m.O,rowsIn:m.I,labels:m.labels,rowColors:m.colors,Ta:S.T0,Tb:S.Ts});
-  $('rasModCap').textContent=`Model: ${TNAME[f.tk]} × ${MNAME[f.mk]} (one simulation, ${fmtInt(sim.length)} events)`;
+  $('rasModCap').textContent=`Model: ${modelName(f.tk,f.mk,f.rec)} (one simulation, ${fmtInt(sim.length)} events)`;
 }
 
 /* ---------- Dynamics ---------- */
@@ -1063,7 +1556,7 @@ function dynPrepare(){
   const S=state.S,R=state.R;if(!S)return;
   if(S.n<=300&&!dyn.layout)dyn.layout=layoutFR(S,R);
   const f=featured();
-  if(dyn.src==='emp'){dyn.ev=S.events;dyn.Ta=S.T0;dyn.Tb=S.T1;}else{dyn.ev=getSim(f.tk,f.mk,1);dyn.Ta=S.T0;dyn.Tb=S.Ts;}
+  if(dyn.src==='emp'){dyn.ev=S.events;dyn.Ta=S.T0;dyn.Tb=S.T1;}else{dyn.ev=getSim(f.tk,f.mk,1,f.rec);dyn.Ta=S.T0;dyn.Tb=S.Ts;}
   dyn.times=Float64Array.from(dyn.ev,e=>e.time);
   if(!(dyn.t>=dyn.Ta&&dyn.t<=dyn.Tb))dyn.t=dyn.Ta+winWidth();
 }
@@ -1120,12 +1613,13 @@ function exportJSON(){const S=state.S,R=state.R;if(!R)return;const out={dataset:
   blocks:{B:R.blocks.B,Q:R.blocks.Q,membership:Object.fromEntries(S.labels.map((l,i)=>[l,R.blocks.block[i]]))},
   time:Object.fromEntries(TIME_DEFS.map(([k])=>{const t=R.times[k];return [k,{name:t.name,scope:t.scope,k:t.k,llTrain:t.llTrain,llTest:t.llTest,ks:{D:t.ks.D,p:t.ks.p,m:t.ks.m},params:k==='shawk'?t.params.map((p,i)=>({node:S.labels[i],...p})):k==='spois'?{rates:t.params.rates}:t.params}];})),
   mark:Object.fromEntries(MARK_DEFS.map(([k])=>{const m=R.marks.layers[k];return [k,{name:m.name,k:m.k,kCond:m.kc,llTrainJoint:m.llTrJ,llTestJoint:m.llTeJ,llTrainCond:m.llTrC,llTestCond:m.llTeC,EUtrain:m.EUtr,EUtest:m.EUte,ipfIterations:m.iters,ipfError:m.err}];})),
+  reciprocity:Object.fromEntries(TIME_DEFS.flatMap(([tk])=>MARK_DEFS.map(([mk])=>[tk+'×'+mk,R.recip[tk][mk]]))),
   combined:Object.fromEntries(TIME_DEFS.flatMap(([tk])=>MARK_DEFS.map(([mk])=>[tk+'×'+mk,combined(R,S,tk,mk)])))};
   download('metn-results.json',JSON.stringify(out,null,1),'application/json');}
 
 /* ---------- wiring ---------- */
 function debounce(f,ms){let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>f(...a),ms);};}
-function markAll(){state.dirty=new Set(['overview','lik','diag','raster','dyn']);}
+function markAll(){state.dirty=new Set(ALL_TABS);}
 function init(){
   buildSelects();updateLabels();
   for(const id of ['from','to','trainFrac','bins','gamma'])$(id).addEventListener('input',updateLabels);
@@ -1135,9 +1629,15 @@ function init(){
     rd.onload=()=>{try{const ds=parseEdgeList(rd.result);if(!ds.events.length)throw new Error('No events parsed. Expected columns: source target timestamp.');setDataset(ds,f.name);}catch(err){setStatus(err.message,true);}};rd.readAsText(f);});
   $('urlBtn').addEventListener('click',()=>{const u=$('url').value.trim();if(u)fetchCSV(u);});
   $('fitBtn').addEventListener('click',runPipeline);
-  for(const id of ['fTime','fMark','nSims'])$(id).addEventListener('change',()=>{state.dirty=new Set(['lik','diag','raster','dyn']);if(state.tab==='dyn'){dynPrepare();}render();});
+  for(const id of ['fTime','fMark','nSims','recip'])$(id).addEventListener('change',()=>{state.dirty=new Set(ALL_TABS);if(state.tab==='dyn'){dynPrepare();}render();});
   for(const b of document.querySelectorAll('.tabs button'))b.addEventListener('click',()=>showTab(b.dataset.tab));
-  $('delta').addEventListener('input',debounce(()=>{if(state.R)renderMotifs();},150));
+  $('mDelta').addEventListener('input',debounce(()=>{if(!state.R)return;state.dirty.add('motif');state.dirty.add('diag');render();},120));
+  for(const a of document.querySelectorAll('[data-goto]'))a.addEventListener('click',e=>{e.preventDefault();showTab(a.dataset.goto);document.querySelector('.content').scrollIntoView({behavior:'smooth',block:'start'});});
+  {const cv=$('cvMTime'),tip=$('tip');cv.addEventListener('mousemove',e=>{const G=cv._geom;if(!G){return;}const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+    const q=Math.floor((x-G.m.l)/G.cw),row=Math.floor((y-G.y0)/G.rowH);if(q<0||q>=G.nb||row<0||row>=G.rows){tip.style.display='none';return;}
+    const v=G.TL.rate[row][q];tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';
+    tip.textContent=`${MOTIF_DEFS[row][1]} · t ∈ [${tickLabel(+G.edges[q].toPrecision(4))}, ${tickLabel(+G.edges[q+1].toPrecision(4))}] · rate ${fmt(v,3)} · ${fmtInt(G.TL.counts[row][q])} of ${fmtInt(G.TL.elig[q])} events`;});
+   cv.addEventListener('mouseleave',()=>{tip.style.display='none';});}
   for(const b of $('rasMode').querySelectorAll('button'))b.addEventListener('click',()=>{state.rasMode=b.dataset.v;for(const c of $('rasMode').querySelectorAll('button'))c.setAttribute('aria-pressed',String(c===b));state.dirty.add('raster');render();});
   $('rasRows').addEventListener('input',()=>{state.dirty.add('raster');render();});$('rasSeed').addEventListener('change',()=>{state.dirty.add('raster');render();});
   $('dynPlay').addEventListener('click',dynToggle);
