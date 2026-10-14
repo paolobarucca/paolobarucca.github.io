@@ -99,7 +99,12 @@ table.t{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:
 .seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
 .mono{font-family:var(--mono);font-size:12.5px}
 .warn{color:var(--warn)}
-#dynCanvas{background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:crosshair}
+.dyngrid{display:grid;grid-template-columns:repeat(var(--np,2),minmax(0,1fr));gap:10px}
+@media(max-width:900px){.dyngrid{grid-template-columns:minmax(0,1fr)}}
+.dyngrid canvas{background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:crosshair}
+.mchips{display:inline-flex;flex-wrap:wrap;gap:6px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:3px 10px;font:500 12.5px var(--sans);cursor:pointer}
+.mchip[aria-pressed=true]{color:var(--ink);border-color:var(--ink);background:var(--accent-soft)}
 #dynStrip{margin-top:8px;cursor:pointer}
 .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:12px var(--mono);padding:4px 7px;border-radius:5px;display:none;z-index:10}
 .prose{max-width:820px}
@@ -293,7 +298,7 @@ dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{marg
    <h3 class="sec">Full model: training ΔAIC / ΔBIC</h3>
    <div class="tablewrap"><table class="t" id="tblAic"></table></div>
    <h3 class="sec">Reciprocity extension</h3>
-   <p class="secnote">Each event \(i\to j\) raises the intensity of the reverse pair: \(\lambda_{ij}(t)=c\,G_{r(i,j)}(t)\,p_{ij}+\rho\,\beta_\rho\sum_{t_k<t,\;m_k=j\to i}e^{-\beta_\rho(t-t_k)}\), so \(\rho\) is the expected number of replies per event, and \(\rho=0\) recovers the factorised model. Cells show test \(\ell\)/event, with the change versus \(\rho=0\) and the fitted \(\rho\) in brackets.</p>
+   <p class="secnote">Each event \(i\to j\) raises the intensity of the reverse pair: \(\lambda_{ij}(t)=c\,G_{r(i,j)}(t)\,p_{ij}+\rho\,\beta_\rho\sum_{t_k\lt t,\;m_k=j\to i}e^{-\beta_\rho(t-t_k)}\), so \(\rho\) is the expected number of replies per event, and \(\rho=0\) recovers the factorised model. Cells show test \(\ell\)/event, with the change versus \(\rho=0\) and the fitted \(\rho\) in brackets.</p>
    <div class="tablewrap"><table class="t" id="tblRecip"></table></div>
    <div class="tablewrap"><table class="t" id="tblRecipPar"></table></div>
    <div class="grid2">
@@ -370,15 +375,20 @@ dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{marg
   <section class="panel" id="p-dyn" role="tabpanel" hidden>
    <div class="toolbar">
     <button id="dynPlay" style="min-width:84px">Play</button>
-    <span class="seg" id="dynSrc"><button aria-pressed="true" data-v="emp">Empirical</button><button aria-pressed="false" data-v="model">Featured model</button></span>
     <label>Window <input type="range" id="dynWin" min="0" max="100" value="45"></label>
     <label>Speed <input type="range" id="dynSpeed" min="0" max="100" value="40"></label>
+    <label>Compare with <select id="dynCmp" style="width:auto"><option value="null" selected>null: Poisson × same marks</option><option value="norho">featured model without ρ</option><option value="none">nothing else</option></select></label>
     <label class="check" style="margin:0"><input type="checkbox" id="dynLabels"> Labels</label>
-    <span class="mono" id="dynTime"></span>
    </div>
-   <canvas id="dynCanvas"></canvas>
-   <canvas id="dynStrip"></canvas>
-   <p class="note">Nodes are placed by a force layout of the aggregated training network and coloured by detected block. Arrows show events in the sliding window, fading with age; node size tracks recent activity. Click or drag the strip to scrub. Best for subsets of up to about 150 nodes.</p>
+   <div class="toolbar">
+    <span>Highlight motifs:</span><span id="dynMotifs" class="mchips"></span>
+    <label>δ <input type="range" id="dynDelta" min="0" max="100" value="50"></label><span class="mono" id="dynDeltaVal"></span>
+   </div>
+   <p class="mono" id="dynTime" style="margin:0 0 8px;color:var(--muted)"></p>
+   <div class="dyngrid" id="dynGrid"></div>
+   <figure class="chart" style="margin-top:12px"><figcaption>When motifs appear: data vs models</figcaption><canvas id="dynStrip"></canvas>
+    <p class="note">Each row counts the events that complete a highlighted motif, per time bin, on one shared scale; with nothing highlighted it counts all events. The shaded band is the animation window; click or drag to scrub. Model rows are simulated on the training window and forecast after the split, conditioned on the observed training history.</p></figure>
+   <p class="note">The same nodes, positions and clock in every panel: a force layout of the aggregated training network, coloured by block. Arrows are events in the sliding window, fading with age. A highlighted arrow completes a motif: it follows, within δ, an earlier event that shares a node with it. δ is shared with the Motifs tab. Best for subsets of up to about 150 nodes.</p>
   </section>
 
   <section class="panel prose" id="p-method" role="tabpanel" hidden>
@@ -392,9 +402,9 @@ dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{marg
    <h3>Layers implemented here</h3>
    <ul>
     <li><b>Poisson</b> and <b>NHPP</b> (piecewise constant, user-set bins) global profiles.</li>
-    <li><b>Hawkes-exp</b>: \(G(t)=\mu+\eta\beta\sum_{t_k<t}e^{-\beta(t-t_k)}\), with branching ratio \(\eta\). Maximum likelihood by multi-start Nelder–Mead on \((\log\mu,\operatorname{logit}\eta,\log\beta)\), using the \(O(n)\) recursion.</li>
+    <li><b>Hawkes-exp</b>: \(G(t)=\mu+\eta\beta\sum_{t_k\lt t}e^{-\beta(t-t_k)}\), with branching ratio \(\eta\). Maximum likelihood by multi-start Nelder–Mead on \((\log\mu,\operatorname{logit}\eta,\log\beta)\), using the \(O(K)\) recursion over the \(K\) events.</li>
     <li><b>Per-sender</b> Poisson or Hawkes profiles, i.e. the partition \(E_r=\{(r,j)\}\). Here marks are conditional, \(p_{j\mid i}\).</li>
-    <li><b>Uniform</b>: \(w_{ij}\equiv\)const. <b>Edge-Poisson</b>: \(w_{ij}=N_{ij}\).</li>
+    <li><b>Uniform</b>: \(w_{ij}\equiv\text{const}\). <b>Edge-Poisson</b>: \(w_{ij}=N_{ij}\).</li>
     <li><b>ME-Strength</b>: the directed weighted configuration model \(w_{ij}=x_iy_j\), fitted by iterative proportional fitting to in/out strengths.</li>
     <li><b>Block-DWCM</b>: \(w_{ij}=x_iy_jz_{g(i)g(j)}\) on the full support, which also matches block-pair totals \(C_{ab}\). Blocks come from Louvain on the symmetrised training counts.</li>
     <li><b>Block-Mask</b>: the same constraints restricted to the support observed in training, \(M_{ij}=\mathbb 1[N_{ij}>0]\). The mask is selected from data and is not penalised in AIC.</li>
@@ -402,8 +412,8 @@ dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{marg
    <p>For out-of-sample evaluation every mark distribution is mixed with the uniform one, \(p\to(1-\kappa)p+\kappa/|S|\), so that pairs unseen in training have finite likelihood. Parameter counts are for the normalised mark distribution: DWCM has \(a_{\rm out}+a_{\rm in}-2\) free parameters (one gauge, one normalisation; \(a\) = number of active senders/receivers), block factors add the non-empty block cells minus \(2B-1\) gauges, and conditional marks drop the \(a_{\rm out}-1\) sender marginals now carried by the time layer. Per-sender time layers give senders with no training events a regularising rate \(0.5/T\) (not counted as a parameter), so test likelihoods stay finite. A Hawkes fit whose maximum is not above the Poisson likelihood, or whose kernel is longer than half the training window (\(\beta T<2\)), is reported in the Poisson limit \(\eta=0\).</p>
    <h3>Reciprocity</h3>
    <p>The factorised models cannot express that a message \(i\to j\) makes a reply \(j\to i\) more likely soon after. The extension adds a reply kernel to every pair,</p>
-   $$\lambda_{ij}(t)=c\,G_{r(i,j)}(t)\,p_{ij}+\rho\,\beta_\rho\!\!\sum_{t_k<t,\;m_k=j\to i}\!\!e^{-\beta_\rho(t-t_k)},$$
-   <p>i.e. a superposition of the MaxEnt process with a reply cascade. Every event spawns on average \(\rho\) replies on the reversed pair, with delays \(\sim{\rm Exp}(\beta_\rho)\). Replies feed back into the global Hawkes excitation, and replies to replies are allowed. The model is stable if \(c\,\eta+\rho<1\) (per-sender: \(c\max_i\eta_i+\rho<1\)). The log-likelihood keeps an \(O(n)\) recursion along pair chains,</p>
+   $$\lambda_{ij}(t)=c\,G_{r(i,j)}(t)\,p_{ij}+\rho\,\beta_\rho\!\!\sum_{t_k\lt t,\;m_k=j\to i}\!\!e^{-\beta_\rho(t-t_k)},$$
+   <p>i.e. a superposition of the MaxEnt process with a reply cascade. Every event spawns on average \(\rho\) replies on the reversed pair, with delays \(\sim{\rm Exp}(\beta_\rho)\). Replies feed back into the global Hawkes excitation, and replies to replies are allowed. The model is stable if \(c\,\eta+\rho<1\) (per-sender: \(c\max_i\eta_i+\rho<1\)). The log-likelihood keeps an \(O(K)\) recursion along pair chains,</p>
    $$\ell=\sum_k\log\!\Big(c\,G(t_k)\,p_{m_k}+\rho\beta_\rho R_{m_k}(t_k)\Big)-c\!\int\! G\,dt-\rho\sum_k\big(1-e^{-\beta_\rho(T-t_k)}\big),$$
    <p>where \(R_{ij}(t)\) is the decayed count of past \(j\to i\) events. With the global Hawkes layer, \((\mu,\eta,\beta,\rho,\beta_\rho)\) are fitted jointly by maximum likelihood. For the other layers the fitted time profile is kept and \((c,\rho,\beta_\rho)\) are profiled, so those fits are conditional on the first-stage estimate. Simulations use the exact branching representation. On a generator whose only mark effect is replying, the estimator recovers \(\rho\), \(\beta_\rho\), \(\eta\) and \(\beta\) without detectable bias. When other mark effects are present (repeats, broadcasts), \(\rho\) absorbs part of them.</p>
    <p>The additive form leaves the time × mark factorisation, but keeps the mark layer's MaxEnt weights and has a branching interpretation. The strict maximum-entropy alternative constrains \(\mathbb E\int\lambda_{ij}h_{ij}\,dt\) with \(h_{ij}(t)=\sum_{m_k=j\to i}e^{-\beta_\rho(t-t_k)}\). It gives a log-linear coupling \(\lambda_{ij}=\varphi(t)\,w_{ij}\,e^{\theta h_{ij}(t)}\), whose compensator needs numerical integration and which can explode for \(\theta>0\).</p>
@@ -966,6 +976,20 @@ function motifTimelineFD(F,delta,Tend,edges){const nb=edges.length-1,E=new Float
 function motifByNodeFD(F,m,delta,Tend,n){const sent=new Float64Array(n),hit=new Float64Array(n),lim=upperBound(F.t,Tend-delta);
   for(let k=0;k<lim;k++){sent[F.src[k]]++;if(F.fd[m][k]<=delta)hit[F.src[k]]++;}return {sent,hit};}
 
+// For every event l, a bitmask of the motif types it completes: bit m is set if some earlier event within delta
+// together with l forms motif m (l is the follow-up). Same six definitions as motifFirstDelays.
+function motifCompletionMasks(ev,delta){
+  const K=ev.length,mask=new Uint8Array(K),outL=new Map(),inL=new Map();
+  const get=(m,k)=>{let a=m.get(k);if(!a){a=[];m.set(k,a);}return a;};
+  const back=(arr,t,f)=>{for(let p=arr.length-1,c=0;p>=0&&c<400;p--,c++){const e=ev[arr[p]];if(t-e.time>delta)break;f(e);}};
+  for(let l=0;l<K;l++){const {i:c,j:d,time:t}=ev[l];let m=0;
+    back(get(outL,c),t,e=>{m|=e.j===d?1:4;});            // prior c→x: repetition if x=d, else broadcast
+    back(get(inL,d),t,e=>{if(e.i!==c)m|=8;});             // prior x→d, x≠c: convergence
+    back(get(outL,d),t,e=>{m|=e.j===c?2:32;});            // prior d→x: reciprocity if x=c, else reverse chain
+    back(get(inL,c),t,e=>{if(e.i!==d)m|=16;});            // prior x→c, x≠d: chain
+    mask[l]=m;get(outL,c).push(l);get(inL,d).push(l);}
+  return mask;}
+
 /* ---------- Diagnostics ---------- */
 function motifRates(ev,delta,Tend){
   const n=ev.length,c=[0,0,0,0];let elig=0;
@@ -984,7 +1008,7 @@ function logHist(vals,nb,lo,hi){const L0=Math.log10(lo),L1=Math.log10(hi),d=(L1-
   const x=[],y=[];for(let q=0;q<nb;q++){const a=Math.pow(10,L0+q*d),b=Math.pow(10,L0+(q+1)*d);x.push(Math.sqrt(a*b));y.push(c[q]>0?c[q]/(tot*(b-a)):NaN);}return {x,y};}
 function gaps(evs){const o=[];for(let k=1;k<evs.length;k++)o.push(evs[k].time-evs[k-1].time);return o;}
 
-if(typeof module!=='undefined')module.exports={mulberry32,seed,rand,nelderMead,parseEdgeList,PRESETS,synthNetwork,makeSubset,countMatrix,detectBlocks,ipf,buildMarkLayers,buildTimeLayers,fitAll,combined,simulateModel,motifRates,burstiness,logHist,gaps,hawkesLL,fitHawkes,hawkesCompAt,TIME_DEFS,MARK_DEFS,ksFromTaus,fitRecipAll,simulateRecip,recipLL,hawkRecipLL,pairChains,simulateWindow,MOTIF_DEFS,motifFirstDelays,motifRatesFD,motifCountsFD,motifCurvesFD,motifTimelineFD,motifByNodeFD};
+if(typeof module!=='undefined')module.exports={mulberry32,seed,rand,nelderMead,parseEdgeList,PRESETS,synthNetwork,makeSubset,countMatrix,detectBlocks,ipf,buildMarkLayers,buildTimeLayers,fitAll,combined,simulateModel,motifRates,burstiness,logHist,gaps,hawkesLL,fitHawkes,hawkesCompAt,TIME_DEFS,MARK_DEFS,ksFromTaus,fitRecipAll,simulateRecip,recipLL,hawkRecipLL,pairChains,simulateWindow,MOTIF_DEFS,motifFirstDelays,motifRatesFD,motifCountsFD,motifCurvesFD,motifTimelineFD,motifByNodeFD,motifCompletionMasks};
 
 </script>
 <script>
@@ -1176,7 +1200,7 @@ async function runPipeline(){
     if(S.n>500)throw new Error(`Subset has ${S.n} nodes. Set Top-N ≤ 500 (mark layers are dense n×n).`);
     const t0=performance.now();
     const R=await fitAll(S,fitOpts(),msg=>setStatus(msg));
-    state.S=S;state.R=R;state.simCache.clear();state.mFD.clear();state.fitSettings={subset:subsetOpts(),est:fitOpts()};dyn.layout=null;
+    state.S=S;state.R=R;state.simCache.clear();state.mFD.clear();state.fitSettings={subset:subsetOpts(),est:fitOpts()};dyn.layout=null;dyn.key='';dyn.t=NaN;
     setStatus(`Fitted ${TIME_DEFS.length}×${MARK_DEFS.length} models on ${fmtInt(S.train.length)} train / ${fmtInt(S.test.length)} test events, n = ${S.n}, in ${(performance.now()-t0).toFixed(0)} ms.`+(S.jittered?`\n${fmtInt(S.nTies)} tied timestamps jittered.`:''));
     state.dirty=new Set(ALL_TABS);render();
   }catch(e){console.error(e);setStatus(e.message||String(e),true);}
@@ -1537,7 +1561,8 @@ function renderRaster(){
 }
 
 /* ---------- Dynamics ---------- */
-const dyn={playing:false,raf:0,t:0,last:0,src:'emp',ev:null,times:null,Ta:0,Tb:1,layout:null,hover:-1,px:null,py:null,dragging:false};
+/* ---------- Dynamics: data and models side by side, with motif highlighting ---------- */
+const dyn={playing:false,raf:0,t:NaN,last:0,Ta:0,Tb:1,layout:null,hover:{p:-1,i:-1},dragging:false,panels:[],sel:new Set([1]),key:''};
 function layoutFR(S,R){
   const n=S.n,N=R.marks.Ntr,blk=R.blocks.block,B=R.blocks.B;seed(99);
   const E=[];let wmax=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const w=N[i*n+j]+N[j*n+i];if(w>0){const lw=Math.log1p(w);E.push([i,j,lw]);wmax=Math.max(wmax,lw);}}
@@ -1552,59 +1577,98 @@ function layoutFR(S,R){
   let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;for(let i=0;i<n;i++){x0=Math.min(x0,x[i]);x1=Math.max(x1,x[i]);y0=Math.min(y0,y[i]);y1=Math.max(y1,y[i]);}
   const sx=x1-x0||1,sy=y1-y0||1;for(let i=0;i<n;i++){x[i]=(x[i]-x0)/sx;y[i]=(y[i]-y0)/sy;}return {x,y};
 }
+function dynDelta(){return mDelta();}
+function modelEvents(tk,mk,rec){const S=state.S,a=getSim(tk,mk,1,rec);const b=S.test.length?forecastSim(tk,mk,rec,0):[];return a.concat(b);}
 function dynPrepare(){
-  const S=state.S,R=state.R;if(!S)return;
+  const S=state.S,R=state.R;if(!S)return;const f=featured(),cmp=$('dynCmp').value,d=dynDelta();
   if(S.n<=300&&!dyn.layout)dyn.layout=layoutFR(S,R);
-  const f=featured();
-  if(dyn.src==='emp'){dyn.ev=S.events;dyn.Ta=S.T0;dyn.Tb=S.T1;}else{dyn.ev=getSim(f.tk,f.mk,1,f.rec);dyn.Ta=S.T0;dyn.Tb=S.Ts;}
-  dyn.times=Float64Array.from(dyn.ev,e=>e.time);
-  if(!(dyn.t>=dyn.Ta&&dyn.t<=dyn.Tb))dyn.t=dyn.Ta+winWidth();
+  const key=[f.tk,f.mk,f.rec,cmp,d].join('|');
+  if(key!==dyn.key){dyn.key=key;
+    const P=[{name:'Data',short:'Data',sub:'observed',ev:S.events}];
+    P.push({name:modelName(f.tk,f.mk,f.rec),short:'Featured model',sub:'model',ev:modelEvents(f.tk,f.mk,f.rec)});
+    if(cmp==='norho'&&f.rec)P.push({name:modelName(f.tk,f.mk,false),short:'Without ρ',sub:'model',ev:modelEvents(f.tk,f.mk,false)});
+    if(cmp==='null')P.push({name:'Null: '+modelName('pois',f.mk,false),short:'Null',sub:'model',ev:modelEvents('pois',f.mk,false)});
+    for(const p of P){p.times=Float64Array.from(p.ev,e=>e.time);p.mask=motifCompletionMasks(p.ev,d);}
+    dyn.panels=P;const grid=$('dynGrid');grid.style.setProperty('--np',P.length);
+    grid.innerHTML=P.map((p,k)=>`<canvas data-p="${k}" aria-label="${p.name}"></canvas>`).join('');
+    for(const cv of grid.querySelectorAll('canvas'))attachHover(cv);}
+  dyn.Ta=S.T0;dyn.Tb=S.T1;if(!(dyn.t>=dyn.Ta&&dyn.t<=dyn.Tb))dyn.t=dyn.Ta+winWidth();
+  $('dynDeltaVal').textContent=`${fmt(d,3)} (${fmt(d/meanGap(),2)} × mean gap)`;
+  renderDynChips();
 }
+function renderDynChips(){const C=colors();$('dynMotifs').innerHTML=MOTIF_DEFS.map((D,m)=>`<button class="mchip" data-m="${m}" aria-pressed="${dyn.sel.has(m)}" title="${D[2]}"><span class="sw" style="background:${mColor(m)}"></span>${D[1]}</button>`).join('');
+  for(const b of $('dynMotifs').querySelectorAll('.mchip'))b.addEventListener('click',()=>{const m=+b.dataset.m;if(dyn.sel.has(m))dyn.sel.delete(m);else dyn.sel.add(m);renderDynChips();dynDraw();});}
 function winWidth(){return (dyn.Tb-dyn.Ta)*Math.pow(10,-3.3+2.3*(+$('dynWin').value)/100);}
 function speedFrac(){return Math.pow(10,-3.2+2*(+$('dynSpeed').value)/100);}
 function renderDyn(){dynPrepare();dynDraw();}
+function selMask(){let m=0;for(const k of dyn.sel)m|=1<<k;return m;}
+function firstType(mask){for(let m=0;m<6;m++)if(mask&(1<<m))return m;return -1;}
 function dynDraw(){
-  const S=state.S,R=state.R,cv=$('dynCanvas');if(!S||!dyn.times)return;const C=colors();
-  const w0=cv.clientWidth||700,h=Math.round(clamp(w0*0.6,320,620));const {ctx,w}=prep(cv,h);
-  if(!dyn.layout){noData(ctx,w,h,`Animated view needs ≤ 300 nodes (this subset has ${S.n}). Lower Top-N in the Subset panel.`);drawStrip();return;}
-  const n=S.n,pad=28,L=dyn.layout,px=new Float64Array(n),py=new Float64Array(n);
-  for(let i=0;i<n;i++){px[i]=pad+L.x[i]*(w-2*pad);py[i]=pad+L.y[i]*(h-2*pad);}dyn.px=px;dyn.py=py;
-  const W=winWidth(),t=dyn.t,lo=lowerBound(dyn.times,t-W),hi=upperBound(dyn.times,t);
-  const act=new Float32Array(n);for(let k=lo;k<hi;k++){act[dyn.ev[k].i]++;act[dyn.ev[k].j]++;}
-  const blk=R.blocks.block,inact=b=>R.blocks.hasInactive&&b===R.blocks.B-1;
-  const rad=i=>3+2.2*Math.sqrt(act[i]);
-  ctx.lineCap='round';
-  for(let k=Math.max(lo,hi-900);k<hi;k++){const e=dyn.ev[k];if(e.i===e.j)continue;const age=(t-e.time)/W,a=Math.max(0.05,1-age);
-    const x1=px[e.i],y1=py[e.i],x2=px[e.j],y2=py[e.j],dx=x2-x1,dy=y2-y1,d=Math.hypot(dx,dy)||1;
-    const cx=(x1+x2)/2-dy*0.12,cy=(y1+y2)/2+dx*0.12;ctx.strokeStyle=blockColor(blk[e.i],inact(blk[e.i]));ctx.globalAlpha=0.85*a;ctx.lineWidth=1.2+1.2*a;
-    ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(cx,cy,x2,y2);ctx.stroke();
-    const ux=x2-cx,uy=y2-cy,ul=Math.hypot(ux,uy)||1,r=rad(e.j)+2,tx=x2-ux/ul*r,ty=y2-uy/ul*r,ang=Math.atan2(uy,ux);
-    ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-7*Math.cos(ang-0.4),ty-7*Math.sin(ang-0.4));ctx.lineTo(tx-7*Math.cos(ang+0.4),ty-7*Math.sin(ang+0.4));ctx.closePath();ctx.fill();}
-  ctx.globalAlpha=1;
-  const showLab=$('dynLabels').checked||n<=25;ctx.font='11px '+C.sans;ctx.textAlign='left';ctx.textBaseline='middle';
-  for(let i=0;i<n;i++){const r=rad(i);ctx.beginPath();ctx.arc(px[i],py[i],r,0,7);ctx.fillStyle=blockColor(blk[i],inact(blk[i]));ctx.globalAlpha=act[i]>0?1:0.35;ctx.fill();
-    ctx.globalAlpha=1;ctx.strokeStyle=C.panel;ctx.lineWidth=1;ctx.stroke();
-    if(showLab&&(act[i]>0||n<=25)){ctx.fillStyle=C.ink;ctx.fillText(S.labels[i].slice(0,14),px[i]+r+3,py[i]);}}
-  if(dyn.hover>=0){const i=dyn.hover;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px[i],py[i],rad(i)+3,0,7);ctx.stroke();}
-  $('dynTime').textContent=`t = ${tickLabel(+t.toPrecision(5))} · window ${tickLabel(+W.toPrecision(3))} · ${hi-lo} events`;
+  const S=state.S,R=state.R;if(!S||!dyn.panels.length)return;const C=colors(),W=winWidth(),t=dyn.t,sm=selMask();
+  const canvases=$('dynGrid').querySelectorAll('canvas');const n=S.n,blk=R.blocks.block,inact=b=>R.blocks.hasInactive&&b===R.blocks.B-1;
+  let info=[];
+  dyn.panels.forEach((P,pi)=>{const cv=canvases[pi];const w0=cv.clientWidth||500,h=Math.round(clamp(w0*0.72,260,560));const {ctx,w}=prep(cv,h);
+    if(!dyn.layout){noData(ctx,w,h,`Animated view needs ≤ 300 nodes (this subset has ${n}).`);return;}
+    const pad=26,top=50,L=dyn.layout,px=new Float64Array(n),py=new Float64Array(n);
+    for(let i=0;i<n;i++){px[i]=pad+L.x[i]*(w-2*pad);py[i]=top+L.y[i]*(h-top-pad);}P.px=px;P.py=py;
+    const lo=lowerBound(P.times,t-W),hi=upperBound(P.times,t);const act=new Float32Array(n);let nmCount=0;const cntT=new Array(6).fill(0);
+    for(let k=lo;k<hi;k++){act[P.ev[k].i]++;act[P.ev[k].j]++;const mk=P.mask[k]&sm;if(mk){nmCount++;for(let m=0;m<6;m++)if(mk&(1<<m))cntT[m]++;}}
+    const rad=i=>3+2*Math.sqrt(act[i]);ctx.lineCap='round';
+    const drawArrow=(e,color,alpha,lw)=>{if(e.i===e.j)return;const x1=px[e.i],y1=py[e.i],x2=px[e.j],y2=py[e.j],dx=x2-x1,dy=y2-y1;
+      const cx=(x1+x2)/2-dy*0.12,cy=(y1+y2)/2+dx*0.12;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.globalAlpha=alpha;ctx.lineWidth=lw;
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(cx,cy,x2,y2);ctx.stroke();
+      const ux=x2-cx,uy=y2-cy,ul=Math.hypot(ux,uy)||1,r=rad(e.j)+2,tx=x2-ux/ul*r,ty=y2-uy/ul*r,ang=Math.atan2(uy,ux),s=5+lw;
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-s*Math.cos(ang-0.4),ty-s*Math.sin(ang-0.4));ctx.lineTo(tx-s*Math.cos(ang+0.4),ty-s*Math.sin(ang+0.4));ctx.closePath();ctx.fill();};
+    const start=Math.max(lo,hi-900),hl=[];
+    for(let k=start;k<hi;k++){const e=P.ev[k],a=Math.max(0.06,1-(t-e.time)/W),mk=P.mask[k]&sm;
+      if(mk){hl.push([k,a,mk]);continue;}
+      drawArrow(e,sm?C.faint:blockColor(blk[e.i],inact(blk[e.i])),(sm?0.35:0.85)*a,1+1.1*a);}
+    for(const [k,a,mk] of hl)drawArrow(P.ev[k],mColor(firstType(mk)),Math.max(0.35,a),1.8+1.6*a);
+    ctx.globalAlpha=1;const showLab=$('dynLabels').checked||n<=25;ctx.font='11px '+C.sans;ctx.textAlign='left';ctx.textBaseline='middle';
+    for(let i=0;i<n;i++){const r=rad(i);ctx.beginPath();ctx.arc(px[i],py[i],r,0,7);ctx.fillStyle=blockColor(blk[i],inact(blk[i]));ctx.globalAlpha=act[i]>0?1:0.3;ctx.fill();
+      ctx.globalAlpha=1;ctx.strokeStyle=C.panel;ctx.lineWidth=1;ctx.stroke();if(showLab&&(act[i]>0||n<=25)){ctx.fillStyle=C.ink;ctx.fillText(S.labels[i].slice(0,14),px[i]+r+3,py[i]);}}
+    if(dyn.hover.i>=0){const i=dyn.hover.i;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px[i],py[i],rad(i)+3,0,7);ctx.stroke();}
+    // header: name on the first line, phase and counts on the second
+    const phase=P.sub==='observed'?(t<=S.Ts?'training window':'test window'):(t<=S.Ts?'simulated':'forecast');
+    ctx.textBaseline='alphabetic';ctx.textAlign='left';ctx.fillStyle=C.ink;ctx.font='600 13px '+C.sans;
+    let nm=P.name;while(nm.length>4&&ctx.measureText(nm).width>w-20)nm=nm.slice(0,-2);if(nm!==P.name)nm=nm.slice(0,-1)+'…';ctx.fillText(nm,10,18);
+    ctx.font='12px '+C.sans;ctx.fillStyle=C.muted;
+    ctx.fillText(`${phase} · ${hi-lo} events`+(sm?` · ${nmCount} motifs`:''),10,36);
+    if(sm){let x=w-10;ctx.textAlign='right';ctx.font='11px '+C.sans;for(const m of [...dyn.sel].sort().reverse()){const s=` ${cntT[m]}`;ctx.fillStyle=C.ink;ctx.fillText(s,x,36);x-=ctx.measureText(s).width;ctx.fillStyle=mColor(m);ctx.fillRect(x-9,28,8,8);x-=14;}}
+    ctx.textAlign='left';info.push(hi-lo);});
+  $('dynTime').textContent=`t = ${tickLabel(+dyn.t.toPrecision(5))} · window ${tickLabel(+W.toPrecision(3))} · ${dyn.t<=S.Ts?'training window':'test window: model panels forecast from the training fit'}`;
   drawStrip();
 }
 function drawStrip(){
-  const cv=$('dynStrip'),{ctx,w,h}=prep(cv,64),C=colors();if(!dyn.times)return;
-  const nb=Math.max(40,Math.min(300,Math.floor(w/3))),T0=dyn.Ta,T1=dyn.Tb,bw=(T1-T0)/nb,cnt=new Float64Array(nb);
-  for(const t of dyn.times){const q=Math.floor((t-T0)/bw);if(q>=0&&q<nb)cnt[q]++;}let mx=0;for(const c of cnt)mx=Math.max(mx,c);
-  const X=t=>(t-T0)/(T1-T0)*w;ctx.fillStyle=C.s[1];ctx.globalAlpha=0.55;
-  for(let q=0;q<nb;q++){const hh=mx?cnt[q]/mx*(h-14):0;ctx.fillRect(q*w/nb,h-hh,Math.max(1,w/nb-0.5),hh);}ctx.globalAlpha=1;
-  if(dyn.src==='emp'&&state.S.test.length){ctx.strokeStyle=C.muted;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(X(state.S.Ts),0);ctx.lineTo(X(state.S.Ts),h);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=C.muted;ctx.font='10px '+C.sans;ctx.fillText('test',X(state.S.Ts)+4,10);}
-  const W=winWidth();ctx.fillStyle=C.accent;ctx.globalAlpha=0.18;ctx.fillRect(X(dyn.t-W),0,Math.max(2,X(dyn.t)-X(dyn.t-W)),h);ctx.globalAlpha=1;
-  ctx.fillStyle=C.accent;ctx.fillRect(X(dyn.t)-1,0,2,h);
+  const S=state.S,C=colors(),cv=$('dynStrip');if(!dyn.panels.length)return;const rows=dyn.panels.length,rowH=38,top=6;const h=top+rows*rowH+30;const {ctx,w}=prep(cv,h);
+  const m={l:112,r:10},pw=w-m.l-m.r,nb=Math.max(40,Math.min(160,Math.floor(pw/5))),T0=dyn.Ta,T1=dyn.Tb,bw=(T1-T0)/nb,X=t=>m.l+(t-T0)/(T1-T0)*pw,sm=selMask();
+  const H=dyn.panels.map(P=>{const c=Array.from({length:6},()=>new Float64Array(nb)),tot=new Float64Array(nb);
+    for(let k=0;k<P.ev.length;k++){const q=Math.min(nb-1,Math.floor((P.times[k]-T0)/bw));if(q<0)continue;tot[q]++;const mk=P.mask[k]&sm;if(mk){const f=firstType(mk);c[f][q]++;}}return {c,tot};});
+  let mx=0;for(const r of H)for(let q=0;q<nb;q++){let s=0;if(sm){for(const cc of r.c)s+=cc[q];}else s=r.tot[q];mx=Math.max(mx,s);}
+  ctx.font='12px '+C.sans;ctx.textBaseline='middle';
+  dyn.panels.forEach((P,pi)=>{const y0=top+pi*rowH,y1=y0+rowH-8;ctx.fillStyle=pi%2?C.panel:C.grid;ctx.globalAlpha=0.5;ctx.fillRect(m.l,y0,pw,rowH-4);ctx.globalAlpha=1;
+    ctx.fillStyle=C.ink;ctx.textAlign='right';ctx.fillText(P.short,m.l-8,y0+(rowH-4)/2);
+    for(let q=0;q<nb;q++){let yb=y1;const x=m.l+q*pw/nb,bwp=Math.max(1,pw/nb-1);
+      if(sm){for(let tt=0;tt<6;tt++){const v=H[pi].c[tt][q];if(!v)continue;const hh=v/mx*(rowH-12);ctx.fillStyle=mColor(tt);ctx.fillRect(x,yb-hh,bwp,hh);yb-=hh;}}
+      else{const hh=mx?H[pi].tot[q]/mx*(rowH-12):0;ctx.fillStyle=C.faint;ctx.fillRect(x,yb-hh,bwp,hh);}}});
+  const yb=top+rows*rowH;ctx.strokeStyle=C.muted;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(X(S.Ts),top);ctx.lineTo(X(S.Ts),yb-4);ctx.stroke();ctx.setLineDash([]);
+  const W=winWidth();ctx.fillStyle=C.accent;ctx.globalAlpha=0.16;ctx.fillRect(X(dyn.t-W),top,Math.max(2,X(dyn.t)-X(dyn.t-W)),yb-top-4);ctx.globalAlpha=1;ctx.fillRect(X(dyn.t)-1,top,2,yb-top-4);
+  ctx.fillStyle=C.muted;ctx.textAlign='center';ctx.textBaseline='top';for(const v of linTicks(T0,T1,8)){const px=X(v);if(px<m.l||px>m.l+pw)continue;ctx.fillRect(px,yb-4,1,4);ctx.fillText(tickLabel(v),px,yb+2);}
+  ctx.textAlign='left';ctx.fillText('test →',X(S.Ts)+4,yb+2);
+  cv._geom={m,pw,T0,T1};
 }
+function attachHover(cv){const tip=$('tip');
+  cv.addEventListener('mousemove',e=>{const P=dyn.panels[+cv.dataset.p];if(!P||!P.px)return;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=-1,bd=144;
+    for(let i=0;i<P.px.length;i++){const d=(P.px[i]-mx)**2+(P.py[i]-my)**2;if(d<bd){bd=d;best=i;}}
+    if(best!==dyn.hover.i){dyn.hover={p:+cv.dataset.p,i:best};if(!dyn.playing)dynDraw();}
+    if(best>=0){const S=state.S,R=state.R;tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';
+      tip.textContent=`${S.labels[best]} · block ${R.blocks.block[best]+1} · out ${R.marks.sout[best]} / in ${R.marks.sin[best]} (train)`;}else tip.style.display='none';});
+  cv.addEventListener('mouseleave',()=>{tip.style.display='none';dyn.hover={p:-1,i:-1};if(!dyn.playing)dynDraw();});}
 function dynLoop(ts){if(!dyn.playing)return;const dt=dyn.last?Math.min(0.1,(ts-dyn.last)/1000):0;dyn.last=ts;
   dyn.t+=dt*speedFrac()*(dyn.Tb-dyn.Ta);if(dyn.t>dyn.Tb)dyn.t=dyn.Ta+winWidth();dynDraw();dyn.raf=requestAnimationFrame(dynLoop);}
 function dynStop(){dyn.playing=false;cancelAnimationFrame(dyn.raf);dyn.last=0;const b=$('dynPlay');if(b)b.textContent='Play';}
 function dynToggle(){if(!state.S)return;if(dyn.playing){dynStop();return;}dynPrepare();dyn.playing=true;dyn.last=0;$('dynPlay').textContent='Pause';dyn.raf=requestAnimationFrame(dynLoop);}
-function stripSeek(ev){const r=$('dynStrip').getBoundingClientRect();const fr=clamp((ev.clientX-r.left)/r.width,0,1);dyn.t=dyn.Ta+fr*(dyn.Tb-dyn.Ta);dynDraw();}
+function stripSeek(ev){const cv=$('dynStrip'),G=cv._geom;if(!G)return;const r=cv.getBoundingClientRect();const fr=clamp((ev.clientX-r.left-G.m.l)/G.pw,0,1);dyn.t=dyn.Ta+fr*(dyn.Tb-dyn.Ta);dynDraw();}
 
 /* ---------- downloads ---------- */
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
@@ -1641,17 +1705,12 @@ function init(){
   for(const b of $('rasMode').querySelectorAll('button'))b.addEventListener('click',()=>{state.rasMode=b.dataset.v;for(const c of $('rasMode').querySelectorAll('button'))c.setAttribute('aria-pressed',String(c===b));state.dirty.add('raster');render();});
   $('rasRows').addEventListener('input',()=>{state.dirty.add('raster');render();});$('rasSeed').addEventListener('change',()=>{state.dirty.add('raster');render();});
   $('dynPlay').addEventListener('click',dynToggle);
-  for(const b of $('dynSrc').querySelectorAll('button'))b.addEventListener('click',()=>{dyn.src=b.dataset.v;for(const c of $('dynSrc').querySelectorAll('button'))c.setAttribute('aria-pressed',String(c===b));dyn.t=NaN;dynPrepare();dynDraw();});
+  $('dynCmp').addEventListener('change',()=>{if(state.R){dynPrepare();dynDraw();}});
+  $('dynDelta').addEventListener('input',debounce(()=>{$('mDelta').value=$('dynDelta').value;if(!state.R)return;state.dirty.add('motif');state.dirty.add('diag');dynPrepare();dynDraw();},120));
+  $('mDelta').addEventListener('input',()=>{$('dynDelta').value=$('mDelta').value;});
   for(const id of ['dynWin','dynSpeed','dynLabels'])$(id).addEventListener('input',()=>{if(!dyn.playing)dynDraw();});
   const strip=$('dynStrip');strip.addEventListener('pointerdown',e=>{dyn.dragging=true;strip.setPointerCapture(e.pointerId);stripSeek(e);});
   strip.addEventListener('pointermove',e=>{if(dyn.dragging)stripSeek(e);});strip.addEventListener('pointerup',()=>dyn.dragging=false);
-  const cv=$('dynCanvas'),tip=$('tip');
-  cv.addEventListener('mousemove',e=>{if(!dyn.px)return;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=-1,bd=144;
-    for(let i=0;i<dyn.px.length;i++){const d=(dyn.px[i]-mx)**2+(dyn.py[i]-my)**2;if(d<bd){bd=d;best=i;}}
-    if(best!==dyn.hover){dyn.hover=best;if(!dyn.playing)dynDraw();}
-    if(best>=0){const R=state.R,S=state.S;tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';
-      tip.textContent=`${S.labels[best]} · block ${R.blocks.block[best]+1} · out ${R.marks.sout[best]} / in ${R.marks.sin[best]} (train)`;}else tip.style.display='none';});
-  cv.addEventListener('mouseleave',()=>{tip.style.display='none';dyn.hover=-1;if(!dyn.playing)dynDraw();});
   window.addEventListener('resize',debounce(()=>{markAll();render();},200));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{markAll();render();});
   loadSource();
