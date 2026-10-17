@@ -1,54 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-title-en="Comedy · Paolo Barucca" data-title-it="Comedy · Paolo Barucca">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Comedy · Paolo Barucca</title>
+  <script>
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'it' || q === 'en') localStorage.setItem('lang', q);
+      var l = localStorage.getItem('lang') || ((navigator.language || '').slice(0, 2) === 'it' ? 'it' : 'en');
+      document.documentElement.dataset.lang = l;
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="lang.js" defer></script>
 </head>
 <body>
 <header class="site">
   <nav class="nav">
     <a class="name" href="index.html">Paolo Barucca</a>
-    <a href="research.html">Research</a>
-    <a href="teaching.html">Teaching</a>
-    <a href="consultancy.html">Consultancy</a>
+    <a href="research.html"><span class="en">Research</span><span class="it">Ricerca</span></a>
+    <a href="teaching.html"><span class="en">Teaching</span><span class="it">Didattica</span></a>
+    <a href="outreach.html"><span class="en">Outreach</span><span class="it">Divulgazione</span></a>
+    <a href="consultancy.html"><span class="en">Consultancy</span><span class="it">Consulenza</span></a>
     <a href="comedy.html" aria-current="page">Comedy</a>
-    <a href="links.html">Links</a>
-    <a href="contact.html">Contact</a>
+    <a href="writing.html"><span class="en">Writing</span><span class="it">Scrittura</span></a>
+    <button class="lang" type="button">IT</button>
   </nav>
 </header>
 
 <main>
-  <h1>Comedy &amp; outreach</h1>
-  <p class="lead">Science, but <em>coatta</em>.</p>
+<h1>Comedy</h1>
+  <p class="lead"><span class="en">Science, but <em>coatta</em>. Stand-up and shows in Italian and English.</span><span class="it">La scienza, ma <em>coatta</em>. Stand-up e spettacoli in italiano e in inglese.</span></p>
+  <p><span class="en">Since 2015 I’ve been making science memes and comedy as La Scienza Coatta, taking physics, chemistry and complexity out of the lecture hall and into Roman slang. On stage I’m</span><span class="it">Dal 2015 faccio meme e comicità scientifica come La Scienza Coatta, portando fisica, chimica e complessità fuori dall’aula e dentro il romanesco. Sul palco sono</span> <a href="https://www.instagram.com/the_standup_scientist">The Standup Scientist</a>.</p>
 
-  <p>Since 2015 I've been making science memes and comedy as <a href="http://linktr.ee/LaScienzaCoatta">La Scienza Coatta</a> — taking physics, chemistry and complexity out of the lecture hall and into Roman slang. These days I also do stand-up as <a href="https://www.instagram.com/the_standup_scientist">The Standup Scientist</a>.</p>
-
-  <div class="grid">
-    <a class="card" href="https://linktr.ee/pestocomedyclub"><h3>🎤 Pesto Comedy</h3><p>Upcoming shows and tickets.</p></a>
-    <a class="card" href="https://www.instagram.com/the_standup_scientist"><h3>🎬 The Standup Scientist</h3><p>Reels and acts on Instagram.</p></a>
-    <a class="card" href="http://linktr.ee/LaScienzaCoatta"><h3>😂 La Scienza Coatta</h3><p>Memes and shows.</p></a>
+  <div class="cols">
+    <section>
+      <h2><span class="en">In Italian</span><span class="it">In italiano</span></h2>
+    <div class="entry">
+      <h3><a href="http://linktr.ee/LaScienzaCoatta">La Scienza Coatta</a></h3>
+      <p><span class="en">Memes, books and live shows.</span><span class="it">Meme, libri e spettacoli dal vivo.</span></p>
+      <p><span class="tag">Pe’ dilla tutta Live</span></p>
+    </div>
+    <div class="entry">
+      <h3><a href="https://linktr.ee/pestocomedyclub">Pesto Comedy</a></h3>
+      <p><span class="en">Comedy club with open mic nights and shows.</span><span class="it">Comedy club con serate open mic e spettacoli.</span></p>
+      <p><span class="tag">Open mic</span><span class="tag">Show</span></p>
+    </div>
+    <div class="entry">
+      <h3><a href="https://www.youtube.com/playlist?list=PLzxB3KYt8D769NOUo47Qo8ZowE75LkETW">Effetto Farfalla</a></h3>
+      <p><span class="en">The series on YouTube.</span><span class="it">La serie su YouTube.</span></p>
+    </div>
+    <div class="entry">
+      <h3>Cosmicomedy Roma</h3>
+      <p><span class="tag"><span class="en">Coming soon</span><span class="it">Prossimamente</span></span></p>
+    </div>
+    <div class="entry">
+      <h3>La Scienza Coatta a Londra</h3>
+      <p><span class="tag"><span class="en">Coming soon</span><span class="it">Prossimamente</span></span></p>
+    </div>
+    </section>
+    <section>
+      <h2><span class="en">In English</span><span class="it">In inglese</span></h2>
+    <div class="entry">
+      <h3>Italian-ish</h3>
+      <p><span class="en">A show with Reeta Em at the Edinburgh Fringe, at Canongait for PBH’s Free Fringe.</span><span class="it">Uno spettacolo con Reeta Em all’Edinburgh Fringe, al Canongait per il PBH’s Free Fringe.</span></p>
+      <p><span class="tag">Edinburgh Fringe</span></p>
+      <p class="sub"><a href="https://www.skiddle.com/whats-on/London/The-Betsey-Trotwood/Jester-Jesters-ITALIAN-ISH-Work-in-Progress/41815528/"><span class="en">Work in progress at The Betsey Trotwood, London, 13 July 2026</span><span class="it">Anteprima al Betsey Trotwood, Londra, 13 luglio 2026</span></a></p>
+    </div>
+    </section>
   </div>
 
-  <h2>Books</h2>
-  <div class="grid">
-    <a class="card" href="https://momoedizioni.it/catalogo/manualetto-di-fisica-coatta/"><h3>Manualetto di Fisica Coatta</h3><p>Momo, 2024</p></a>
-    <a class="card" href="https://momoedizioni.it/catalogo/chimica-coatta-la/"><h3>Chimica Coatta</h3><p>Momo, 2022</p></a>
-    <a class="card" href="https://www.garzanti.it/libri/paolo-barucca-la-scienza-coatta-9788811602576/"><h3>La Scienza Coatta</h3><p>Garzanti, 2018</p></a>
-  </div>
+  <h2><span class="en">From the shows</span><span class="it">Dagli spettacoli</span></h2>
+  <p><span class="en">The opening of the show, translated from Roman dialect. Switch to IT at the top for the original only.</span><span class="it">L’inizio dello spettacolo. Passa a EN in alto per la traduzione in inglese.</span></p>
+  <article class="entry" id="spqr">
+    <h3>SPQR</h3>
+    <p class="sub">Pe’ dilla tutta Live · Fondazione GIMEMA, Roma</p>
+    <p class="sub"><span class="en">Written by Letizia Scacchi, Paolo Barucca and Sandro Iannaccone. Read by Francesco Pompilio and Letizia Scacchi.</span><span class="it">Testi di Letizia Scacchi, Paolo Barucca e Sandro Iannaccone. Letture di Francesco Pompilio e Letizia Scacchi.</span></p>
+    <div class="it"><blockquote class="incipit" lang="it">
+<p>Roma, trecento anni prima de Cristo. Sta a succede un macello: piano piano se stamo a pijà tutto er Mediterraneo e l'Oriente, e tra poco rimettemo a posto pure quei laziali de cartagginesi, je famo abbassà 'a cresta. Insomma se stamo a preparà a diventà Caput Mundi. Sennonché fra noi e 'a gloria ce se mette Yersinia pestis, un batterio piccolo ma 'nfame, tipo Brunetta. Che te combina sto bacillo de Yersinia? Te fa scoppià n'epidemia de peste che la metà basta, che te fa morì 'na cifra de gente, patrizi e plebei, giallorossi e biancocelesti.</p>
+    </blockquote></div>
+    <div class="en">
+      <blockquote class="incipit">
+<p>Rome, three hundred years before Christ. All hell is breaking loose: bit by bit we’re grabbing the whole Mediterranean and the East, and any minute now we’ll sort out those Lazio-supporting Carthaginians too and take them down a peg. Basically, we’re getting ready to become Caput Mundi. Except that between us and glory stands Yersinia pestis, a bacterium that’s tiny but nasty, like Brunetta. And what does this Yersinia bacillus do to you? It sets off a plague epidemic like you wouldn’t believe, killing loads of people: patricians and plebeians, Roma fans and Lazio fans alike.</p>
+      </blockquote>
+      <details class="orig"><summary>Read the original Italian</summary><blockquote class="incipit" lang="it">
+<p>Roma, trecento anni prima de Cristo. Sta a succede un macello: piano piano se stamo a pijà tutto er Mediterraneo e l'Oriente, e tra poco rimettemo a posto pure quei laziali de cartagginesi, je famo abbassà 'a cresta. Insomma se stamo a preparà a diventà Caput Mundi. Sennonché fra noi e 'a gloria ce se mette Yersinia pestis, un batterio piccolo ma 'nfame, tipo Brunetta. Che te combina sto bacillo de Yersinia? Te fa scoppià n'epidemia de peste che la metà basta, che te fa morì 'na cifra de gente, patrizi e plebei, giallorossi e biancocelesti.</p>
+      </blockquote></details>
+    </div>
+  </article>
 
-  <h2>Shows and public events</h2>
-  <ul class="plain">
-    <li>Il Sentiero dei Sistemi Complessi <span>· COMPENG2026, July 2026</span></li>
-    <li><a href="https://ccs25.cssociety.org/public-dissemination-event/">La complessità è semplice?</a> <span>· Conference on Complex Systems, September 2025</span></li>
-  </ul>
-
-  <p>Want a show or talk at your event? <a href="contact.html?topic=comedy">Get in touch</a>.</p>
+  <p><span class="en">The La Scienza Coatta books and stories are on the</span><span class="it">I libri e i racconti della Scienza Coatta sono nella pagina</span> <a href="writing.html"><span class="en">Writing</span><span class="it">Scrittura</span></a><span class="en"> page.</span><span class="it">.</span></p>
+  <p><span class="en">Want a show at your event?</span><span class="it">Vuoi uno spettacolo al tuo evento?</span> <a href="contact.html?topic=comedy"><span class="en">Get in touch</span><span class="it">Scrivimi</span></a>.</p>
 </main>
 
-<footer>© Paolo Barucca · <a href="contact.html">Get in touch</a></footer>
+<footer>© Paolo Barucca · <a href="contact.html"><span class="en">Get in touch</span><span class="it">Contatti</span></a> · <a href="links.html">Links</a></footer>
 </body>
 </html>

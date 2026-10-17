@@ -1,65 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-title-en="Consultancy · Paolo Barucca" data-title-it="Consulenza · Paolo Barucca">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Consultancy · Paolo Barucca</title>
+  <script>
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'it' || q === 'en') localStorage.setItem('lang', q);
+      var l = localStorage.getItem('lang') || ((navigator.language || '').slice(0, 2) === 'it' ? 'it' : 'en');
+      document.documentElement.dataset.lang = l;
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="lang.js" defer></script>
 </head>
 <body>
 <header class="site">
   <nav class="nav">
     <a class="name" href="index.html">Paolo Barucca</a>
-    <a href="research.html">Research</a>
-    <a href="teaching.html">Teaching</a>
-    <a href="consultancy.html" aria-current="page">Consultancy</a>
+    <a href="research.html"><span class="en">Research</span><span class="it">Ricerca</span></a>
+    <a href="teaching.html"><span class="en">Teaching</span><span class="it">Didattica</span></a>
+    <a href="outreach.html"><span class="en">Outreach</span><span class="it">Divulgazione</span></a>
+    <a href="consultancy.html" aria-current="page"><span class="en">Consultancy</span><span class="it">Consulenza</span></a>
     <a href="comedy.html">Comedy</a>
-    <a href="links.html">Links</a>
-    <a href="contact.html">Contact</a>
+    <a href="writing.html"><span class="en">Writing</span><span class="it">Scrittura</span></a>
+    <button class="lang" type="button">IT</button>
   </nav>
 </header>
 
 <main>
-  <h1>Explainable Complexity</h1>
-  <p class="lead">R&amp;D, consulting, training and events.</p>
+<h1><span class="en">Consultancy</span><span class="it">Consulenza</span></h1>
+  <p class="lead"><span class="en">Explainable Complexity: bringing research and teaching into companies and institutions.</span><span class="it">Explainable Complexity: portare ricerca e didattica dentro aziende e istituzioni.</span></p>
 
-  <h2>R&amp;D</h2>
-  <p>We develop statistical and machine learning models that must fit data while respecting constraints — liquidity or no-arbitrage constraints in portfolio construction, balance-sheet constraints in economic activity, physical constraints in spatial systems, and network constraints in socio-economic and financial systems.</p>
-  <p><a href="contact.html?topic=rd"><strong>Find out about our models →</strong></a></p>
-
-  <h2>Consulting</h2>
-  <p>We navigate and simplify complex system dynamics, co-designing models that disentangle data dependencies and break complex problems into simple, generalisable and scalable models using state-of-the-art statistical, physical and machine learning tools.</p>
-  <p><a href="contact.html?topic=consulting"><strong>Schedule a first chat →</strong></a></p>
-
-  <h2>Training</h2>
-  <p>Tailored high-level courses, in-depth workshops and hands-on labs that help institutions and companies of every size access the best current methods, speed up their own processes and keep up with recent scientific advances.</p>
-  <p><a href="contact.html?topic=training"><strong>Start your training →</strong></a></p>
-
-  <h2>Events</h2>
-  <p>Entertaining activities that engage people, teams, communities and stakeholders beyond the purely technical — helping them ask the right questions, listen to each other, and turn answers into real change.</p>
-  <p><a href="contact.html?topic=events"><strong>Enjoy the show →</strong></a></p>
-
-  <h2 id="experiments">Experiments</h2>
-  <p>Interactive experiments we run in workshops, lectures and events. The room becomes the system and the model appears in front of everyone. Each one runs in the browser, with nothing to install.</p>
+  <h2><span class="en">Training</span><span class="it">Formazione</span></h2>
+  <p><span class="en">Tailored courses, in-depth workshops and hands-on labs drawn from my research and teaching: machine learning in finance, algorithmic trading, complex networks and statistical physics for learning. They help institutions and companies of every size access current methods and keep up with recent scientific advances.</span><span class="it">Corsi su misura, workshop di approfondimento e laboratori pratici nati dalla mia ricerca e dalla mia didattica: machine learning in finanza, trading algoritmico, reti complesse e fisica statistica dell’apprendimento. Aiutano istituzioni e aziende di ogni dimensione ad accedere ai metodi attuali e a restare al passo con la ricerca.</span></p>
+  <p><span class="en">Sessions build on the interactive research tools:</span><span class="it">Le sessioni si basano sugli strumenti interattivi della ricerca:</span></p>
   <div class="grid">
-    <a class="card" href="twothirds.html">
-      <h3>Two-thirds of the average</h3>
-      <p>Everyone picks a number, and the closest to two-thirds of the average wins. Play two rounds and see how many steps ahead the crowd reasons.</p>
-    </a>
-    <a class="card" href="lattice.html">
-      <h3>The 7 × 7 lattice</h3>
-      <p>Forty-nine people, one spin each. Watch Ising, voter and Hopfield dynamics play out on the room itself.</p>
-    </a>
-    <a class="card" href="metn.html">
-      <h3>Temporal network explorer</h3>
-      <p>Fit and compare maximum-entropy temporal network models on synthetic data or your own edge lists, with diagnostics and animated dynamics.</p>
-    </a>
+    <a class="card" href="hessian.html"><h3><span class="en">Hessian eigenvector analytics</span><span class="it">Analisi degli autovettori dell’Hessiana</span></h3><p><span class="en">See how optimisers shape the curvature of a network while it trains.</span><span class="it">Guarda come gli ottimizzatori plasmano la curvatura di una rete durante l’addestramento.</span></p></a>
+    <a class="card" href="metn.html"><h3><span class="en">Temporal network explorer</span><span class="it">Esploratore di reti temporali</span></h3><p><span class="en">Fit and compare temporal network models on your own interaction data.</span><span class="it">Stima e confronta modelli di reti temporali sui tuoi dati di interazione.</span></p></a>
+    <a class="card" href="pinn.html"><h3><span class="en">Arbitrage-free option surfaces with DC-PINNs</span><span class="it">Superfici di opzioni senza arbitraggio con DC-PINN</span></h3><p><span class="en">Turn noisy option marks into a smooth, arbitrage-free price surface with clean Greeks.</span><span class="it">Trasforma quotazioni rumorose in una superficie di prezzi liscia, senza arbitraggio e con greche pulite.</span></p></a>
   </div>
-  <p><a href="contact.html?topic=events"><strong>Bring an experiment to your team →</strong></a></p>
+  <p><a href="contact.html?topic=training"><strong><span class="en">Plan a training session</span><span class="it">Organizza una formazione</span></strong></a></p>
+
+  <h2><span class="en">Product co-development with Neatryx</span><span class="it">Co-sviluppo di prodotti con Neatryx</span></h2>
+  <p><span class="en">Neatryx Lab at UCL builds Neatryx Core, an open-source engine for pricing, risk and XVA built on JAX and automatic differentiation. With Neatryx I co-develop products based on physics-informed neural networks (PINNs) for finance, turning research on fast, constraint-aware pricing and calibration into tools that run in production.</span><span class="it">Neatryx Lab, a UCL, sviluppa Neatryx Core, un motore open source per pricing, rischio e XVA basato su JAX e differenziazione automatica. Con Neatryx co-sviluppo prodotti basati su reti neurali informate dalla fisica (PINN) per la finanza, trasformando la ricerca su pricing e calibrazione rapidi e rispettosi dei vincoli in strumenti pronti per la produzione.</span></p>
+  <p><a href="https://neutryx-lab.github.io/core.html" rel="noopener"><strong><span class="en">Visit Neatryx Core</span><span class="it">Visita Neatryx Core</span></strong></a></p>
+
+  <p class="sub"><span class="en">Other R&amp;D or consulting questions?</span><span class="it">Altre richieste di R&amp;S o consulenza?</span> <a href="contact.html?topic=consulting"><span class="en">Get in touch</span><span class="it">Scrivimi</span></a>.</p>
 </main>
 
-<footer>© Paolo Barucca · <a href="contact.html">Get in touch</a></footer>
+<footer>© Paolo Barucca · <a href="contact.html"><span class="en">Get in touch</span><span class="it">Contatti</span></a> · <a href="links.html">Links</a></footer>
 </body>
 </html>

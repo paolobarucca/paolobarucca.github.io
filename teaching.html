@@ -1,12 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-title-en="Teaching · Paolo Barucca" data-title-it="Didattica · Paolo Barucca">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Teaching · Paolo Barucca</title>
+  <script>
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'it' || q === 'en') localStorage.setItem('lang', q);
+      var l = localStorage.getItem('lang') || ((navigator.language || '').slice(0, 2) === 'it' ? 'it' : 'en');
+      document.documentElement.dataset.lang = l;
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="lang.js" defer></script>
   <style>
     .toc { display: flex; flex-wrap: wrap; gap: .4rem .6rem; margin: 1.2rem 0 0; padding: 0; list-style: none; }
     .toc a { display: inline-block; padding: .3rem .8rem; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: .9rem; }
@@ -32,64 +41,89 @@
 <header class="site">
   <nav class="nav">
     <a class="name" href="index.html">Paolo Barucca</a>
-    <a href="research.html">Research</a>
-    <a href="teaching.html" aria-current="page">Teaching</a>
-    <a href="consultancy.html">Consultancy</a>
+    <a href="research.html"><span class="en">Research</span><span class="it">Ricerca</span></a>
+    <a href="teaching.html" aria-current="page"><span class="en">Teaching</span><span class="it">Didattica</span></a>
+    <a href="outreach.html"><span class="en">Outreach</span><span class="it">Divulgazione</span></a>
+    <a href="consultancy.html"><span class="en">Consultancy</span><span class="it">Consulenza</span></a>
     <a href="comedy.html">Comedy</a>
-    <a href="links.html">Links</a>
-    <a href="contact.html">Contact</a>
+    <a href="writing.html"><span class="en">Writing</span><span class="it">Scrittura</span></a>
+    <button class="lang" type="button">IT</button>
   </nav>
 </header>
 
 <main>
-  <h1>Teaching</h1>
-  <p class="lead">I lead two postgraduate modules in the Department of Computer Science at UCL, teach doctoral courses on the statistical physics of learning, and supervise industry projects through UCL IXN.</p>
+<h1><span class="en">Teaching</span><span class="it">Didattica</span></h1>
+  <p class="lead"><span class="en">I teach a doctoral course on the statistical physics of learning, lead two postgraduate modules in the Department of Computer Science at UCL, and supervise industry projects through UCL IXN.</span><span class="it">Tengo un corso di dottorato sulla fisica statistica dell’apprendimento, sono responsabile di due moduli magistrali al Department of Computer Science di UCL e seguo progetti con l’industria tramite UCL IXN.</span></p>
+  <p class="it sub">I corsi si svolgono in inglese, quindi le schede dei corsi qui sotto sono in inglese.</p>
 
   <ul class="toc">
-    <li><a href="#modules">UCL modules</a></li>
-    <li><a href="#masters">Master's programmes</a></li>
-    <li><a href="#phd">PhD teaching</a></li>
-    <li><a href="#ixn">UCL IXN projects</a></li>
-    <li><a href="#supervision">Supervision</a></li>
+    <li><a href="#phd"><span class="en">PhD course</span><span class="it">Corso di dottorato</span></a></li>
+    <li><a href="#masters"><span class="en">Master’s programmes</span><span class="it">Master</span></a></li>
+    <li><a href="#comp0162">Advanced ML in Finance</a></li>
+    <li><a href="#comp0051">Algorithmic Trading</a></li>
+    <li><a href="#cards"><span class="en">Course previews</span><span class="it">Anteprime dei corsi</span></a></li>
+    <li><a href="#ixn">UCL IXN</a></li>
+    <li><a href="#supervision"><span class="en">Supervision</span><span class="it">Supervisione</span></a></li>
   </ul>
 
-  <!-- ============ UCL MODULES ============ -->
-  <h2 id="modules">UCL modules</h2>
-  <p>Both modules are 15-credit, Level 7 (postgraduate) modules taught in person in Term 2, and are assessed half through in-class activity and half through coursework.</p>
-
-  <article class="course" id="comp0051">
-    <h3>Algorithmic Trading</h3>
+  <!-- ============ PHD ============ -->
+  <h2 id="phd"><span class="en">PhD course</span><span class="it">Corso di dottorato</span></h2>
+  <article class="course" id="statphys-ml">
+    <h3>Statistical Physics for Machine Learning</h3>
+    <p class="subtitle">Phase transitions, inference and high-dimensional landscapes</p>
     <ul class="meta">
-      <li>COMP0051</li>
-      <li>15 credits · Level 7</li>
-      <li>Term 2</li>
-      <li>Module leader since 2018/19</li>
+      <li>PhD in Data Science · Sapienza University of Rome</li>
+      <li>DIAG</li>
+      <li>20 hours · 5 days × 4 h</li>
+      <li>25–29 May 2026</li>
     </ul>
-    <p>An introduction to algorithmic trading and risk-premia strategies: why they work, what their statistical properties are, and how to design, implement and evaluate them. The module surveys the main families of strategies used in industry, points to open areas of research including recent machine-learning approaches, and gives students the tools to build strategies and to test their known and provable properties rigorously.</p>
+    <p>A doctoral course delivered at the Department of Computer, Control and Management Engineering (DIAG) of Sapienza, my alma mater. It treats learning as a problem in statistical mechanics: starting from entropy, free energy and Bayesian inference, maximum likelihood, regularisation and posterior inference become instances of the same physics, and phase transitions explain when learning becomes hard. Each day mixes lectures, whiteboard derivations, exercises and open problems.</p>
 
-    <h4>Topics</h4>
+    <h4>Programme</h4>
     <ul>
-      <li>The trading industry, market structure and data sources</li>
-      <li>Families of trading and risk-premia strategies</li>
-      <li>Limit order book dynamics</li>
-      <li>Portfolio theory and portfolio construction</li>
-      <li>Statistical analysis and evaluation of strategies</li>
-      <li>Sharpe ratio and other performance metrics</li>
-      <li>Backtest overfitting, multiple hypothesis testing and model validation</li>
-    </ul>
-
-    <h4>Learning outcomes</h4>
-    <ul>
-      <li>Analyse trading strategies statistically</li>
-      <li>Research, design and develop new strategies</li>
+      <li><strong>Foundations</strong> — entropy, free energy and Bayesian inference; learning as statistical mechanics</li>
+      <li><strong>Disordered systems</strong> — random-field Ising model, Sherrington–Kirkpatrick spin glass, p-spin model, random k-SAT</li>
+      <li><strong>Methods</strong> — replica, cavity and mean-field approaches</li>
+      <li><strong>Random matrix theory</strong> — semicircle law, Stieltjes transform, BBP transition</li>
+      <li><strong>Applications</strong> — PCA and community detection, Hopfield networks, loss-landscape Hessians and the edge of stability, diffusion models</li>
+      <li><strong>Open problems</strong> — overparameterised networks, implicit regularisation, the limits of high-dimensional generation</li>
     </ul>
 
     <h4>Background expected</h4>
-    <p>Probability and statistics, mathematical analysis, and fluency in a scientific programming language (Python is used in class).</p>
+    <p>Linear algebra, probability and basic calculus. No prior knowledge of statistical physics or spin glasses is needed.</p>
 
-    <p class="more"><a href="https://www.ucl.ac.uk/module-catalogue/modules/algorithmic-trading-COMP0051">Full description in the UCL module catalogue →</a></p>
+    <p class="more"><a href="https://phd.uniroma1.it/web/OffertaFormativaErogataCiclo.aspx?c=41&amp;i=3565&amp;l=EN">Listing in the Sapienza PhD course catalogue →</a></p>
   </article>
 
+  <!-- ============ MASTER'S ============ -->
+  <h2 id="masters"><span class="en">Master’s programmes</span><span class="it">Master</span></h2>
+  <p><span class="en">My modules are options on four one-year MSc programmes at UCL, so each class brings together students from computer science, quantitative finance, risk and data science.</span><span class="it">I miei moduli sono opzionali in quattro MSc annuali di UCL, quindi ogni classe riunisce studenti di informatica, finanza quantitativa, rischio e data science.</span></p>
+  <div class="programmes">
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/computational-finance-msc">
+      <h3>MSc Computational Finance</h3>
+      <p>Mathematics, finance, computer science and statistics for quantitative roles.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
+    </a>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/financial-technology-msc">
+      <h3>MSc Financial Technology</h3>
+      <p>Technology, data and computation for the financial services industry.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
+    </a>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/emerging-digital-technologies-msc">
+      <h3>MSc Emerging Digital Technologies</h3>
+      <p>AI, distributed ledgers and cloud computing in financial and business settings.</p>
+      <p class="mods">COMP0051 · COMP0162</p>
+    </a>
+    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/financial-risk-management-msc">
+      <h3>MSc Financial Risk Management</h3>
+      <p>Finance theory combined with data analytics and computational modelling.</p>
+      <p class="mods">COMP0051</p>
+    </a>
+  </div>
+
+  <!-- ============ MODULES ============ -->
+  <h2 id="modules"><span class="en">UCL modules</span><span class="it">Moduli UCL</span></h2>
+  <p><span class="en">Both modules are 15-credit, Level 7 (postgraduate) modules taught in person in Term 2, and are assessed half through in-class activity and half through coursework.</span><span class="it">Entrambi i moduli valgono 15 crediti, sono di livello 7 (magistrale), si tengono in presenza nel secondo trimestre e sono valutati per metà con attività in aula e per metà con progetti.</span></p>
   <article class="course" id="comp0162">
     <h3>Advanced Machine Learning in Finance</h3>
     <ul class="meta">
@@ -134,62 +168,47 @@
     <p class="more"><a href="https://www.ucl.ac.uk/module-catalogue/modules/advanced-machine-learning-in-finance-COMP0162">Full description in the UCL module catalogue →</a></p>
   </article>
 
-  <!-- ============ MASTER'S ============ -->
-  <h2 id="masters">Master's programmes</h2>
-  <p>My modules are options on four one-year MSc programmes at UCL, so each class brings together students from computer science, quantitative finance, risk and data science.</p>
-
-  <div class="programmes">
-    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/computational-finance-msc">
-      <h3>MSc Computational Finance</h3>
-      <p>Mathematics, finance, computer science and statistics for quantitative roles.</p>
-      <p class="mods">COMP0051 · COMP0162</p>
-    </a>
-    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/financial-technology-msc">
-      <h3>MSc Financial Technology</h3>
-      <p>Technology, data and computation for the financial services industry.</p>
-      <p class="mods">COMP0051 · COMP0162</p>
-    </a>
-    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/emerging-digital-technologies-msc">
-      <h3>MSc Emerging Digital Technologies</h3>
-      <p>AI, distributed ledgers and cloud computing in financial and business settings.</p>
-      <p class="mods">COMP0051 · COMP0162</p>
-    </a>
-    <a class="card" href="https://www.ucl.ac.uk/study/prospective-students/graduate/courses/financial-risk-management-msc">
-      <h3>MSc Financial Risk Management</h3>
-      <p>Finance theory combined with data analytics and computational modelling.</p>
-      <p class="mods">COMP0051</p>
-    </a>
-  </div>
-
-  <!-- ============ PHD ============ -->
-  <h2 id="phd">PhD teaching</h2>
-
-  <article class="course" id="statphys-ml">
-    <h3>Statistical Physics for Machine Learning</h3>
-    <p class="subtitle">Phase transitions, inference and high-dimensional landscapes</p>
+  <article class="course" id="comp0051">
+    <h3>Algorithmic Trading</h3>
     <ul class="meta">
-      <li>PhD in Data Science · Sapienza University of Rome</li>
-      <li>DIAG</li>
-      <li>20 hours · 5 days × 4 h</li>
-      <li>25–29 May 2026</li>
+      <li>COMP0051</li>
+      <li>15 credits · Level 7</li>
+      <li>Term 2</li>
+      <li>Module leader since 2018/19</li>
     </ul>
-    <p>A doctoral course delivered at the Department of Computer, Control and Management Engineering (DIAG) of Sapienza, my alma mater. It treats learning as a problem in statistical mechanics: starting from entropy, free energy and Bayesian inference, maximum likelihood, regularisation and posterior inference become instances of the same physics, and phase transitions explain when learning becomes hard. Each day mixes lectures, whiteboard derivations, exercises and open problems.</p>
+    <p>An introduction to algorithmic trading and risk-premia strategies: why they work, what their statistical properties are, and how to design, implement and evaluate them. The module surveys the main families of strategies used in industry, points to open areas of research including recent machine-learning approaches, and gives students the tools to build strategies and to test their known and provable properties rigorously.</p>
 
-    <h4>Programme</h4>
+    <h4>Topics</h4>
     <ul>
-      <li><strong>Foundations</strong> — entropy, free energy and Bayesian inference; learning as statistical mechanics</li>
-      <li><strong>Disordered systems</strong> — random-field Ising model, Sherrington–Kirkpatrick spin glass, p-spin model, random k-SAT</li>
-      <li><strong>Methods</strong> — replica, cavity and mean-field approaches</li>
-      <li><strong>Random matrix theory</strong> — semicircle law, Stieltjes transform, BBP transition</li>
-      <li><strong>Applications</strong> — PCA and community detection, Hopfield networks, loss-landscape Hessians and the edge of stability, diffusion models</li>
-      <li><strong>Open problems</strong> — overparameterised networks, implicit regularisation, the limits of high-dimensional generation</li>
+      <li>The trading industry, market structure and data sources</li>
+      <li>Families of trading and risk-premia strategies</li>
+      <li>Limit order book dynamics</li>
+      <li>Portfolio theory and portfolio construction</li>
+      <li>Statistical analysis and evaluation of strategies</li>
+      <li>Sharpe ratio and other performance metrics</li>
+      <li>Backtest overfitting, multiple hypothesis testing and model validation</li>
+    </ul>
+
+    <h4>Learning outcomes</h4>
+    <ul>
+      <li>Analyse trading strategies statistically</li>
+      <li>Research, design and develop new strategies</li>
     </ul>
 
     <h4>Background expected</h4>
-    <p>Linear algebra, probability and basic calculus. No prior knowledge of statistical physics or spin glasses is needed.</p>
+    <p>Probability and statistics, mathematical analysis, and fluency in a scientific programming language (Python is used in class).</p>
 
-    <p class="more"><a href="https://phd.uniroma1.it/web/OffertaFormativaErogataCiclo.aspx?c=41&amp;i=3565&amp;l=EN">Listing in the Sapienza PhD course catalogue →</a></p>
+    <p class="more"><a href="https://www.ucl.ac.uk/module-catalogue/modules/algorithmic-trading-COMP0051">Full description in the UCL module catalogue →</a></p>
   </article>
+
+  <!-- ============ CARDS ============ -->
+  <h2 id="cards"><span class="en">Course previews</span><span class="it">Anteprime dei corsi</span></h2>
+  <ul class="plain">
+    <li><a href="https://www.ucl.ac.uk/module-catalogue/modules/advanced-machine-learning-in-finance-COMP0162">Advanced Machine Learning in Finance</a> <span>· <span class="en">UCL module catalogue</span><span class="it">catalogo dei moduli UCL</span></span></li>
+    <li><a href="https://www.ucl.ac.uk/module-catalogue/modules/algorithmic-trading-COMP0051">Algorithmic Trading</a> <span>· <span class="en">UCL module catalogue</span><span class="it">catalogo dei moduli UCL</span></span></li>
+    <li><a href="https://phd.uniroma1.it/web/OffertaFormativaErogataCiclo.aspx?c=41&amp;i=3565&amp;l=EN">Statistical Physics for Machine Learning</a> <span>· <span class="en">Sapienza PhD catalogue</span><span class="it">catalogo dottorato Sapienza</span></span></li>
+    <!-- TODO: add preview videos or sample slides, e.g. <li><a href="...">AMLF lecture 1 preview</a></li> -->
+  </ul>
 
   <!-- ============ IXN ============ -->
   <h2 id="ixn">UCL IXN industry projects</h2>
@@ -202,10 +221,10 @@
   <p>I supervise IXN projects in quantitative finance, financial networks and machine learning. Organisations interested in proposing a project for next summer can <a href="contact.html">get in touch</a>; proposals for master's projects are usually collected between November and January.</p>
 
   <!-- ============ SUPERVISION ============ -->
-  <h2 id="supervision">Supervision</h2>
-  <p>I supervise PhD and MSc projects on complex networks, random matrix theory and physics-informed machine learning, often with applications in finance. Prospective students are welcome to <a href="contact.html">get in touch</a> with a short description of their interests.</p>
+  <h2 id="supervision"><span class="en">Supervision</span><span class="it">Supervisione</span></h2>
+  <p><span class="en">I supervise PhD and MSc projects on complex networks, random matrix theory and physics-informed machine learning, often with applications in finance. Prospective students are welcome to</span><span class="it">Seguo tesi di dottorato e di master su reti complesse, teoria delle matrici aleatorie e machine learning informato dalla fisica, spesso con applicazioni in finanza. Chi è interessato può</span> <a href="contact.html?topic=students"><span class="en">get in touch</span><span class="it">scrivermi</span></a> <span class="en">with a short description of their interests.</span><span class="it">con una breve descrizione dei propri interessi.</span></p>
 </main>
 
-<footer>© Paolo Barucca · <a href="contact.html">Get in touch</a></footer>
+<footer>© Paolo Barucca · <a href="contact.html"><span class="en">Get in touch</span><span class="it">Contatti</span></a> · <a href="links.html">Links</a></footer>
 </body>
 </html>

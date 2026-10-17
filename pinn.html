@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DC-PINN Option Surfaces · Paolo Barucca</title>
+<meta name="description" content="Derivative-constrained physics-informed neural networks turn noisy option marks into an arbitrage-free price surface: a Black–Scholes benchmark and an equity-skew case, trained live in the browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:light dark;
+ --bg:#fbfaf7;--panel:#ffffff;--ink:#1f2328;--muted:#5b6168;--faint:#9aa1a8;--line:#e6e2da;--grid:#efece6;
+ --accent:#b4412c;--accent-soft:#f6e4df;--warn:#9a4a12;
+ --s0:#22313f;--s1:#0e7c7b;--s2:#d1603d;--s3:#6a4c93;--s4:#3d8b37;--s5:#b8972c;--s6:#b5446e;
+ --serif:"Source Serif 4",Georgia,serif;
+ --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+@media (prefers-color-scheme:dark){:root{
+ --bg:#16181b;--panel:#1f2226;--ink:#e8e6e1;--muted:#a3a8ae;--faint:#6f7880;--line:#2e3237;--grid:#272a2f;
+ --accent:#f07a5f;--accent-soft:#3a2520;--warn:#e39a62;
+ --s0:#dfe5ea;--s1:#4fb3b0;--s2:#ee8a63;--s3:#a68bd6;--s4:#7cc47f;--s5:#e2c96a;--s6:#e07aa0;}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+a{color:var(--accent)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px}
+header.sitenav{border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+.sitenav nav{max-width:1360px;margin:0 auto;padding:.8rem 16px;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1.1rem}
+.sitenav .name{font:700 1.1rem var(--serif);color:var(--ink);text-decoration:none;margin-right:auto}
+.sitenav a:not(.name){color:var(--muted);text-decoration:none;font-size:.95rem}
+.sitenav a:not(.name):hover,.sitenav a[aria-current=page]{color:var(--accent)}
+.pagehead{border-bottom:1px solid var(--line);padding:26px 0 20px}
+.kicker{margin:0;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.kicker a{color:var(--muted)}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
+.lede{max-width:820px;color:var(--muted);margin:0}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:24px;padding-top:20px;padding-bottom:40px;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:minmax(0,1fr)}}
+aside.controls{position:sticky;top:64px;max-height:calc(100vh - 76px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+@media(max-width:920px){aside.controls{position:static;max-height:none}}
+.controls h2{font:600 11.5px/1 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.controls h2:first-child{margin-top:2px;padding-top:0;border-top:0}
+label.f{display:block;font-size:13px;margin:9px 0 3px}
+.val{font:12px var(--mono);color:var(--muted);float:right}
+.hint{font-size:12px;color:var(--muted);margin:3px 0 0}
+select,input[type=text],input[type=number],input[type=url]{width:100%;font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+input[type=checkbox]{accent-color:var(--accent)}
+.check{display:flex;gap:7px;align-items:center;font-size:13px;margin:6px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row2 label.f{margin-top:6px}
+button{font:600 14px var(--sans);padding:8px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--panel);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button:disabled{opacity:.55;cursor:progress}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btnrow button{flex:1}
+details.gen{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+details.gen summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+.status{font:12px/1.45 var(--mono);color:var(--muted);margin-top:12px;min-height:1.4em;white-space:pre-wrap}
+.status.err{color:var(--warn)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:18px;scrollbar-width:thin}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);border-radius:0;padding:10px 12px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel[hidden]{display:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1150px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.grid3{grid-template-columns:minmax(0,1fr)}}
+figure.chart{margin:0 0 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;min-width:0}
+.grid2 figure.chart{margin:0}
+figure.chart figcaption{font-weight:600;font-size:14px}
+.sub{font-size:12px;color:var(--muted);text-align:center;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12px;color:var(--muted);margin:5px 0 6px;min-height:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+canvas{display:block;width:100%}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card b{display:block;font:600 21px/1.25 var(--serif);font-variant-numeric:tabular-nums}
+.card span{font-size:12px;color:var(--muted)}
+h3.sec{font:600 19px var(--serif);margin:6px 0 4px}
+p.secnote{color:var(--muted);font-size:13.5px;margin:0 0 12px;max-width:860px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:18px}
+table.t{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.t th,.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.t tr:last-child td{border-bottom:0}
+.t th:first-child,.t td:first-child{text-align:left}
+.t thead th{color:var(--muted);font-weight:600;font-size:12px}
+.t td.best{color:var(--accent);font-weight:700}
+.t td.feat{background:var(--accent-soft)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:12px;font-size:13px}
+.toolbar label{display:flex;gap:6px;align-items:center}
+.toolbar input[type=range]{width:130px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:transparent;color:var(--muted);border:0;border-radius:0;padding:6px 11px;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.warn{color:var(--warn)}
+.dyngrid{display:grid;grid-template-columns:repeat(var(--np,2),minmax(0,1fr));gap:10px}
+@media(max-width:900px){.dyngrid{grid-template-columns:minmax(0,1fr)}}
+.dyngrid canvas{background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:crosshair}
+.mchips{display:inline-flex;flex-wrap:wrap;gap:6px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:3px 10px;font:500 12.5px var(--sans);cursor:pointer}
+.mchip[aria-pressed=true]{color:var(--ink);border-color:var(--ink);background:var(--accent-soft)}
+#dynStrip{margin-top:8px;cursor:pointer}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:12px var(--mono);padding:4px 7px;border-radius:5px;display:none;z-index:10}
+.prose{max-width:820px}
+.prose h3{font-family:var(--serif);font-size:21px;margin:26px 0 6px}
+.prose h3:first-child{margin-top:0}
+.prose li{margin:3px 0}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font:12.5px/1.5 var(--mono)}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:2rem 16px;text-align:center}
+.empty{padding:40px 12px;text-align:center;color:var(--muted);font-size:14px}
+.hint b{color:var(--muted);font-weight:600}
+dl.gloss{margin:8px 0 0;font-size:12px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 8px}
+dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{margin:0}
+.sidelink{font-size:12.5px;margin:0 0 4px}
+.steps{max-width:1040px}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin-bottom:16px}
+.stepnum{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--panel);font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:10px}
+.stepbody{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px 10px;min-width:0}
+.stepbody h4{margin:2px 0 6px;font:600 18px/1.3 var(--serif)}
+.algo{font-size:14px;margin:4px 0 8px;max-width:900px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px;font-size:12px;color:var(--muted)}
+.chip{font:12px var(--mono);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:2px 9px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;margin:8px 0 6px}
+.kv div{font-size:12px;color:var(--muted)}.kv b{display:block;font:600 16px var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.stepbody .tablewrap{margin:8px 0;padding:2px 8px}
+.stepbody .t td.l{white-space:normal}
+.stepbody canvas{margin-top:4px}
+.usedby{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.glyphs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
+@media(max-width:1180px){.glyphs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.glyphs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.glyph{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);font-weight:400}
+.glyph[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.glyph svg{display:block;width:100%;height:54px}
+.glyph b{display:block;font-size:13.5px;margin-top:2px}.glyph span{display:block;font-size:11.5px;color:var(--muted)}
+.glyph .gv{font:600 15px var(--serif);color:var(--ink);margin-top:3px}
+.mcurves{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.mcurves{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mcurves div{border:1px solid transparent;border-radius:8px;padding:4px}.mcurves div.on{border-color:var(--accent)}
+.mcurves .ttl{font-size:12.5px;font-weight:600;display:flex;gap:6px;align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.t td.good{color:var(--accent);font-weight:600}.t td.bad{color:var(--warn);font-weight:600}
+.t td.l,.t th.l{text-align:left}
+
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:10px;visibility:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+.swatch{display:inline-block;width:18px;height:3px;vertical-align:middle;border-radius:2px}
+.swatch.fit{background:var(--s3)}.swatch.dc{background:var(--accent)}
+.prose ol li,.prose ul li{margin:4px 0}
+.content .tablewrap td.l{white-space:normal}
+#cards .card span{display:block;line-height:1.35}
+</style>
+</head>
+<body>
+<header class="sitenav">
+ <nav>
+  <a class="name" href="index.html">Paolo Barucca</a>
+  <a href="research.html" aria-current="page">Research</a>
+  <a href="teaching.html">Teaching</a>
+  <a href="outreach.html">Outreach</a>
+  <a href="consultancy.html">Consultancy</a>
+  <a href="comedy.html">Comedy</a>
+  <a href="writing.html">Writing</a>
+ </nav>
+</header>
+<div class="pagehead">
+ <div class="wrap">
+  <p class="kicker"><a href="research.html">Research</a> › Interactive tools</p>
+  <h1>Arbitrage-free option surfaces with DC-PINNs</h1>
+  <p class="lede">A companion to <a href="https://arxiv.org/abs/2604.13723"><i>Physics-Informed Neural Networks for Solving Derivative-Constrained PDEs</i></a> (Hoshisashi, Phelan and Barucca). Take noisy option marks, fit a neural price surface that also satisfies Dupire’s equation and the static no-arbitrage conditions, and compare it with the true surface and with a plain neural fit of the same marks. Everything is trained live in your browser.</p>
+ </div>
+</div>
+
+<main class="wrap layout">
+ <aside class="controls" aria-label="Controls">
+  <h2>1 · Market</h2>
+  <label class="f" for="case">Case</label>
+  <select id="case">
+   <option value="bs" selected>Black–Scholes, flat volatility</option>
+   <option value="lv">Equity skew (local volatility)</option>
+  </select>
+  <label class="f" for="sig">ATM volatility σ₀ <span class="val" id="v_sig"></span></label>
+  <input type="range" id="sig" min="0.1" max="0.4" step="0.01" value="0.2">
+  <div id="lvBox" hidden>
+   <label class="f" for="beta">Skew β <span class="val" id="v_beta"></span></label>
+   <input type="range" id="beta" min="0" max="0.5" step="0.05" value="0.3">
+   <label class="f" for="gam">Smile γ <span class="val" id="v_gam"></span></label>
+   <input type="range" id="gam" min="0" max="0.5" step="0.05" value="0.2">
+   <label class="f" for="Bt">Term slope B <span class="val" id="v_Bt"></span></label>
+   <input type="range" id="Bt" min="-0.03" max="0.03" step="0.005" value="0.01">
+   <p class="hint">Local vol \(\sigma_{\rm LV}(K,T)=\sigma_0-\beta\ln\frac{K}{F}+\gamma\ln^2\frac{K}{F}+BT\), floored at 5% and capped at 60%. Downside strikes get more volatility, as on an equity index.</p>
+  </div>
+  <p class="hint" id="caseHint">Every option is priced by Black–Scholes at one volatility. The true surface is known in closed form, so every error can be measured exactly.</p>
+  <div class="row2">
+   <div><label class="f" for="S0">Index level</label><input type="number" id="S0" value="8000" step="100"></div>
+   <div><label class="f" for="rr">Rate r (%)</label><input type="number" id="rr" value="4" step="0.25"></div>
+   <div><label class="f" for="qq">Dividend q (%)</label><input type="number" id="qq" value="3.5" step="0.25"></div>
+  </div>
+  <p class="hint">Used only to turn results into index points and spot Greeks. Everything else is in forward terms, where rates and dividends drop out.</p>
+
+  <h2>2 · Marks</h2>
+  <label class="f" for="noise">Noise on the marks <span class="val" id="v_noise"></span></label>
+  <input type="range" id="noise" min="0" max="2" step="0.1" value="0.5">
+  <p class="hint">Each of the 45 marks (5 expiries × 9 strikes) is the true implied vol plus Gaussian noise with this standard deviation, in vol points: think stale prints and wide bid–ask spreads.</p>
+  <label class="f" for="seed">Seed</label>
+  <input type="number" id="seed" value="7">
+
+  <h2>3 · Training</h2>
+  <div class="row2">
+   <div><label class="f" for="adam">Adam steps</label><input type="number" id="adam" value="1500" min="200" step="100"></div>
+   <div><label class="f" for="lbfgs">L-BFGS steps</label><input type="number" id="lbfgs" value="500" min="0" step="100"></div>
+  </div>
+  <p class="hint">Network: two hidden layers of 20 tanh units. Adam then L-BFGS, as in the PINN code. About 10–20 seconds on a laptop.</p>
+  <div class="btnrow"><button id="train">Train</button><button id="stop" class="ghost" disabled>Stop</button></div>
+  <div class="progress" id="prog"><span></span></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+ </aside>
+
+ <div class="content">
+  <nav class="tabs" role="tablist">
+   <button role="tab" data-tab="intro" aria-selected="true">Introduction</button>
+   <button role="tab" data-tab="smile" aria-selected="false">Smiles</button>
+   <button role="tab" data-tab="arb" aria-selected="false">No-arbitrage</button>
+   <button role="tab" data-tab="greeks" aria-selected="false">Greeks</button>
+   <button role="tab" data-tab="train" aria-selected="false">Training</button>
+   <button role="tab" data-tab="method" aria-selected="false">Method</button>
+  </nav>
+
+  <section class="panel prose" id="p-intro" role="tabpanel">
+   <h3>The problem on the desk</h3>
+   <p>You mark 45 implied vols: 1M, 3M, 6M, 1Y and 2Y, from roughly the 5-delta put to the 5-delta call. Risk, PnL explain and every exotic need prices <em>between</em> those marks and a little beyond them, with stable Greeks. Any surface you build must not contain static arbitrage, or someone will trade against it:</p>
+   <div class="tablewrap"><table class="t">
+    <thead><tr><th class="l">Condition</th><th class="l">In maths</th><th class="l">On the desk</th></tr></thead>
+    <tbody>
+     <tr><td class="l">Call spreads</td><td class="l">\(-e^{-rT}\le \partial C/\partial K\le 0\)</td><td class="l">A call spread costs between zero and the discounted strike width.</td></tr>
+     <tr><td class="l">Butterflies</td><td class="l">\(\partial^2 C/\partial K^2\ge 0\)</td><td class="l">Every butterfly has a non-negative price: the risk-neutral density is never negative.</td></tr>
+     <tr><td class="l">Calendars</td><td class="l">\(\partial C/\partial T\ge 0\) at fixed \(K/F\)</td><td class="l">A longer-dated option at the same forward moneyness is worth at least as much.</td></tr>
+    </tbody></table></div>
+   <h3>What a DC-PINN does</h3>
+   <p>A small neural network outputs the call price \(C(K,T)\) for every strike and expiry. It is trained on one loss with four parts, exactly as in the paper:</p>
+   <ol>
+    <li><b>Data:</b> match the marks.</li>
+    <li><b>Physics:</b> satisfy Dupire’s equation, the PDE every arbitrage-free call surface obeys under the model, at a few hundred points between the marks.</li>
+    <li><b>Boundaries:</b> payoff at expiry, deep in-the-money and far out-of-the-money limits.</li>
+    <li><b>Derivative constraints:</b> a one-sided penalty \([h]_+^2\) whenever a call spread, butterfly or calendar condition is broken anywhere on the grid. This is the “DC” in DC-PINN.</li>
+   </ol>
+   <p>The weights of the four parts are not hand-tuned: they adapt during training from the size of each part’s gradient, and constraint points that keep failing get more weight. Strikes and expiries enter the network as derivatives through automatic differentiation, so the same network gives prices, Greeks and the density with no finite differences.</p>
+   <h3>How to read this page</h3>
+   <ol>
+    <li>Pick a case. <b>Black–Scholes</b> is the sanity check: the answer is the closed-form price at one vol. <b>Equity skew</b> has a skew and smile, priced by a high-resolution finite-difference solver.</li>
+    <li>Press <b>Train</b>. Two networks of identical size see the same noisy marks: a <span class="swatch fit"></span> <b>plain neural fit</b> (data only) and the <span class="swatch dc"></span> <b>DC-PINN</b>.</li>
+    <li>Read the cards below, then the tabs: <b>Smiles</b> for vol errors, <b>No-arbitrage</b> for where each surface breaks, <b>Greeks</b> for delta, gamma and a priced ticket.</li>
+   </ol>
+   <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="panel" id="p-smile" role="tabpanel" hidden>
+   <div class="toolbar"><span class="seg" id="expSeg"></span></div>
+   <figure class="chart"><figcaption>Implied volatility by strike</figcaption><div class="legend" id="lgSmile"></div><canvas id="cvSmile"></canvas>
+    <p class="note">Strike as a percentage of the forward. Dots are the noisy marks; the black line is the true smile.</p></figure>
+   <figure class="chart"><figcaption>Error against the true surface (vol points)</figcaption><div class="legend" id="lgErr"></div><canvas id="cvErr"></canvas>
+    <p class="note">Positive means the surface is too expensive. The shaded band is ± the noise level on the marks.</p></figure>
+   <div class="tablewrap"><table class="t" id="tblErr"></table></div>
+  </section>
+
+  <section class="panel" id="p-arb" role="tabpanel" hidden>
+   <p class="secnote">Each surface is checked with its exact strike and maturity derivatives on a grid of 26 maturities from 2 weeks to 2 years × 51 strikes from about the 1-delta put to the 1-delta call. A point fails if a call spread, butterfly or calendar condition is broken beyond a tiny tolerance.</p>
+   <div class="tablewrap"><table class="t" id="tblArb"></table></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Where the plain neural fit has arbitrage</figcaption><canvas id="cvMapFit"></canvas><div class="legend" id="lgMap1"></div></figure>
+    <figure class="chart"><figcaption>Where the DC-PINN has arbitrage</figcaption><canvas id="cvMapDC"></canvas><div class="legend" id="lgMap2"></div></figure>
+   </div>
+   <div class="toolbar"><span class="seg" id="expSeg2"></span></div>
+   <figure class="chart"><figcaption>Risk-neutral density \(\partial^2 C/\partial K^2\) (undiscounted, per unit of forward)</figcaption><div class="legend" id="lgDens"></div><canvas id="cvDens"></canvas>
+    <p class="note">Wherever a curve dips below zero, a butterfly there has negative value: free money.</p></figure>
+  </section>
+
+  <section class="panel" id="p-greeks" role="tabpanel" hidden>
+   <div class="toolbar"><span class="seg" id="expSeg3"></span></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Spot delta of a call</figcaption><div class="legend" id="lgDelta"></div><canvas id="cvDelta"></canvas></figure>
+    <figure class="chart"><figcaption>Spot gamma of a call (per 1% move, in delta)</figcaption><div class="legend" id="lgGamma"></div><canvas id="cvGamma"></canvas></figure>
+   </div>
+   <h3 class="sec">Price a ticket</h3>
+   <div class="toolbar">
+    <label>Strike (% of spot) <input type="number" id="tkK" value="95" step="1" style="width:80px"></label>
+    <label>Type <select id="tkType" style="width:auto"><option value="put">Put</option><option value="call">Call</option></select></label>
+    <label>Notional (contracts × multiplier) <input type="number" id="tkN" value="1000" step="100" style="width:100px"></label>
+   </div>
+   <div class="tablewrap"><table class="t" id="tblTicket"></table></div>
+   <p class="note">Puts come from put–call parity on the same surface. Delta and gamma are with respect to spot; gamma is the change in delta for a 1% spot move.</p>
+  </section>
+
+  <section class="panel" id="p-train" role="tabpanel" hidden>
+   <div class="grid2">
+    <figure class="chart"><figcaption>DC-PINN loss components</figcaption><div class="legend" id="lgLoss"></div><canvas id="cvLoss"></canvas>
+     <p class="note">Data, boundary, PDE residual and derivative-constraint terms (log scale). The vertical rule marks the switch from Adam to L-BFGS.</p></figure>
+    <figure class="chart"><figcaption>Self-adaptive category weights λ</figcaption><div class="legend" id="lgLam"></div><canvas id="cvLam"></canvas>
+     <p class="note">Updated every 100 Adam steps from the mean gradient magnitude of each term, then frozen for L-BFGS.</p></figure>
+   </div>
+  </section>
+
+  <section class="panel prose" id="p-method" role="tabpanel" hidden>
+   <h3>Forward coordinates</h3>
+   <p>With discount factor \(D_T=e^{-rT}\) and forward \(F_T=S_0e^{(r-q)T}\), write the call as \(C=D_TF_T\,c(\kappa,T)\) with \(\kappa=K/F_T\). Rates and dividends drop out and Dupire’s equation becomes</p>
+   $$\partial_T c=\tfrac12\,\sigma_{\rm LV}^2(\kappa,T)\,\kappa^2\,\partial_{\kappa\kappa}c,\qquad c(\kappa,0)=(1-\kappa)^+.$$
+   <p>For Black–Scholes \(\sigma_{\rm LV}=\sigma_0\) and \(c=N(d_1)-\kappa N(d_2)\). Static no-arbitrage is \(-1\le\partial_\kappa c\le0\), \(\partial_{\kappa\kappa}c\ge0\) and \(\partial_Tc\ge0\).</p>
+   <h3>The DC-PINN loss</h3>
+   <p>As in the paper, \(\mathcal L=\lambda_0\hat{\mathcal L}_0+\lambda_f\hat{\mathcal L}_f+\lambda_b\hat{\mathcal L}_b+\lambda_h\hat{\mathcal L}_h\), with data, PDE-residual, boundary and inequality terms. The inequality term is the one-sided penalty</p>
+   $$\hat{\mathcal L}_h=\frac1{N_h}\big\|m_h\,[h(\kappa,T)]_+\big\|_2^2,\qquad h\in\{\partial_\kappa c,\;-1-\partial_\kappa c,\;-\partial_{\kappa\kappa}c,\;-\partial_Tc\}.$$
+   <p>Every 100 Adam steps the category weights move toward \(\lambda_\chi=\tfrac1n\sum_{\chi'}\bar\alpha_{\chi'}/\bar\alpha_\chi\), where \(\bar\alpha_\chi\) is the mean absolute gradient of term \(\chi\) (moving average 0.9, clipped to [0.1, 10]). Every 10 steps the point weights \(m_h\) of violated constraints grow in proportion to their squared violation, normalised to mean one. Two choices differ from the paper, for this setting: point weights are not adapted on the marks, because up-weighting the worst-fitted marks means chasing their noise; and the paper’s Algorithm 1 adds the gradient ratio to λ, while we use a bounded moving average.</p>
+   <h3>Network and parametrisation</h3>
+   <p>Inputs are standardised moneyness \(\xi=\ln\kappa/\sqrt T\) and \(s=\sqrt T\); a 2 × 20 tanh network outputs a correction \(N_\theta\). The price is</p>
+   $$c=s\,\big[G_{\rm BS}(\xi,s)+\varphi(d_1)\,N_\theta(\xi,s)\big],$$
+   <p>where \(sG_{\rm BS}\) is Black–Scholes priced at the Berestycki–Busca–Florent short-maturity implied vol (the harmonic mean of local vol between the forward and the strike), and \(\varphi(d_1)\) is its vega shape, so \(N_\theta\) reads as an implied-vol correction. This backbone is what lets a network this small reach a few hundredths of a vol point in seconds; the network learns what the approximation misses and absorbs the marks. The plain neural fit uses the same parametrisation, so the comparison isolates the physics and the constraints. Strike and maturity derivatives are propagated exactly through the network; gradients with respect to the weights match finite differences to about \(10^{-10}\).</p>
+   <h3>Training and reference</h3>
+   <p>Residuals are scaled by \(1/(e^{-z^2/2}+0.1)\), \(z\) the standardised moneyness, so the loss counts errors roughly in vol points across the smile. Adam (learning rate 3·10⁻³, decaying) then L-BFGS (memory 20, Armijo backtracking), with 192 collocation points used for both the PDE and the constraints. The skew reference solves Dupire’s equation by Crank–Nicolson on 3,201 log-strike nodes with Rannacher start-up; on the Black–Scholes case it matches the closed form to within 0.004 vol points over the displayed range.</p>
+   <h3>Links</h3>
+   <ul>
+    <li>K. Hoshisashi, C. E. Phelan, P. Barucca, <a href="https://arxiv.org/abs/2604.13723">Physics-Informed Neural Networks for Solving Derivative-Constrained PDEs</a> (2026).</li>
+    <li>Kentaro Hoshisashi’s Whack-a-mole Online Learning (WamOL) for real-time implied-vol surface calibration with no-arbitrage and PDE constraints.</li>
+    <li>Product co-development: <a href="https://neutryx-lab.github.io/core.html">Neatryx</a>.</li>
+   </ul>
+  </section>
+ </div>
+</main>
+
+<footer>© Paolo Barucca · <a href="research.html">Research</a> · <a href="contact.html">Get in touch</a></footer>
+<script>
+// ===================== DC-PINN numerical core (pure functions, testable in Node) =====================
+// Conventions (forward terms): kappa = K / F_T (strike as a fraction of the forward), y = ln kappa,
+// c(kappa, T) = C / (D_T F_T) (call price as a fraction of the discounted forward).
+// Rates and dividends drop out: dc/dT = 1/2 sigma_LV^2 kappa^2 c_kk (Dupire, forward form).
+const DC = {};
+
+// ---------- random numbers ----------
+DC.mulberry32 = function (a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+DC.gaussian = function (rng) { let spare = null; return function () { if (spare !== null) { const s = spare; spare = null; return s; } let u, v, s; do { u = 2 * rng() - 1; v = 2 * rng() - 1; s = u * u + v * v; } while (s >= 1 || s === 0); const m = Math.sqrt(-2 * Math.log(s) / s); spare = v * m; return u * m; }; };
+
+// ---------- normal distribution (W. J. Cody's erfc, ~1e-15 relative accuracy) ----------
+DC.erfc = function (x) {
+  const ax = Math.abs(x); let r;
+  if (ax < 0.5) {
+    const t = x * x;
+    const top = (((0.1857777061846032 * t + 3.161123743870566) * t + 113.8641541510502) * t + 377.485237685302) * t + 3209.377589138469;
+    const bot = (((t + 23.60129095234412) * t + 244.0246379344442) * t + 1282.616526077372) * t + 2844.236833439171;
+    return 1 - x * top / bot;
+  }
+  if (ax < 4) {
+    const top = (((((((2.15311535474403846e-8 * ax + 0.564188496988670089) * ax + 8.88314979438837594) * ax + 66.1191906371416295) * ax + 298.635138197400131) * ax + 881.95222124176909) * ax + 1712.04761263407058) * ax + 2051.07837782607147) * ax + 1230.33935479799725;
+    const bot = (((((((ax + 15.7449261107098347) * ax + 117.693950891312499) * ax + 537.181101862009858) * ax + 1621.38957456669019) * ax + 3290.79923573345963) * ax + 4362.61909014324716) * ax + 3439.36767414372164) * ax + 1230.33935480374942;
+    r = Math.exp(-ax * ax) * top / bot;
+  } else {
+    const z = 1 / (ax * ax);
+    const top = ((((0.0163153871373020978 * z + 0.305326634961232344) * z + 0.360344899949804439) * z + 0.125781726111229246) * z + 0.0160837851487422766) * z + 6.58749161529837803e-4;
+    const bot = ((((z + 2.56852019228982242) * z + 1.87295284992346725) * z + 0.527905102951428412) * z + 0.0605183413124413191) * z + 2.33520497626869185e-3;
+    r = Math.exp(-ax * ax) / ax * (0.564189583547756287 - z * top / bot);
+  }
+  return x < 0 ? 2 - r : r;
+};
+DC.N = x => 0.5 * DC.erfc(-x / Math.SQRT2);
+DC.phi = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+
+// ---------- Black–Scholes in forward terms ----------
+// c = N(d1) - kappa N(d2),  d1 = (-ln kappa + v/2)/sqrt(v),  v = sigma^2 T
+DC.bsC = function (kap, T, sig) {
+  if (T <= 0 || sig <= 0) return Math.max(1 - kap, 0);
+  const sv = sig * Math.sqrt(T), d1 = (-Math.log(kap) + 0.5 * sv * sv) / sv;
+  return DC.N(d1) - kap * DC.N(d1 - sv);
+};
+DC.bsGreeks = function (kap, T, sig) { // derivatives in kappa and T of the normalised price
+  const sv = sig * Math.sqrt(T), d1 = (-Math.log(kap) + 0.5 * sv * sv) / sv, d2 = d1 - sv;
+  return { c: DC.N(d1) - kap * DC.N(d2), ck: -DC.N(d2), ckk: DC.phi(d2) / (kap * sv), cT: 0.5 * sig * DC.phi(d1) / Math.sqrt(T), vega: Math.sqrt(T) * DC.phi(d1) };
+};
+// Implied vol from a normalised call price: safeguarded Newton (Jaeckel-style start not needed at this accuracy).
+// Out-of-the-money price (put for kappa < 1, call otherwise), computed directly for accuracy in the wings.
+DC.bsOTM = function (kap, T, sig) {
+  const sv = sig * Math.sqrt(T), d1 = (-Math.log(kap) + 0.5 * sv * sv) / sv, d2 = d1 - sv;
+  return kap < 1 ? kap * DC.N(-d2) - DC.N(-d1) : DC.N(d1) - kap * DC.N(d2);
+};
+// Implied vol from a normalised call price, inverting the OTM option by safeguarded Newton.
+DC.impliedVol = function (c, kap, T) {
+  const o = kap < 1 ? c - (1 - kap) : c, upper = kap < 1 ? kap : 1;
+  if (!(o > 1e-14) || o >= upper) return NaN;
+  let lo = 1e-4, hi = 4, s = 0.25;
+  if (DC.bsOTM(kap, T, hi) < o) return NaN;
+  for (let i = 0; i < 100; i++) {
+    const f = DC.bsOTM(kap, T, s) - o;
+    if (f > 0) hi = s; else lo = s;
+    const sv = s * Math.sqrt(T), d1 = (-Math.log(kap) + 0.5 * sv * sv) / sv, vg = Math.sqrt(T) * DC.phi(d1);
+    let sn = vg > 1e-14 ? s - f / vg : 0.5 * (lo + hi);
+    if (!(sn > lo && sn < hi)) sn = 0.5 * (lo + hi);
+    if (Math.abs(sn - s) < 1e-13 || hi - lo < 1e-13) { s = sn; break; }
+    s = sn;
+  }
+  return s;
+};
+
+// ---------- local volatility ----------
+// Case 1: flat Black–Scholes volatility. Case 2: equity-index skew and smile,
+// sigma_LV = clip(sigma0 - beta ln kappa + gamma (ln kappa)^2 + B T, 5%, 60%), in the spirit of the paper's
+// sigma_A + A/K + B t (downside skew plus a term slope) with a smile term that keeps the call wing realistic.
+DC.makeVol = function (cfg) {
+  if (cfg.case === 'bs') return () => cfg.sigma;
+  return (kap, T) => { const y = Math.log(kap); return Math.min(0.6, Math.max(0.05, cfg.sigma - cfg.beta * y + cfg.gamma * y * y + cfg.B * T)); };
+};
+
+// ---------- backbone implied vol: Berestycki–Busca–Florent short-maturity limit ----------
+// 1/sigma_imp(y) = (1/y) * integral_0^y du / sigma_LV(e^u, T/2): the harmonic mean of local vol between forward and strike.
+DC.GL8 = { x: [-0.9602898564975363, -0.7966664774136267, -0.5255324099163290, -0.1834346424956498, 0.1834346424956498, 0.5255324099163290, 0.7966664774136267, 0.9602898564975363],
+           w: [0.1012285362903763, 0.2223810344533745, 0.3137066458778873, 0.3626837833783620, 0.3626837833783620, 0.3137066458778873, 0.2223810344533745, 0.1012285362903763] };
+DC.bbfVol = function (vol) {
+  return (kap, T) => { const y = Math.log(kap), th = T / 2; if (Math.abs(y) < 1e-8) return vol(1, th);
+    let I = 0; for (let i = 0; i < 8; i++) { const u = 0.5 * y * (DC.GL8.x[i] + 1); I += DC.GL8.w[i] / vol(Math.exp(u), th); }
+    return 1 / (0.5 * I); };
+};
+
+// ---------- reference solution: Dupire forward PDE by finite differences ----------
+// dc/dT = 1/2 s(y,T)^2 (c_yy - c_y) on y in [-Y, Y], c(y,0) = (1-e^y)^+, c(-Y) = 1-e^{-Y}, c(Y) = 0.
+// Rannacher start (4 implicit half-steps), then Crank–Nicolson. Rows are stored at requested times.
+DC.solveFD = function (vol, opts) {
+  const Y = opts.Y || 3, ny = opts.ny || 1601, dt = opts.dt || 1 / 1200, Tmax = opts.Tmax || 2;
+  const dy = 2 * Y / (ny - 1), ys = new Float64Array(ny); for (let i = 0; i < ny; i++) ys[i] = -Y + i * dy;
+  let c = new Float64Array(ny); for (let i = 0; i < ny; i++) c[i] = Math.max(1 - Math.exp(ys[i]), 0);
+  const nT = Math.round(Tmax / dt), want = new Map(); (opts.rows || []).forEach(T => want.set(Math.round(T / dt), T));
+  const rows = new Map(); if (want.has(0)) rows.set(want.get(0), Float64Array.from(c));
+  const a = new Float64Array(ny), b = new Float64Array(ny), cc = new Float64Array(ny), rhs = new Float64Array(ny), cp = new Float64Array(ny), dp = new Float64Array(ny);
+  const step = (cOld, t0, h, theta) => { // theta = 1 implicit, 0.5 CN
+    const tm = t0 + h * 0.5; // coefficients at mid-step
+    for (let i = 1; i < ny - 1; i++) {
+      const s = vol(Math.exp(ys[i]), tm), q = 0.5 * s * s;
+      const lw = q * (1 / (dy * dy) + 0.5 / dy), up = q * (1 / (dy * dy) - 0.5 / dy), md = -2 * q / (dy * dy); // L c = lw c_{i-1} + md c_i + up c_{i+1}
+      const Lold = lw * cOld[i - 1] + md * cOld[i] + up * cOld[i + 1];
+      a[i] = -theta * h * lw; b[i] = 1 - theta * h * md; cc[i] = -theta * h * up; rhs[i] = cOld[i] + (1 - theta) * h * Lold;
+    }
+    const cN = new Float64Array(ny); cN[0] = 1 - Math.exp(-Y); cN[ny - 1] = 0;
+    rhs[1] -= a[1] * cN[0]; rhs[ny - 2] -= cc[ny - 2] * cN[ny - 1];
+    cp[1] = cc[1] / b[1]; dp[1] = rhs[1] / b[1];
+    for (let i = 2; i < ny - 1; i++) { const m = b[i] - a[i] * cp[i - 1]; cp[i] = cc[i] / m; dp[i] = (rhs[i] - a[i] * dp[i - 1]) / m; }
+    cN[ny - 2] = dp[ny - 2]; for (let i = ny - 3; i >= 1; i--) cN[i] = dp[i] - cp[i] * cN[i + 1];
+    return cN;
+  };
+  let t = 0;
+  for (let n = 1; n <= nT; n++) {
+    if (n === 1) { for (let r = 0; r < 4; r++) { c = step(c, t, dt / 4, 1); t += dt / 4; } }
+    else { c = step(c, t, dt, 0.5); t += dt; }
+    if (want.has(n)) rows.set(want.get(n), Float64Array.from(c));
+  }
+  // 4-point Lagrange interpolation in y
+  const interp = (row, y) => {
+    let i = Math.floor((y + Y) / dy) - 1; i = Math.max(0, Math.min(ny - 4, i));
+    const x0 = ys[i], u = (y - x0) / dy; const [p0, p1, p2, p3] = [row[i], row[i + 1], row[i + 2], row[i + 3]];
+    return p0 * (u - 1) * (u - 2) * (u - 3) / -6 + p1 * u * (u - 2) * (u - 3) / 2 + p2 * u * (u - 1) * (u - 3) / -2 + p3 * u * (u - 1) * (u - 2) / 6;
+  };
+  return { ys, dy, rows, price: (kap, T) => { const r = rows.get(T); if (!r) throw new Error('FD row missing for T=' + T); return interp(r, Math.log(kap)); } };
+};
+
+// ---------- the network: tanh MLP with four forward streams ----------
+// Inputs (xi, s) with s = sqrt(T), xi = ln(kappa)/s. Streams carry value, d/dxi, d2/dxi2 and d/ds.
+// Linear output G = z; the price is c = s * (G_BS + G) with an optional flat-vol Black–Scholes backbone G_BS.
+DC.Net = function (sizes, seed, XI, SMAX, outScale) {
+  const nL = sizes.length - 1, off = []; let P = 0;
+  for (let l = 0; l < nL; l++) { off.push({ W: P, b: P + sizes[l] * sizes[l + 1] }); P += sizes[l] * sizes[l + 1] + sizes[l + 1]; }
+  const th = new Float64Array(P), g = DC.gaussian(DC.mulberry32(seed));
+  for (let l = 0; l < nL; l++) { const sd = Math.sqrt(2 / (sizes[l] + sizes[l + 1])) * (l === nL - 1 && outScale ? outScale : 1); for (let i = 0; i < sizes[l] * sizes[l + 1]; i++) th[off[l].W + i] = sd * g(); }
+  this.P = P; this.theta = th;
+  this.forward = (xi, s) => {
+    const n = xi.length; let H = new Float64Array(n * 2), Hx = new Float64Array(n * 2), Hxx = new Float64Array(n * 2), Hs = new Float64Array(n * 2);
+    for (let p = 0; p < n; p++) { H[2 * p] = xi[p] / XI; H[2 * p + 1] = 2 * s[p] / SMAX - 1; Hx[2 * p] = 1 / XI; Hs[2 * p + 1] = 2 / SMAX; }
+    const cache = [];
+    for (let l = 0; l < nL; l++) {
+      const di = sizes[l], dO = sizes[l + 1], Wo = off[l].W, bo = off[l].b;
+      const Z = new Float64Array(n * dO), Zx = new Float64Array(n * dO), Zxx = new Float64Array(n * dO), Zs = new Float64Array(n * dO);
+      for (let p = 0; p < n; p++) {
+        const pb = p * di, ob = p * dO;
+        for (let j = 0; j < dO; j++) Z[ob + j] = th[bo + j];
+        for (let i = 0; i < di; i++) {
+          const h = H[pb + i], hx = Hx[pb + i], hxx = Hxx[pb + i], hs = Hs[pb + i], wr = Wo + i * dO;
+          for (let j = 0; j < dO; j++) { const w = th[wr + j]; Z[ob + j] += h * w; Zx[ob + j] += hx * w; Zxx[ob + j] += hxx * w; Zs[ob + j] += hs * w; }
+        }
+      }
+      const c = { H, Hx, Hxx, Hs, Zx, Zxx, Zs };
+      if (l < nL - 1) {
+        const A = new Float64Array(n * dO), Ax = new Float64Array(n * dO), Axx = new Float64Array(n * dO), As = new Float64Array(n * dO);
+        for (let o = 0; o < n * dO; o++) { const a = Math.tanh(Z[o]), d = 1 - a * a; A[o] = a; Ax[o] = d * Zx[o]; Axx[o] = -2 * a * d * Zx[o] * Zx[o] + d * Zxx[o]; As[o] = d * Zs[o]; }
+        c.A = A; H = A; Hx = Ax; Hxx = Axx; Hs = As;
+      } else c.out = { z: Z, zx: Zx, zxx: Zxx, zs: Zs };
+      cache.push(c);
+    }
+    // linear output: G = z (+ Black–Scholes backbone added by the trainer)
+    const o = cache[nL - 1].out, G = Float64Array.from(o.z), Gx = Float64Array.from(o.zx), Gxx = Float64Array.from(o.zxx), Gs = Float64Array.from(o.zs), sg = null;
+    return { G, Gx, Gxx, Gs, sg, cache, n };
+  };
+  // gradient of a loss given dL/d(G, Gx, Gxx, Gs) at each point
+  this.backward = (f, gG, gGx, gGxx, gGs) => {
+    const n = f.n, grad = new Float64Array(P), o = f.cache[nL - 1].out;
+    let gZ = Float64Array.from(gG), gZx = Float64Array.from(gGx), gZxx = Float64Array.from(gGxx), gZs = Float64Array.from(gGs);
+    for (let l = nL - 1; l >= 0; l--) {
+      const c = f.cache[l], di = sizes[l], dO = sizes[l + 1], Wo = off[l].W, bo = off[l].b;
+      if (l < nL - 1) {
+        const A = c.A, nZ = new Float64Array(n * dO), nZx = new Float64Array(n * dO), nZxx = new Float64Array(n * dO), nZs = new Float64Array(n * dO);
+        for (let k = 0; k < n * dO; k++) { const a = A[k], d = 1 - a * a, zx = c.Zx[k], zxx = c.Zxx[k], zs = c.Zs[k];
+          const gA = gZ[k] + gZx[k] * (-2 * a * zx) + gZxx[k] * ((-2 + 6 * a * a) * zx * zx - 2 * a * zxx) + gZs[k] * (-2 * a * zs);
+          nZ[k] = gA * d; nZx[k] = d * (gZx[k] - 4 * a * zx * gZxx[k]); nZxx[k] = d * gZxx[k]; nZs[k] = d * gZs[k]; }
+        gZ = nZ; gZx = nZx; gZxx = nZxx; gZs = nZs;
+      }
+      const H = c.H, Hx = c.Hx, Hxx = c.Hxx, Hs = c.Hs;
+      for (let p = 0; p < n; p++) {
+        const pb = p * di, ob = p * dO;
+        for (let j = 0; j < dO; j++) grad[bo + j] += gZ[ob + j];
+        for (let i = 0; i < di; i++) { const h = H[pb + i], hx = Hx[pb + i], hxx = Hxx[pb + i], hs = Hs[pb + i], wr = Wo + i * dO;
+          for (let j = 0; j < dO; j++) { const k = ob + j; grad[wr + j] += h * gZ[k] + hx * gZx[k] + hxx * gZxx[k] + hs * gZs[k]; } }
+      }
+      if (l > 0) {
+        const nH = new Float64Array(n * di), nHx = new Float64Array(n * di), nHxx = new Float64Array(n * di), nHs = new Float64Array(n * di);
+        for (let p = 0; p < n; p++) { const pb = p * di, ob = p * dO;
+          for (let i = 0; i < di; i++) { let a = 0, ax = 0, axx = 0, as = 0; const wr = Wo + i * dO;
+            for (let j = 0; j < dO; j++) { const w = th[wr + j], k = ob + j; a += gZ[k] * w; ax += gZx[k] * w; axx += gZxx[k] * w; as += gZs[k] * w; }
+            nH[pb + i] = a; nHx[pb + i] = ax; nHxx[pb + i] = axx; nHs[pb + i] = as; } }
+        gZ = nH; gZx = nHx; gZxx = nHxx; gZs = nHs;
+      }
+    }
+    return grad;
+  };
+};
+
+// Map network streams to prices and strike/maturity derivatives (c, c_k, c_kk, c_T) at (kappa, T).
+// c = s G;  c_y = G_xi;  c_yy = G_xixi / s;  c_k = c_y/kappa;  c_kk = (c_yy - c_y)/kappa^2;  c_T = (G + s G_s - xi G_xi)/(2 s).
+DC.toPrice = function (xi, s, G, Gx, Gxx, Gs) {
+  const kap = Math.exp(xi * s);
+  return { kap, c: s * G, ck: Gx / kap, ckk: (Gxx / s - Gx) / (kap * kap), cT: (G + s * Gs - xi * Gx) / (2 * s) };
+};
+// Short-maturity limit of G at fixed xi (s -> 0): G0 = sigma0 phi(xi/sigma0) - xi N(-xi/sigma0).
+DC.G0 = (xi, s0) => s0 * DC.phi(xi / s0) - xi * DC.N(-xi / s0);
+
+// Flat-vol Black–Scholes backbone in network coordinates: G_BS = c_BS/s and its streams.
+DC.bsStreams = function (xi, s, sig) {
+  if (s <= 0) return { G: DC.G0(xi, sig), Gx: -DC.N(-xi / sig), Gxx: 0, Gs: 0 };
+  const y = xi * s, kap = Math.exp(y), sv = sig * s, d1 = (-y + 0.5 * sv * sv) / sv, d2 = d1 - sv;
+  const c = DC.N(d1) - kap * DC.N(d2), cy = -kap * DC.N(d2), cyy = cy + kap * DC.phi(d2) / sv, cT = 0.5 * sig * DC.phi(d1) / s;
+  return { G: c / s, Gx: cy, Gxx: s * cyy, Gs: (-c / s + xi * cy) / s + 2 * cT };
+};
+
+// ---------- quotes ----------
+DC.EXPIRIES = [{ T: 1 / 12, lab: '1M' }, { T: 0.25, lab: '3M' }, { T: 0.5, lab: '6M' }, { T: 1, lab: '1Y' }, { T: 2, lab: '2Y' }];
+DC.ZQ = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2]; // standardised moneyness ln(kappa)/(sigma_ATM sqrt T): roughly 5-delta put to 5-delta call
+DC.makeQuotes = function (truth, vol, noiseVol, seed) {
+  const g = DC.gaussian(DC.mulberry32(seed)), q = [];
+  for (const e of DC.EXPIRIES) {
+    const sATM = vol(1, e.T);
+    for (const z of DC.ZQ) {
+      const kap = Math.exp(z * sATM * Math.sqrt(e.T)), cTrue = truth(kap, e.T), ivTrue = DC.impliedVol(cTrue, kap, e.T);
+      const ivObs = ivTrue + noiseVol * g();
+      q.push({ T: e.T, lab: e.lab, z, kap, cTrue, ivTrue, ivObs, cObs: DC.bsC(kap, e.T, ivObs) });
+    }
+  }
+  return q;
+};
+// Static-arbitrage check on the quotes of one expiry (strike-ordered): call spreads in [-1, 0] per unit strike, butterflies >= 0.
+DC.quoteArbitrage = function (quotes) {
+  const out = []; let nb = 0, bad = 0, ncs = 0, badcs = 0;
+  for (const e of DC.EXPIRIES) {
+    const qs = quotes.filter(x => x.T === e.T).sort((a, b) => a.kap - b.kap);
+    const sl = []; for (let i = 0; i + 1 < qs.length; i++) sl.push((qs[i + 1].cObs - qs[i].cObs) / (qs[i + 1].kap - qs[i].kap));
+    let eb = 0, ecs = 0; sl.forEach(v => { ncs++; if (v > 0 || v < -1) { ecs++; badcs++; } });
+    for (let i = 0; i + 1 < sl.length; i++) { nb++; if (sl[i + 1] < sl[i] - 1e-14) { eb++; bad++; } }
+    out.push({ lab: e.lab, butterflies: sl.length - 1, badButterflies: eb, spreads: sl.length, badSpreads: ecs });
+  }
+  return { rows: out, nb, bad, ncs, badcs };
+};
+
+// ---------- DC-PINN trainer ----------
+// Loss categories as in the paper: data (0), boundary/initial (b), PDE residual (f), derivative inequalities (h).
+// mode: 'data' (neural fit of quotes only), 'pinn' (data + b + f, unit weights), 'pinnh' (+ h, unit weights), 'dc' (+ h, self-adaptive lambda and m).
+DC.Trainer = function (cfg) {
+  const XI = cfg.XI, SMAX = Math.sqrt(cfg.Tmax), vol = cfg.vol, mode = cfg.mode, sig0 = vol(1, 0);
+  const net = new DC.Net([2].concat(Array(cfg.depth).fill(cfg.width), [1]), cfg.seed, XI, SMAX, cfg.backbone ? 0.05 : 1);
+  this.net = net; this.it = 0; this.hist = []; this.mode = mode;
+  const P = net.P, mA = new Float64Array(P), vA = new Float64Array(P), rng = DC.mulberry32(cfg.seed + 11);
+  // fixed point sets
+  const dq = cfg.quotes.map(q => ({ xi: Math.log(q.kap) / Math.sqrt(q.T), s: Math.sqrt(q.T), G: q.cObs / Math.sqrt(q.T) }));
+  const nI = 41, nB = 24, ic = [], bc = [];
+  for (let i = 0; i < nI; i++) { const xi = -XI + 2 * XI * i / (nI - 1); ic.push({ xi, s: 0, G: DC.G0(xi, sig0) }); }
+  for (let j = 0; j < nB; j++) { const s = SMAX * (j + 1) / nB; bc.push({ xi: -XI, s, G: (1 - Math.exp(-XI * s)) / s }); bc.push({ xi: XI, s, G: 0 }); }
+  // Collocation (PDE residual and derivative inequalities): 3/4 of the points in standardised moneyness
+  // z = ln(kappa)/(sigma sqrt T) in [-3.5, 3.5] with sqrt(T) uniform, the rest uniform over the whole (xi, s) box.
+  const nF = cfg.nColl, col = new Array(nF);
+  const resample = () => { for (let i = 0; i < nF; i++) { const s = Math.max(1e-3, SMAX * rng()); let xi;
+    if (i % 4) { xi = (2 * rng() - 1) * 3.5 * sig0; } else xi = (2 * rng() - 1) * XI; col[i] = { xi: Math.max(-XI, Math.min(XI, xi)), s }; } };
+  resample();
+  const use = { data: true, b: mode !== 'data', f: mode !== 'data', h: mode === 'pinnh' || mode === 'dc' };
+  const lam = { data: 1, b: 1, f: 1, h: 1 }; this.lam = lam;
+  const mD = new Float64Array(dq.length).fill(1), mH = new Float64Array(nF * 4).fill(1); this.mH = mH; this.mD = mD;
+  const adaptive = mode === 'dc', mMax = cfg.mMax || 10, etaM = cfg.etaM, pM = cfg.pM, pL = cfg.pL;
+  // Backbone: Black–Scholes priced at sigBB(kappa, T). A number gives flat vol (analytic streams);
+  // a function gives a strike/maturity-dependent backbone whose streams are taken by central differences.
+  const bb = cfg.backbone || null, sigHat = typeof bb === 'number' ? bb : (bb ? bb(1, 0) : 0);
+  const Gbb = (xi, s) => { if (s <= 0) return DC.G0(xi, bb(1, 0)); const kap = Math.exp(xi * s); return DC.bsC(kap, s * s, bb(kap, s * s)) / s; };
+  const bbStreams = (xi, s) => {
+    if (typeof bb === 'number') return DC.bsStreams(xi, s, bb);
+    if (s <= 0) return { G: Gbb(xi, 0), Gx: 0, Gxx: 0, Gs: 0 };
+    const h = 2e-4, hs = Math.min(1e-4, 0.5 * s), g0 = Gbb(xi, s), gp = Gbb(xi + h, s), gm = Gbb(xi - h, s), sp = Gbb(xi, s + hs), sm = Gbb(xi, s - hs);
+    return { G: g0, Gx: (gp - gm) / (2 * h), Gxx: (gp - 2 * g0 + gm) / (h * h), Gs: (sp - sm) / (2 * hs) };
+  };
+  // G = G_BB + V * N, with V = phi(d1) the backbone's vega shape (flat vol sigHat): N reads as an implied-vol correction.
+  const addPrior = (f, xi, s) => {
+    if (!bb) return f;
+    const n = f.n; f.V = new Float64Array(n); f.Vx = new Float64Array(n); f.Vxx = new Float64Array(n); f.Vs = new Float64Array(n); f.N = Float64Array.from(f.G); f.Nx = Float64Array.from(f.Gx);
+    for (let i = 0; i < n; i++) {
+      const b = bbStreams(xi[i], s[i]), d1 = -xi[i] / sigHat + 0.5 * sigHat * s[i], V = DC.phi(d1), Vx = d1 * V / sigHat, Vxx = V * (d1 * d1 - 1) / (sigHat * sigHat), Vs = -0.5 * d1 * V * sigHat;
+      const N = f.G[i], Nx = f.Gx[i], Nxx = f.Gxx[i], Ns = f.Gs[i];
+      f.G[i] = b.G + V * N; f.Gx[i] = b.Gx + Vx * N + V * Nx; f.Gxx[i] = b.Gxx + Vxx * N + 2 * Vx * Nx + V * Nxx; f.Gs[i] = b.Gs + Vs * N + V * Ns;
+      f.V[i] = V; f.Vx[i] = Vx; f.Vxx[i] = Vxx; f.Vs[i] = Vs;
+    }
+    return f;
+  };
+  // pull gradients on G streams back to the network's N streams
+  const backward = (f, gG, gGx, gGxx, gGs) => {
+    if (!bb) return net.backward(f, gG, gGx, gGxx, gGs);
+    const n = f.n, a = new Float64Array(n), ax = new Float64Array(n), axx = new Float64Array(n), as = new Float64Array(n);
+    for (let i = 0; i < n; i++) { const V = f.V[i]; a[i] = gG[i] * V + gGx[i] * f.Vx[i] + gGxx[i] * f.Vxx[i] + gGs[i] * f.Vs[i]; ax[i] = gGx[i] * V + 2 * gGxx[i] * f.Vx[i]; axx[i] = gGxx[i] * V; as[i] = gGs[i] * V; }
+    return net.backward(f, a, ax, axx, as);
+  };
+  this.sigHat = sigHat;
+  // Vega-style point scales: residuals in price units are divided by the normal density at standardised
+  // moneyness z = xi / sigma, so the loss counts errors roughly in volatility points across the smile.
+  const vw = cfg.vegaWeight === false ? (() => 1) : (xi => { const z = xi / (sigHat || sig0); return 1 / (Math.exp(-0.5 * z * z) + (cfg.vegaFloor || 0.1)); });
+  this.vw = vw;
+  dq.forEach(p => p.w = vw(p.xi)); ic.forEach(p => p.w = vw(p.xi)); bc.forEach(p => p.w = 1);
+  // assemble all points into one forward pass
+  const evalAll = () => {
+    const pts = [].concat(dq, use.b ? ic : [], use.b ? bc : [], use.f || use.h ? col : []);
+    const xi = Float64Array.from(pts, p => p.xi), s = Float64Array.from(pts, p => p.s);
+    return { f: addPrior(net.forward(xi, s), xi, s), oB: dq.length, oC: dq.length + (use.b ? ic.length + bc.length : 0), pts };
+  };
+  // losses and per-category gradient seeds
+  const lossSeeds = (F, which) => {
+    const { f, oB, oC, pts } = F, n = f.n;
+    const seeds = {}; const mk = () => ({ gG: new Float64Array(n), gGx: new Float64Array(n), gGxx: new Float64Array(n), gGs: new Float64Array(n) });
+    const L = { data: 0, b: 0, f: 0, h: 0, viol: 0 };
+    { const S = mk(); seeds.data = S; const N = dq.length;
+      for (let i = 0; i < N; i++) { const r = f.G[i] - dq[i].G, w = (adaptive ? mD[i] : 1) * dq[i].w; L.data += w * w * r * r / N; S.gG[i] = 2 * w * w * r / N; this._rD[i] = r; } }
+    if (use.b) { const S = mk(); seeds.b = S; const N = ic.length + bc.length;
+      for (let i = oB; i < oC; i++) { const w = pts[i].w, r = f.G[i] - pts[i].G; L.b += w * w * r * r / N; S.gG[i] = 2 * w * w * r / N; } }
+    if (use.f) { const S = mk(); seeds.f = S; const N = nF;
+      for (let k = 0; k < nF; k++) { const i = oC + k, xi = pts[i].xi, s = pts[i].s, kap = Math.exp(xi * s), sg = vol(kap, s * s), v = sg * sg;
+        const G = f.G[i], Gx = f.Gx[i], Gxx = f.Gxx[i], Gs = f.Gs[i];
+        const w = vw(xi), w2 = w * w, r = G + s * Gs - xi * Gx - v * (Gxx - s * Gx); L.f += w2 * r * r / N;
+        const c2 = 2 * w2 * r / N; S.gG[i] = c2; S.gGs[i] = c2 * s; S.gGx[i] = c2 * (-xi + v * s); S.gGxx[i] = -c2 * v; } }
+    if (use.h) { const S = mk(); seeds.h = S; const N = nF;
+      for (let k = 0; k < nF; k++) { const i = oC + k, xi = pts[i].xi, s = pts[i].s, kap = Math.exp(xi * s);
+        const G = f.G[i], Gx = f.Gx[i], Gxx = f.Gxx[i], Gs = f.Gs[i];
+        // h <= 0 constraints: butterfly, call-spread upper, call-spread lower, calendar
+        const hs = [-(Gxx - s * Gx), Gx, -kap - Gx, -(G + s * Gs - xi * Gx)];
+        const vwi = vw(xi); for (let q = 0; q < 4; q++) { const h = hs[q] * vwi; this._rH[4 * k + q] = h > 0 ? h : 0; if (h <= 0) continue; const w = adaptive ? mH[4 * k + q] : 1, c2 = 2 * w * w * h * vwi / N; L.h += w * w * h * h / N; L.viol++;
+          if (q === 0) { S.gGxx[i] -= c2; S.gGx[i] += c2 * s; } else if (q === 1) S.gGx[i] += c2; else if (q === 2) S.gGx[i] -= c2; else { S.gG[i] -= c2; S.gGs[i] -= c2 * s; S.gGx[i] += c2 * xi; } } } }
+    return { L, seeds };
+  };
+  this._rD = new Float64Array(dq.length); this._rH = new Float64Array(nF * 4);
+  const combine = (seeds, n) => { const out = { gG: new Float64Array(n), gGx: new Float64Array(n), gGxx: new Float64Array(n), gGs: new Float64Array(n) };
+    for (const k in seeds) { const w = lam[k]; for (const a of ['gG', 'gGx', 'gGxx', 'gGs']) { const src = seeds[k][a], dst = out[a]; for (let i = 0; i < n; i++) dst[i] += w * src[i]; } } return out; };
+  this.lossGrad = () => { const F = evalAll(), { L, seeds } = lossSeeds(F), S = combine(seeds, F.f.n);
+    let tot = 0; for (const k in seeds) tot += lam[k] * L[k]; return { tot, L, grad: backward(F.f, S.gG, S.gGx, S.gGxx, S.gGs) }; };
+
+  // ---- L-BFGS (memory 20, backtracking Armijo line search) ----
+  const lb = { S: [], Y: [], g: null, f: null };
+  const objective = () => { const F = evalAll(), { L, seeds } = lossSeeds(F), S = combine(seeds, F.f.n);
+    let tot = 0; for (const k in seeds) tot += lam[k] * L[k]; return { tot, L, grad: backward(F.f, S.gG, S.gGx, S.gGxx, S.gGs) }; };
+  this.lbfgsIter = () => {
+    const th = net.theta;
+    if (!lb.g) { const o = objective(); lb.f = o.tot; lb.g = o.grad; }
+    const g = lb.g, m = lb.S.length, q = Float64Array.from(g), al = new Array(m), rho = new Array(m);
+    const dot = (a, b) => { let r = 0; for (let i = 0; i < P; i++) r += a[i] * b[i]; return r; };
+    for (let j = m - 1; j >= 0; j--) { rho[j] = 1 / dot(lb.Y[j], lb.S[j]); al[j] = rho[j] * dot(lb.S[j], q); for (let i = 0; i < P; i++) q[i] -= al[j] * lb.Y[j][i]; }
+    let gam = m ? dot(lb.S[m - 1], lb.Y[m - 1]) / dot(lb.Y[m - 1], lb.Y[m - 1]) : 1e-3 / Math.sqrt(dot(g, g) + 1e-30);
+    for (let i = 0; i < P; i++) q[i] *= gam;
+    for (let j = 0; j < m; j++) { const b = rho[j] * dot(lb.Y[j], q); for (let i = 0; i < P; i++) q[i] += lb.S[j][i] * (al[j] - b); }
+    let gd = -dot(g, q); if (!(gd < 0)) { lb.S = []; lb.Y = []; for (let i = 0; i < P; i++) q[i] = 1e-3 * g[i]; gd = -dot(g, q); }
+    const th0 = Float64Array.from(th); let t = 1, o = null;
+    for (let ls = 0; ls < 25; ls++) { for (let i = 0; i < P; i++) th[i] = th0[i] - t * q[i]; o = objective(); if (o.tot <= lb.f + 1e-4 * t * gd) break; t *= 0.5; o = null; }
+    if (!o) { for (let i = 0; i < P; i++) th[i] = th0[i]; lb.S = []; lb.Y = []; return; }
+    const sv = new Float64Array(P), yv = new Float64Array(P); for (let i = 0; i < P; i++) { sv[i] = th[i] - th0[i]; yv[i] = o.grad[i] - g[i]; }
+    if (dot(sv, yv) > 1e-12) { lb.S.push(sv); lb.Y.push(yv); if (lb.S.length > 20) { lb.S.shift(); lb.Y.shift(); } }
+    lb.f = o.tot; lb.g = o.grad;
+    if ((this.it + 1) % 20 === 0) this.hist.push({ it: this.it + 1, phase: 'lbfgs', data: o.L.data, b: o.L.b, f: o.L.f, h: o.L.h, viol: o.L.viol, lam: Object.assign({}, lam) });
+  };
+  this.step = (nSteps) => {
+    const b1 = 0.9, b2 = 0.999;
+    const total = cfg.iters + (cfg.lbfgs || 0);
+    for (let k = 0; k < nSteps && this.it < cfg.iters; k++) {
+      if (this.it > 0 && this.it % 200 === 0) resample();
+      const F = evalAll(), { L, seeds } = lossSeeds(F);
+      // self-adaptive category weights (every pL steps): lambda_chi = sum(alpha)/alpha_chi, alpha = mean |grad_theta L_chi|
+      if (adaptive && this.it % pL === 0) {
+        const al = {}; let sum = 0;
+        for (const key in seeds) { const g = backward(F.f, seeds[key].gG, seeds[key].gGx, seeds[key].gGxx, seeds[key].gGs); let a = 0; for (let i = 0; i < P; i++) a += Math.abs(g[i]); al[key] = a / P; sum += al[key]; }
+        const keys = Object.keys(al).filter(k => al[k] > 0), nk = keys.length || 1;
+        for (const key in al) { const target = al[key] > 0 ? (sum / al[key]) / nk : 1; lam[key] = Math.min(cfg.lamMax || 10, Math.max(cfg.lamMin || 0.1, this.it === 0 ? target : 0.9 * lam[key] + 0.1 * target)); }
+      }
+      // self-adaptive point weights (every pM steps): gradient ascent on m, normalised to mean 1
+      if (adaptive && this.it % pM === 0) {
+        const upd = (m, r) => { let ms = 0, mr = 0; for (let i = 0; i < r.length; i++) mr += r[i] * r[i]; mr /= r.length; if (mr <= 0) return;
+          for (let i = 0; i < m.length; i++) { m[i] = Math.min(mMax, m[i] * (1 + etaM * r[i] * r[i] / mr)); ms += m[i]; } ms /= m.length; for (let i = 0; i < m.length; i++) m[i] /= ms; };
+        if (cfg.mOnData) upd(mD, this._rD); if (use.h) upd(mH, this._rH);
+      }
+      const S = combine(seeds, F.f.n), grad = backward(F.f, S.gG, S.gGx, S.gGxx, S.gGs);
+      this.it++;
+      const lr = cfg.lr * Math.pow(0.9, this.it / (cfg.iters / 10)), c1 = 1 - Math.pow(b1, this.it), c2 = 1 - Math.pow(b2, this.it), th = net.theta;
+      for (let i = 0; i < P; i++) { mA[i] = b1 * mA[i] + (1 - b1) * grad[i]; vA[i] = b2 * vA[i] + (1 - b2) * grad[i] * grad[i]; th[i] -= lr * (mA[i] / c1) / (Math.sqrt(vA[i] / c2) + 1e-8); }
+      if (this.it % 20 === 0 || this.it === 1) this.hist.push({ it: this.it, phase: 'adam', data: L.data, b: L.b, f: L.f, h: L.h, viol: L.viol, lam: Object.assign({}, lam) });
+    }
+    // L-BFGS phase on the same (frozen) points and weights, as in optim/lbfgs_phase.py
+    for (let k = 0; k < nSteps && this.it >= cfg.iters && this.it < total; k++) { this.lbfgsIter(); this.it++; }
+    return this.it / total;
+  };
+  // evaluate prices and derivatives at (kappa, T) points
+  this.eval = (kaps, Ts) => {
+    const n = kaps.length, xi = new Float64Array(n), s = new Float64Array(n);
+    for (let i = 0; i < n; i++) { s[i] = Math.sqrt(Ts[i]); xi[i] = Math.log(kaps[i]) / s[i]; }
+    const f = addPrior(net.forward(xi, s), xi, s), out = [];
+    for (let i = 0; i < n; i++) out.push(DC.toPrice(xi[i], s[i], f.G[i], f.Gx[i], f.Gxx[i], f.Gs[i]));
+    return out;
+  };
+};
+
+if (typeof module !== 'undefined') module.exports = DC;
+
+// ---------- evaluation against the reference ----------
+DC.EVAL_T = (() => { const out = []; for (let i = 0; i <= 24; i++) { const s = Math.sqrt(1 / 24) + (Math.sqrt(2) - Math.sqrt(1 / 24)) * i / 24; out.push(Math.round(s * s * 1200) / 1200); } DC.EXPIRIES.forEach(e => out.push(e.T)); return Array.from(new Set(out)).sort((a, b) => a - b); })();
+DC.EVAL_Z = (() => { const out = []; for (let z = -2.5; z <= 2.5001; z += 0.1) out.push(Math.round(z * 10) / 10); return out; })();
+DC.TOL = { bfly: 1e-4, cal: 1e-5, cs: 1e-6 };
+// Returns per-point records and summary statistics. truth(kappa,T) and truthG(kappa,T) (exact derivatives, optional).
+DC.evaluate = function (tr, truth, vol) {
+  const kaps = [], Ts = [], meta = [];
+  for (const T of DC.EVAL_T) { const sA = vol(1, T); for (const z of DC.EVAL_Z) { kaps.push(Math.exp(z * sA * Math.sqrt(T))); Ts.push(T); meta.push({ z, T }); } }
+  const res = tr.eval(kaps, Ts), pts = [];
+  let n = 0, nq = 0, sAbs = 0, mAbs = 0, sPx = 0, bad = { bfly: 0, cal: 0, cs: 0, any: 0 }, nArb = 0;
+  for (let i = 0; i < res.length; i++) {
+    const r = res[i], m = meta[i], cT = truth(r.kap, m.T), ivT = DC.impliedVol(cT, r.kap, m.T), iv = DC.impliedVol(r.c, r.kap, m.T);
+    const quoted = Math.abs(m.z) <= 2 + 1e-9 && m.T >= 1 / 12 - 1e-9;
+    const b1 = r.ckk < -DC.TOL.bfly, b2 = r.cT < -DC.TOL.cal, b3 = r.ck > DC.TOL.cs || r.ck < -1 - DC.TOL.cs;
+    nArb++; if (b1) bad.bfly++; if (b2) bad.cal++; if (b3) bad.cs++; if (b1 || b2 || b3) bad.any++;
+    const e = isFinite(iv) && isFinite(ivT) ? iv - ivT : NaN;
+    if (quoted) { nq++; if (isFinite(e)) { sAbs += Math.abs(e); mAbs = Math.max(mAbs, Math.abs(e)); n++; } else mAbs = Infinity; sPx += Math.abs(r.c - cT); }
+    pts.push({ z: m.z, T: m.T, kap: r.kap, c: r.c, ck: r.ck, ckk: r.ckk, cT: r.cT, iv, ivT, e, quoted, b1, b2, b3 });
+  }
+  return { pts, meanVolErr: sAbs / Math.max(n, 1), maxVolErr: mAbs, meanPxErr: sPx / Math.max(nq, 1), nanIV: nq - n, bad, nArb };
+};
+
+// ===================== UI =====================
+(function () {
+const $ = id => document.getElementById(id);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COL = () => ({ truth: css('--ink'), marks: css('--s5'), fit: css('--s3'), dc: css('--accent'), grid: css('--grid'), line: css('--line'), muted: css('--muted'), panel: css('--panel'), s1: css('--s1'), s4: css('--s4') });
+const fmt = (v, d = 2) => isFinite(v) ? v.toFixed(d) : '–';
+let state = { exp: 3 }, running = false, stopFlag = false;
+
+// ---------- settings ----------
+const settings = () => {
+  const c = $('case').value;
+  return { case: c, sigma: +$('sig').value, beta: +$('beta').value, gamma: +$('gam').value, B: +$('Bt').value,
+    S0: +$('S0').value, r: +$('rr').value / 100, q: +$('qq').value / 100, noise: +$('noise').value / 100, seed: +$('seed').value | 0,
+    adam: Math.max(100, +$('adam').value | 0), lbfgs: Math.max(0, +$('lbfgs').value | 0) };
+};
+const syncLabels = () => {
+  const s = settings();
+  $('v_sig').textContent = (s.sigma * 100).toFixed(0) + '%'; $('v_beta').textContent = s.beta.toFixed(2); $('v_gam').textContent = s.gamma.toFixed(2);
+  $('v_Bt').textContent = (s.B >= 0 ? '+' : '') + s.B.toFixed(3); $('v_noise').textContent = s.noise * 100 > 0 ? (s.noise * 100).toFixed(1) + ' vol' : 'none';
+  $('lvBox').hidden = s.case !== 'lv';
+  $('caseHint').textContent = s.case === 'bs' ? 'Every option is priced by Black–Scholes at one volatility. The true surface is known in closed form, so every error can be measured exactly.'
+    : 'Prices come from a local-volatility model with a downside skew and a smile. The true surface is computed by a high-resolution finite-difference solver of Dupire’s equation.';
+};
+['case', 'sig', 'beta', 'gam', 'Bt', 'noise'].forEach(id => $(id).addEventListener('input', syncLabels));
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'p-' + b.dataset.tab);
+  draw();
+}));
+const makeSeg = (id) => { const el = $(id); el.innerHTML = DC.EXPIRIES.map((e, i) => `<button type="button" data-i="${i}" aria-pressed="${i === state.exp}">${e.lab}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { state.exp = +b.dataset.i; ['expSeg', 'expSeg2', 'expSeg3'].forEach(makeSeg); draw(); })); };
+
+// ---------- canvas plotting ----------
+function plot(cv, o) {
+  const C = COL(), dpr = window.devicePixelRatio || 1, W = cv.clientWidth || 600, H = o.h || 280;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px'; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const ml = 54, mr = 12, mt = 10, mb = 38, pw = W - ml - mr, ph = H - mt - mb;
+  let xs = [], ys = []; o.series.forEach(s => s.pts.forEach(p => { if (isFinite(p[0]) && isFinite(p[1])) { xs.push(p[0]); ys.push(o.logy ? Math.log10(Math.max(p[1], 1e-30)) : p[1]); } }));
+  if (o.band) ys.push(o.band[0], o.band[1]);
+  if (!xs.length) { g.fillStyle = C.muted; g.font = '13px Inter, sans-serif'; g.fillText(o.empty || 'Press Train to fit the models.', ml, mt + 20); return; }
+  let x0 = o.xlim ? o.xlim[0] : Math.min(...xs), x1 = o.xlim ? o.xlim[1] : Math.max(...xs), y0 = o.ylim ? o.ylim[0] : Math.min(...ys), y1 = o.ylim ? o.ylim[1] : Math.max(...ys);
+  if (o.zeroLine && !o.logy) { y0 = Math.min(y0, 0); y1 = Math.max(y1, 0); }
+  if (y1 - y0 < 1e-12) { y0 -= 1; y1 += 1; } const py = (y1 - y0) * 0.06; y0 -= py; y1 += py;
+  const X = x => ml + (x - x0) / (x1 - x0) * pw, Y = y => mt + (1 - ((o.logy ? Math.log10(Math.max(y, 1e-30)) : y) - y0) / (y1 - y0)) * ph;
+  const nice = (lo, hi, n) => { const st0 = (hi - lo) / n, m = Math.pow(10, Math.floor(Math.log10(st0))), r = st0 / m, st = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * m, out = []; for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-12; v += st) out.push(+v.toPrecision(10)); return out; };
+  g.font = '11.5px Inter, sans-serif'; g.lineWidth = 1;
+  nice(y0, y1, 4).forEach(v => { const y = mt + (1 - (v - y0) / (y1 - y0)) * ph; g.strokeStyle = C.grid; g.beginPath(); g.moveTo(ml, y); g.lineTo(W - mr, y); g.stroke(); g.fillStyle = C.muted; g.textAlign = 'right'; g.fillText(o.logy ? '1e' + v : (o.yfmt ? o.yfmt(v) : +v.toPrecision(4)), ml - 6, y + 4); });
+  nice(x0, x1, 6).forEach(v => { const x = X(v); g.strokeStyle = C.line; g.beginPath(); g.moveTo(x, mt + ph); g.lineTo(x, mt + ph + 4); g.stroke(); g.fillStyle = C.muted; g.textAlign = 'center'; g.fillText(o.xfmt ? o.xfmt(v) : +v.toPrecision(4), x, mt + ph + 17); });
+  g.strokeStyle = C.line; g.beginPath(); g.moveTo(ml, mt + ph); g.lineTo(W - mr, mt + ph); g.stroke();
+  if (o.xlab) { g.fillStyle = C.muted; g.textAlign = 'center'; g.fillText(o.xlab, ml + pw / 2, H - 4); }
+  if (o.band) { g.fillStyle = css('--accent-soft'); g.globalAlpha = 0.6; g.fillRect(ml, Y(o.band[1]), pw, Y(o.band[0]) - Y(o.band[1])); g.globalAlpha = 1; }
+  if (o.zeroLine && !o.logy && y0 < 0 && y1 > 0) { g.strokeStyle = C.muted; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(ml, Y(0)); g.lineTo(W - mr, Y(0)); g.stroke(); g.setLineDash([]); }
+  (o.vlines || []).forEach(v => { g.strokeStyle = C.muted; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(X(v), mt); g.lineTo(X(v), mt + ph); g.stroke(); g.setLineDash([]); });
+  g.save(); g.beginPath(); g.rect(ml, mt, pw, ph); g.clip();
+  o.series.forEach(s => {
+    g.strokeStyle = s.color; g.fillStyle = s.color; g.lineWidth = s.width || 2; g.setLineDash(s.dash || []);
+    if (s.dots) s.pts.forEach(p => { if (!isFinite(p[1])) return; g.beginPath(); g.arc(X(p[0]), Y(p[1]), s.r || 3.5, 0, 7); g.fill(); });
+    else { g.beginPath(); let on = false; s.pts.forEach(p => { if (!isFinite(p[1])) { on = false; return; } const x = X(p[0]), y = Y(p[1]); on ? g.lineTo(x, y) : g.moveTo(x, y); on = true; }); g.stroke(); }
+    g.setLineDash([]);
+  });
+  g.restore();
+}
+const legend = (id, items) => { $(id).innerHTML = items.map(([c, t, dash]) => `<span><i style="background:${c};${dash ? 'opacity:.7' : ''}"></i>${t}</span>`).join(''); };
+
+// ---------- model run ----------
+let R = null; // results of the last run
+const sleep = () => new Promise(r => setTimeout(r, 0));
+const setProg = f => { const p = $('prog'); p.style.visibility = f == null ? 'hidden' : 'visible'; p.firstElementChild.style.width = ((f || 0) * 100) + '%'; };
+async function run() {
+  if (running) return; running = true; stopFlag = false; $('train').disabled = true; $('stop').disabled = false; $('status').classList.remove('err');
+  const s = settings(), vol = DC.makeVol({ case: s.case, sigma: s.sigma, beta: s.beta, gamma: s.gamma, B: s.B });
+  try {
+    $('status').textContent = s.case === 'bs' ? 'Black–Scholes closed form.' : 'Solving Dupire’s equation for the true surface…'; setProg(0.01); await sleep();
+    const rows = Array.from(new Set(DC.EVAL_T.concat(DC.EXPIRIES.map(e => e.T))));
+    const truth = s.case === 'bs' ? ((k, T) => DC.bsC(k, T, s.sigma)) : DC.solveFD(vol, { rows, ny: 3201, dt: 1 / 1200, Y: 3 }).price;
+    const quotes = DC.makeQuotes(truth, vol, s.noise, s.seed);
+    const base = { XI: 2.5, Tmax: 2, vol, depth: 2, width: 20, seed: 3, quotes, nColl: 192, iters: s.adam, lbfgs: s.lbfgs, lr: 3e-3, etaM: 0.05, pM: 10, pL: 100, backbone: DC.bbfVol(vol) };
+    const models = {}, t0 = performance.now(), total = 2 * (s.adam + s.lbfgs);
+    let done = 0;
+    for (const [key, mode, label] of [['fit', 'data', 'plain neural fit'], ['dc', 'dc', 'DC-PINN']]) {
+      const tr = new DC.Trainer(Object.assign({}, base, { mode })); models[key] = tr;
+      let f = 0, last = performance.now();
+      while (f < 1) { if (stopFlag) throw new Error('stopped'); f = tr.step(mode === 'data' ? 100 : 10);
+        if (performance.now() - last > 60) { setProg((done + f * (s.adam + s.lbfgs)) / total); $('status').textContent = `Training ${label}: step ${tr.it} of ${s.adam + s.lbfgs}${tr.it > s.adam ? ' (L-BFGS)' : ' (Adam)'}`; await sleep(); last = performance.now(); } }
+      done += s.adam + s.lbfgs;
+    }
+    $('status').textContent = 'Checking both surfaces…'; await sleep();
+    R = { s, vol, truth, quotes, models, ev: { fit: DC.evaluate(models.fit, truth, vol), dc: DC.evaluate(models.dc, truth, vol) }, secs: (performance.now() - t0) / 1000 };
+    $('status').textContent = `Done in ${R.secs.toFixed(1)} s.`;
+  } catch (e) { $('status').textContent = e.message === 'stopped' ? 'Stopped.' : 'Error: ' + e.message; if (e.message !== 'stopped') { $('status').classList.add('err'); console.error(e); } }
+  setProg(null); running = false; $('train').disabled = false; $('stop').disabled = true; draw();
+}
+$('train').addEventListener('click', run);
+$('stop').addEventListener('click', () => { stopFlag = true; });
+
+// ---------- helpers on results ----------
+const smileK = (T, n = 81) => { const sA = R.vol(1, T), out = []; for (let i = 0; i < n; i++) { const z = -2.5 + 5 * i / (n - 1); out.push(Math.exp(z * sA * Math.sqrt(T))); } return out; };
+const modelAt = (tr, kaps, T) => tr.eval(kaps, kaps.map(() => T));
+const truthGreeks = (k, T) => { if (R.s.case === 'bs') return DC.bsGreeks(k, T, R.s.sigma); const h = 1e-3 * k, c = R.truth(k, T), cp = R.truth(k + h, T), cm = R.truth(k - h, T); return { c, ck: (cp - cm) / (2 * h), ckk: (cp - 2 * c + cm) / (h * h) }; };
+
+function drawCards() {
+  if (!R) { $('cards').innerHTML = '<div class="card"><b>–</b><span>Press Train (left) to fit both models.</span></div>'; return; }
+  const f = R.ev.fit, d = R.ev.dc, pct = e => (100 * e.bad.any / e.nArb).toFixed(1) + '%';
+  $('cards').innerHTML = [
+    [fmt(d.meanVolErr * 100, 3), 'DC-PINN mean |vol error| over the marked range (vol points)'],
+    [fmt(f.meanVolErr * 100, 3), 'Plain neural fit mean |vol error| (vol points)'],
+    [isFinite(d.maxVolErr) ? fmt(d.maxVolErr * 100, 2) : 'n/a', 'DC-PINN worst |vol error| (vol points)'],
+    [isFinite(f.maxVolErr) ? fmt(f.maxVolErr * 100, 2) : 'no vol', 'Plain fit worst |vol error| (vol points; “no vol” where its price leaves the arbitrage bounds)'],
+    [pct(d), `DC-PINN grid points with arbitrage (${d.bad.any} of ${d.nArb})`],
+    [pct(f), `Plain fit grid points with arbitrage (${f.bad.any} of ${f.nArb})`],
+    [fmt(R.s.noise * 100, 1), 'Noise on the marks (vol points)'],
+  ].map(([b, s]) => `<div class="card"><b>${b}</b><span>${s}</span></div>`).join('');
+}
+
+function drawSmile() {
+  const C = COL(); legend('lgSmile', [[C.truth, 'True surface'], [C.marks, 'Marks'], [C.fit, 'Plain neural fit'], [C.dc, 'DC-PINN']]);
+  legend('lgErr', [[C.fit, 'Plain neural fit'], [C.dc, 'DC-PINN'], [C.marks, 'Marks']]);
+  if (!R) { plot($('cvSmile'), { series: [] }); plot($('cvErr'), { series: [] }); $('tblErr').innerHTML = ''; return; }
+  const e = DC.EXPIRIES[state.exp], T = e.T, ks = smileK(T), x = ks.map(k => k * 100);
+  const iv = rs => rs.map((r, i) => [x[i], DC.impliedVol(r.c, ks[i], T) * 100]);
+  const tr = ks.map((k, i) => [x[i], DC.impliedVol(R.truth(k, T), k, T) * 100]);
+  const fit = iv(modelAt(R.models.fit, ks, T)), dc = iv(modelAt(R.models.dc, ks, T));
+  const mk = R.quotes.filter(q => q.T === T).map(q => [q.kap * 100, q.ivObs * 100]);
+  plot($('cvSmile'), { series: [{ pts: tr, color: C.truth, width: 2.5 }, { pts: fit, color: C.fit, dash: [6, 4] }, { pts: dc, color: C.dc }, { pts: mk, color: C.marks, dots: true }], xlab: 'Strike, % of forward (' + e.lab + ')', yfmt: v => v.toFixed(1) });
+  const err = a => a.map((p, i) => [p[0], p[1] - tr[i][1]]);
+  const mkErr = R.quotes.filter(q => q.T === T).map(q => [q.kap * 100, (q.ivObs - q.ivTrue) * 100]);
+  const nz = R.s.noise * 100;
+  plot($('cvErr'), { series: [{ pts: err(fit), color: C.fit, dash: [6, 4] }, { pts: err(dc), color: C.dc }, { pts: mkErr, color: C.marks, dots: true }], xlab: 'Strike, % of forward (' + e.lab + ')', zeroLine: true, band: nz > 0 ? [-nz, nz] : null, h: 240 });
+  // table over expiries: mean |error| inside the marked range
+  const rowsH = DC.EXPIRIES.map(ex => { const kk = smileK(ex.T, 41).filter((k, i) => Math.abs(-2.5 + 5 * i / 40) <= 2 + 1e-9);
+    const tv = kk.map(k => DC.impliedVol(R.truth(k, ex.T), k, ex.T));
+    const m = tr2 => { const r = modelAt(tr2, kk, ex.T); let s = 0, n = 0, mx = 0; r.forEach((p, i) => { const v = DC.impliedVol(p.c, kk[i], ex.T); if (isFinite(v)) { s += Math.abs(v - tv[i]); n++; mx = Math.max(mx, Math.abs(v - tv[i])); } else mx = Infinity; }); return [n ? s / n * 100 : NaN, mx * 100]; };
+    const q = R.quotes.filter(x => x.T === ex.T), qe = q.reduce((a, x) => a + Math.abs(x.ivObs - x.ivTrue), 0) / q.length * 100;
+    const a = m(R.models.fit), b = m(R.models.dc);
+    return `<tr><td>${ex.lab}</td><td>${fmt(qe, 3)}</td><td>${fmt(a[0], 3)}</td><td>${isFinite(a[1]) ? fmt(a[1], 2) : 'no vol'}</td><td class="${b[0] < a[0] ? 'best' : ''}">${fmt(b[0], 3)}</td><td>${fmt(b[1], 2)}</td></tr>`; });
+  $('tblErr').innerHTML = `<thead><tr><th>Expiry</th><th>Marks: mean |error|</th><th>Plain fit: mean</th><th>Plain fit: worst</th><th>DC-PINN: mean</th><th>DC-PINN: worst</th></tr></thead><tbody>${rowsH.join('')}</tbody>`;
+}
+
+function drawArb() {
+  const C = COL();
+  legend('lgDens', [[C.truth, 'True density'], [C.fit, 'Plain neural fit'], [C.dc, 'DC-PINN']]);
+  const mapLegend = [[C.dc, 'Butterfly'], [C.s1, 'Calendar'], [C.marks, 'Call spread']];
+  legend('lgMap1', mapLegend); legend('lgMap2', mapLegend);
+  if (!R) { ['cvMapFit', 'cvMapDC', 'cvDens'].forEach(id => plot($(id), { series: [] })); $('tblArb').innerHTML = ''; return; }
+  const qa = DC.quoteArbitrage(R.quotes), f = R.ev.fit, d = R.ev.dc;
+  $('tblArb').innerHTML = `<thead><tr><th class="l">Surface</th><th>Call-spread failures</th><th>Butterfly failures</th><th>Calendar failures</th><th>Points with any arbitrage</th></tr></thead><tbody>
+   <tr><td class="l">The 45 marks (discrete check per expiry)</td><td>${qa.badcs} of ${qa.ncs}</td><td>${qa.bad} of ${qa.nb}</td><td>–</td><td>–</td></tr>
+   <tr><td class="l">Plain neural fit</td><td class="${f.bad.cs ? 'bad' : ''}">${f.bad.cs}</td><td class="${f.bad.bfly ? 'bad' : ''}">${f.bad.bfly}</td><td class="${f.bad.cal ? 'bad' : ''}">${f.bad.cal}</td><td class="${f.bad.any ? 'bad' : ''}">${f.bad.any} of ${f.nArb}</td></tr>
+   <tr><td class="l">DC-PINN</td><td class="${d.bad.cs ? 'bad' : 'good'}">${d.bad.cs}</td><td class="${d.bad.bfly ? 'bad' : 'good'}">${d.bad.bfly}</td><td class="${d.bad.cal ? 'bad' : 'good'}">${d.bad.cal}</td><td class="${d.bad.any ? 'bad' : 'good'}">${d.bad.any} of ${d.nArb}</td></tr></tbody>`;
+  const map = (ev) => { const ser = [{ pts: [], color: C.marks, dots: true, r: 3 }, { pts: [], color: C.s1, dots: true, r: 3 }, { pts: [], color: C.dc, dots: true, r: 3 }, { pts: ev.pts.map(p => [p.z, Math.sqrt(p.T)]), color: C.grid, dots: true, r: 1.2 }];
+    ev.pts.forEach(p => { if (p.b3) ser[0].pts.push([p.z, Math.sqrt(p.T)]); if (p.b2) ser[1].pts.push([p.z, Math.sqrt(p.T)]); if (p.b1) ser[2].pts.push([p.z, Math.sqrt(p.T)]); });
+    return { series: [ser[3], ser[0], ser[1], ser[2]], xlab: 'Standardised moneyness z = ln(K/F)/(σ√T)', ylim: [Math.sqrt(1 / 24), Math.sqrt(2)], yfmt: v => { const T = v * v; return T < 1 ? Math.round(T * 12) + 'M' : (T).toFixed(1) + 'Y'; }, h: 240 }; };
+  plot($('cvMapFit'), map(f)); plot($('cvMapDC'), map(d));
+  const e = DC.EXPIRIES[state.exp], T = e.T, ks = smileK(T, 121), x = ks.map(k => k * 100);
+  const dens = tr => modelAt(tr, ks, T).map((r, i) => [x[i], r.ckk]);
+  plot($('cvDens'), { series: [{ pts: ks.map((k, i) => [x[i], truthGreeks(k, T).ckk]), color: C.truth, width: 2.5 }, { pts: dens(R.models.fit), color: C.fit, dash: [6, 4] }, { pts: dens(R.models.dc), color: C.dc }], xlab: 'Strike, % of forward (' + e.lab + ')', zeroLine: true });
+}
+
+function drawGreeks() {
+  const C = COL(); legend('lgDelta', [[C.truth, 'True'], [C.fit, 'Plain neural fit'], [C.dc, 'DC-PINN']]); legend('lgGamma', [[C.truth, 'True'], [C.fit, 'Plain neural fit'], [C.dc, 'DC-PINN']]);
+  if (!R) { plot($('cvDelta'), { series: [] }); plot($('cvGamma'), { series: [] }); $('tblTicket').innerHTML = ''; return; }
+  const s = R.s, e = DC.EXPIRIES[state.exp], T = e.T, F = s.S0 * Math.exp((s.r - s.q) * T), D = Math.exp(-s.r * T), ks = smileK(T, 101), x = ks.map(k => k * F / s.S0 * 100);
+  // C = D F c(K/F); dC/dS = D (F/S)(c - k c_k); d2C/dS2 = D (F/S^2) k^2 c_kk; gamma per 1% move in delta = S * d2C/dS2 / 100
+  const delta = r => D * (F / s.S0) * (r.c - r.kap * r.ck), gamma = r => D * (F / s.S0) * r.kap * r.kap * r.ckk / 100;
+  const tg = ks.map(k => Object.assign({ kap: k }, truthGreeks(k, T)));
+  const fr = modelAt(R.models.fit, ks, T), dr = modelAt(R.models.dc, ks, T);
+  const xl = 'Strike, % of spot (' + e.lab + ')';
+  plot($('cvDelta'), { series: [{ pts: tg.map((r, i) => [x[i], delta(r)]), color: C.truth, width: 2.5 }, { pts: fr.map((r, i) => [x[i], delta(r)]), color: C.fit, dash: [6, 4] }, { pts: dr.map((r, i) => [x[i], delta(r)]), color: C.dc }], xlab: xl, h: 240 });
+  plot($('cvGamma'), { series: [{ pts: tg.map((r, i) => [x[i], gamma(r)]), color: C.truth, width: 2.5 }, { pts: fr.map((r, i) => [x[i], gamma(r)]), color: C.fit, dash: [6, 4] }, { pts: dr.map((r, i) => [x[i], gamma(r)]), color: C.dc }], xlab: xl, zeroLine: true, h: 240 });
+  // ticket
+  const Kp = +$('tkK').value / 100, put = $('tkType').value === 'put', Nn = +$('tkN').value || 1, k = Kp * s.S0 / F;
+  const price = r => { const call = D * F * r.c; return put ? call - D * (F - k * F) : call; };
+  const dl = r => { const dc = delta(r); return put ? dc - D * F / s.S0 : dc; };
+  const line = (lab, r) => { const iv = DC.impliedVol(r.c, k, T); return `<tr><td class="l">${lab}</td><td>${fmt(price(r), 2)}</td><td>${fmt(price(r) * Nn, 0)}</td><td>${fmt(iv * 100, 2)}</td><td>${fmt(dl(r) * 100, 2)}</td><td>${fmt(gamma(r) * 100, 3)}</td></tr>`; };
+  const t1 = Object.assign({ kap: k }, truthGreeks(k, T)), f1 = modelAt(R.models.fit, [k], T)[0], d1 = modelAt(R.models.dc, [k], T)[0];
+  $('tblTicket').innerHTML = `<thead><tr><th class="l">${e.lab} ${put ? 'put' : 'call'}, strike ${fmt(Kp * s.S0, 0)} (${fmt(Kp * 100, 1)}% of spot, ${fmt(k * 100, 1)}% of forward ${fmt(F, 0)})</th><th>Price (index pts)</th><th>Premium</th><th>Implied vol (%)</th><th>Delta (%)</th><th>Gamma (% per 1%)</th></tr></thead><tbody>${line('True', t1)}${line('Plain neural fit', f1)}${line('DC-PINN', d1)}</tbody>`;
+}
+['tkK', 'tkType', 'tkN'].forEach(id => $(id).addEventListener('input', () => drawGreeks()));
+
+function drawTrain() {
+  const C = COL();
+  legend('lgLoss', [[C.marks, 'Data'], [C.s1, 'Boundary'], [C.truth, 'PDE residual'], [C.dc, 'Constraints']]);
+  legend('lgLam', [[C.marks, 'λ data'], [C.s1, 'λ boundary'], [C.truth, 'λ PDE'], [C.dc, 'λ constraints']]);
+  if (!R) { plot($('cvLoss'), { series: [] }); plot($('cvLam'), { series: [] }); return; }
+  const h = R.models.dc.hist, k = ['data', 'b', 'f', 'h'], cols = [C.marks, C.s1, C.truth, C.dc];
+  plot($('cvLoss'), { series: k.map((key, i) => ({ pts: h.map(p => [p.it, Math.max(p[key], 1e-16)]), color: cols[i], width: 1.6 })), logy: true, xlab: 'Step', vlines: [R.s.adam] });
+  plot($('cvLam'), { series: k.map((key, i) => ({ pts: h.map(p => [p.it, p.lam[key]]), color: cols[i], width: 1.6 })), logy: true, xlab: 'Step', vlines: [R.s.adam] });
+}
+
+function draw() { drawCards(); const t = document.querySelector('.tabs button[aria-selected=true]').dataset.tab;
+  if (t === 'smile') drawSmile(); if (t === 'arb') drawArb(); if (t === 'greeks') drawGreeks(); if (t === 'train') drawTrain(); }
+window.addEventListener('resize', () => draw());
+['expSeg', 'expSeg2', 'expSeg3'].forEach(makeSeg); syncLabels(); draw();
+window.addEventListener('load', () => { setTimeout(run, 200); });
+})();
+
+</script>
+</body>
+</html>

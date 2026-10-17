@@ -1,78 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-title-en="Research · Paolo Barucca" data-title-it="Ricerca · Paolo Barucca">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Research · Paolo Barucca</title>
+  <script>
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'it' || q === 'en') localStorage.setItem('lang', q);
+      var l = localStorage.getItem('lang') || ((navigator.language || '').slice(0, 2) === 'it' ? 'it' : 'en');
+      document.documentElement.dataset.lang = l;
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="lang.js" defer></script>
 </head>
 <body>
 <header class="site">
   <nav class="nav">
     <a class="name" href="index.html">Paolo Barucca</a>
-    <a href="research.html" aria-current="page">Research</a>
-    <a href="teaching.html">Teaching</a>
-    <a href="consultancy.html">Consultancy</a>
+    <a href="research.html" aria-current="page"><span class="en">Research</span><span class="it">Ricerca</span></a>
+    <a href="teaching.html"><span class="en">Teaching</span><span class="it">Didattica</span></a>
+    <a href="outreach.html"><span class="en">Outreach</span><span class="it">Divulgazione</span></a>
+    <a href="consultancy.html"><span class="en">Consultancy</span><span class="it">Consulenza</span></a>
     <a href="comedy.html">Comedy</a>
-    <a href="links.html">Links</a>
-    <a href="contact.html">Contact</a>
+    <a href="writing.html"><span class="en">Writing</span><span class="it">Scrittura</span></a>
+    <button class="lang" type="button">IT</button>
   </nav>
 </header>
 
 <main>
-  <h1>Research</h1>
-  <p class="lead">Statistical physics, network science and machine learning for complex systems.</p>
+<h1><span class="en">Research</span><span class="it">Ricerca</span></h1>
+  <p class="lead"><span class="en">Statistical physics, network science and machine learning for complex systems.</span><span class="it">Fisica statistica, scienza delle reti e machine learning per i sistemi complessi.</span></p>
 
-  <p>My research develops principled, physics-inspired models that equip data-driven methods with robustness, interpretability and theoretical foundations, especially when applied to highly interconnected and non-stationary environments. Full publication list on <a href="https://scholar.google.com/citations?user=8zCztWEAAAAJ&hl=en">Google Scholar</a>.</p>
+  <p><span class="en">My research develops principled, physics-inspired models that equip data-driven methods with robustness, interpretability and theoretical foundations, especially when applied to highly interconnected and non-stationary environments.</span><span class="it">La mia ricerca sviluppa modelli rigorosi, ispirati alla fisica, che danno ai metodi basati sui dati robustezza, interpretabilità e fondamenta teoriche, soprattutto in ambienti molto interconnessi e non stazionari.</span>
+     <span class="en">Full publication list on</span><span class="it">L’elenco completo delle pubblicazioni è su</span> <a href="https://scholar.google.com/citations?user=8zCztWEAAAAJ&hl=en">Google Scholar</a>.</p>
 
-  <h2>Themes</h2>
-  <h3>Complex networks modelling</h3>
-  <p>Temporal networks, contagion processes, liquidity cascades, and network evolution in financial markets. Try the <a href="metn.html">maximum-entropy temporal network explorer</a> to fit and compare continuous-time models in your browser.</p>
-  <h3>Statistical learning via random matrix theory and disordered systems</h3>
-  <p>Extracting signal from noise in high-dimensional data; spectral features of covariance structures.</p>
-  <h3>Machine learning for dynamical systems</h3>
-  <p>Learning under non-stationarity, physics-informed architectures combined with data-driven components, forecasting and risk assessment.</p>
+  <h2><span class="en">Areas</span><span class="it">Aree</span></h2>
+  <h3><span class="en">Temporal networks</span><span class="it">Reti temporali</span></h3>
+  <p><span class="en">Continuous-time models of interactions that change over time: maximum-entropy temporal networks, point processes and network evolution in financial markets.</span><span class="it">Modelli a tempo continuo per interazioni che cambiano nel tempo: reti temporali a massima entropia, processi di punto ed evoluzione delle reti nei mercati finanziari.</span></p>
+  <h3><span class="en">Complex systems</span><span class="it">Sistemi complessi</span></h3>
+  <p><span class="en">Stability of large interacting systems, contagion processes and liquidity cascades, and what finite data can and cannot tell us about them.</span><span class="it">Stabilità dei grandi sistemi interagenti, processi di contagio e cascate di liquidità, e cosa i dati finiti possono e non possono dirci su di essi.</span></p>
+  <h3><span class="en">Statistical physics for machine learning in finance</span><span class="it">Fisica statistica per il machine learning in finanza</span></h3>
+  <p><span class="en">Random matrix theory and disordered systems to extract signal from noise in high-dimensional data and to read the curvature of loss landscapes, and physics-informed neural networks (PINNs) for option pricing and volatility calibration under no-arbitrage constraints.</span><span class="it">Teoria delle matrici aleatorie e sistemi disordinati per separare il segnale dal rumore nei dati ad alta dimensione e leggere la curvatura dei paesaggi di loss, e reti neurali informate dalla fisica (PINN) per il pricing di opzioni e la calibrazione della volatilità con vincoli di non arbitraggio.</span></p>
+  <h3><span class="en">Artificial intelligence</span><span class="it">Intelligenza artificiale</span></h3>
+  <p><span class="en">How optimisers shape training dynamics, learning under non-stationarity, and second-order methods that exploit the structure of the curvature.</span><span class="it">Come gli ottimizzatori plasmano la dinamica dell’addestramento, l’apprendimento in condizioni non stazionarie e i metodi del secondo ordine che sfruttano la struttura della curvatura.</span></p>
 
-  <h2>Interactive tools</h2>
-  <div class="grid">
-    <a class="card" href="metn.html">
-      <h3>Temporal network explorer</h3>
-      <p>Fit time-layer × maximum-entropy mark-layer models (Poisson, NHPP, Hawkes; DWCM, block models) to temporal networks. Compare held-out likelihoods, diagnostics, raster plots and animated dynamics, on synthetic data or your own edge lists.</p>
-    </a>
-    <a class="card" href="https://arxiv.org/abs/2509.02098">
-      <h3>Maximum entropy temporal networks</h3>
-      <p>The paper behind the explorer: a continuous-time maximum-entropy framework that factorises intensities into a global time process and static MaxEnt edge weights.</p>
-    </a>
+  <h2><span class="en">Papers, interactive cards and code</span><span class="it">Articoli, schede interattive e codice</span></h2>
+  <p><span class="en">Each card opens an interactive page that runs the model in your browser, with nothing to install.</span><span class="it">Ogni scheda apre una pagina interattiva che fa girare il modello nel browser, senza installare nulla.</span></p>
+  <div class="tools">
+    <article class="card tool">
+      <h3><a href="metn.html"><span class="en">Temporal network explorer</span><span class="it">Esploratore di reti temporali</span></a></h3>
+      <p><span class="en">Fit time-layer × maximum-entropy mark-layer models (Poisson, NHPP, Hawkes; DWCM, block models) to temporal networks, on synthetic data or your own edge lists.</span><span class="it">Stima modelli con strato temporale × strato a massima entropia (Poisson, NHPP, Hawkes; DWCM, modelli a blocchi) su reti temporali, sintetiche o caricate da te.</span></p>
+      <p class="toollinks"><a href="https://arxiv.org/abs/2509.02098"><span class="en">Paper</span><span class="it">Articolo</span></a> · <a href="metn.html"><span class="en">Interactive</span><span class="it">Interattivo</span></a></p>
+    </article>
+    <article class="card tool">
+      <h3><a href="mou.html"><span class="en">Looking stable, being unstable</span><span class="it">Sembrare stabile, essere instabile</span></a></h3>
+      <p><span class="en">Multivariate Ornstein–Uhlenbeck systems just past May’s instability: simulate them, estimate the drift by maximum likelihood, and see how long it takes for the data to reveal the instability. Bring your own time series too.</span><span class="it">Sistemi di Ornstein–Uhlenbeck multivariati appena oltre l’instabilità di May: simulali, stima la deriva per massima verosimiglianza e guarda quanto tempo serve perché i dati rivelino l’instabilità. Puoi anche caricare le tue serie storiche.</span></p>
+      <p class="toollinks"><a href="mou.html"><span class="en">Interactive</span><span class="it">Interattivo</span></a> · <a href="https://github.com/paolobarucca/OUinference"><span class="en">2014 MATLAB code</span><span class="it">Codice MATLAB del 2014</span></a></p>
+    </article>
+    <article class="card tool">
+      <h3><a href="pinn.html"><span class="en">Arbitrage-free option surfaces with DC-PINNs</span><span class="it">Superfici di opzioni senza arbitraggio con DC-PINN</span></a></h3>
+      <p><span class="en">Derivative-constrained physics-informed networks turn noisy option marks into a price surface that satisfies Dupire’s equation and never shows call-spread, butterfly or calendar arbitrage. A Black–Scholes benchmark and an equity-skew case.</span><span class="it">Le reti informate dalla fisica con vincoli sulle derivate trasformano quotazioni rumorose in una superficie di prezzi che soddisfa l’equazione di Dupire e non mostra arbitraggi di call spread, butterfly o calendario. Un caso Black–Scholes e uno con skew azionario.</span></p>
+      <p class="toollinks"><a href="https://arxiv.org/abs/2604.13723"><span class="en">Paper</span><span class="it">Articolo</span></a> · <a href="pinn.html"><span class="en">Interactive</span><span class="it">Interattivo</span></a> · <a href="https://neutryx-lab.github.io/core.html">Neatryx</a></p>
+    </article>
+    <article class="card tool">
+      <h3><a href="hessian.html"><span class="en">Hessian eigenvector analytics</span><span class="it">Analisi degli autovettori dell’Hessiana</span></a></h3>
+      <p><span class="en">Train small networks with SGD, Adam, SAM or Gauss–Newton on classification, regression or PINN objectives, and follow the Hessian spectrum, eigenvector displacement, localisation, gradient alignment and layer-wise curvature.</span><span class="it">Addestra piccole reti con SGD, Adam, SAM o Gauss–Newton su classificazione, regressione o obiettivi PINN, e segui spettro dell’Hessiana, spostamento e localizzazione degli autovettori, allineamento col gradiente e curvatura per strato.</span></p>
+      <p class="toollinks"><a href="https://arxiv.org/abs/2606.30226"><span class="en">Paper</span><span class="it">Articolo</span></a> · <a href="hessian.html"><span class="en">Interactive</span><span class="it">Interattivo</span></a></p>
+    </article>
   </div>
+  <p><a href="https://github.com/paolobarucca"><span class="en">All code on GitHub</span><span class="it">Tutto il codice su GitHub</span></a></p>
 
-  <h2>Background</h2>
-  <p>I obtained my PhD in Theoretical Physics from Sapienza University of Rome, working on the statistical physics of disordered systems. My focus has since moved to the intersection of physics, network theory and machine learning, applied especially to economics and finance, collaborating across disciplines on questions of stability, inference and predictability. I am now Associate Professor in the Department of Computer Science at UCL.</p>
-
-  <h2>Team</h2>
+  <h2><span class="en">Team and collaborators</span><span class="it">Gruppo e collaboratori</span></h2>
   <div class="person">
     <img src="marcelina.jpeg" alt="" onerror="this.style.display='none'">
     <div>
-      <h3><a href="https://www.linkedin.com/in/marcelina-marjankowska-51822b176/">Marcelina Marjankowska</a> · PhD student</h3>
-      <p>Part of the EIGENDATA project, working on eigenvector statistics in random matrix ensembles and their application to physics-informed neural networks: finite-size analytical results, numerical simulations and new spectral methods for inference and optimisation.</p>
+      <h3><a href="https://www.linkedin.com/in/marcelina-marjankowska-51822b176/">Marcelina Marjankowska</a> · <span class="en">PhD student</span><span class="it">dottoranda</span></h3>
+      <p><span class="en">Part of the EIGENDATA project, working on eigenvector statistics in random matrix ensembles and their application to physics-informed neural networks, and on how optimisers move and localise the leading Hessian eigenvectors during training (</span><span class="it">Fa parte del progetto EIGENDATA e studia la statistica degli autovettori negli ensemble di matrici aleatorie e la sua applicazione alle reti neurali informate dalla fisica, e come gli ottimizzatori spostano e localizzano i principali autovettori dell’Hessiana durante l’addestramento (</span><a href="https://arxiv.org/abs/2606.30226">arXiv:2606.30226</a>).</p>
     </div>
   </div>
   <div class="person">
     <img src="kentaro.jpeg" alt="" onerror="this.style.display='none'">
     <div>
-      <h3><a href="https://www.linkedin.com/in/kentaro-hoshisashi-783929215">Kentaro Hoshisashi</a> · PhD 2025</h3>
-      <p>Introduced Whack-a-mole Online Learning (WamOL), a physics-informed approach to real-time implied volatility surface calibration that enforces no-arbitrage and PDE constraints within deep learning models for option pricing.</p>
+      <h3><a href="https://www.linkedin.com/in/kentaro-hoshisashi-783929215">Kentaro Hoshisashi</a> · <span class="en">PhD 2025</span><span class="it">dottorato 2025</span></h3>
+      <p><span class="en">Introduced Whack-a-mole Online Learning (WamOL), a physics-informed approach to real-time implied volatility surface calibration that enforces no-arbitrage and PDE constraints within deep learning models for option pricing, and derivative-constrained PINNs (DC-PINNs) that enforce no-arbitrage conditions (</span><span class="it">Ha introdotto il Whack-a-mole Online Learning (WamOL), un approccio informato dalla fisica alla calibrazione in tempo reale della superficie di volatilità implicita, che impone vincoli di non arbitraggio e di PDE nei modelli di deep learning per il pricing di opzioni, e le PINN con vincoli sulle derivate (DC-PINN) che impongono le condizioni di non arbitraggio (</span><a href="https://arxiv.org/abs/2604.13723">arXiv:2604.13723</a>).</p>
     </div>
   </div>
+  <!-- TODO: add external collaborators here, e.g. <li><a href="...">Name</a> <span>· Institution</span></li> -->
 
-  <h2>Workshops and seminars</h2>
+  <h2><span class="en">Workshops</span><span class="it">Workshop</span></h2>
   <ul class="plain">
-    <li><a href="https://www.ucl.ac.uk/engineering/computer-science/research/research-groups-and-centres/financial-computing-and-analytics/seminars">FCA Seminar Series</a> <span>· since 2019</span></li>
-    <li><a href="https://sites.google.com/view/fineconets-ccs2025">Complexity in Economics and Finance (FinEcoNets)</a> <span>· since 2018</span></li>
+    <li><a href="https://sites.google.com/view/fineconets-ccs2025">Complexity in Economics and Finance (FinEcoNets)</a> <span>· <span class="en">since 2018</span><span class="it">dal 2018</span></span></li>
   </ul>
+  <p><span class="en">For the UCL seminar series, see</span><span class="it">Per la serie di seminari UCL, vedi</span> <a href="outreach.html"><span class="en">Outreach</span><span class="it">Divulgazione</span></a>.</p>
+
+  <h2><span class="en">Background</span><span class="it">Percorso</span></h2>
+  <p><span class="en">I obtained my PhD in Theoretical Physics from Sapienza University of Rome, working on the statistical physics of disordered systems. My focus has since moved to the intersection of physics, network theory and machine learning, applied especially to economics and finance, collaborating across disciplines on questions of stability, inference and predictability. I am now Associate Professor in the Department of Computer Science at UCL.</span><span class="it">Ho conseguito il dottorato in Fisica Teorica alla Sapienza Università di Roma, lavorando sulla fisica statistica dei sistemi disordinati. Da allora mi sono spostato all’incrocio tra fisica, teoria delle reti e machine learning, con applicazioni soprattutto all’economia e alla finanza, collaborando tra discipline su stabilità, inferenza e prevedibilità. Oggi sono professore associato al Department of Computer Science di UCL.</span></p>
 </main>
 
-<footer>© Paolo Barucca · <a href="contact.html">Get in touch</a></footer>
+<footer>© Paolo Barucca · <a href="contact.html"><span class="en">Get in touch</span><span class="it">Contatti</span></a> · <a href="links.html">Links</a></footer>
 </body>
 </html>

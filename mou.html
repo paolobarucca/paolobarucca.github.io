@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Looking Stable, Being Unstable · Paolo Barucca</title>
+<meta name="description" content="Interactive multivariate Ornstein–Uhlenbeck inference near May's instability: finite-time maximum-likelihood estimates can make an unstable drift matrix look stable. Ensembles, horizon sweeps, phase diagram and your own data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:light dark;
+ --bg:#fbfaf7;--panel:#ffffff;--ink:#1f2328;--muted:#5b6168;--faint:#9aa1a8;--line:#e6e2da;--grid:#efece6;
+ --accent:#b4412c;--accent-soft:#f6e4df;--warn:#9a4a12;
+ --s0:#22313f;--s1:#0e7c7b;--s2:#d1603d;--s3:#6a4c93;--s4:#3d8b37;--s5:#b8972c;--s6:#b5446e;
+ --serif:"Source Serif 4",Georgia,serif;
+ --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+@media (prefers-color-scheme:dark){:root{
+ --bg:#16181b;--panel:#1f2226;--ink:#e8e6e1;--muted:#a3a8ae;--faint:#6f7880;--line:#2e3237;--grid:#272a2f;
+ --accent:#f07a5f;--accent-soft:#3a2520;--warn:#e39a62;
+ --s0:#dfe5ea;--s1:#4fb3b0;--s2:#ee8a63;--s3:#a68bd6;--s4:#7cc47f;--s5:#e2c96a;--s6:#e07aa0;}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+a{color:var(--accent)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px}
+header.sitenav{border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+.sitenav nav{max-width:1360px;margin:0 auto;padding:.8rem 16px;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1.1rem}
+.sitenav .name{font:700 1.1rem var(--serif);color:var(--ink);text-decoration:none;margin-right:auto}
+.sitenav a:not(.name){color:var(--muted);text-decoration:none;font-size:.95rem}
+.sitenav a:not(.name):hover,.sitenav a[aria-current=page]{color:var(--accent)}
+.pagehead{border-bottom:1px solid var(--line);padding:26px 0 20px}
+.kicker{margin:0;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.kicker a{color:var(--muted)}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
+.lede{max-width:820px;color:var(--muted);margin:0}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:24px;padding-top:20px;padding-bottom:40px;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:minmax(0,1fr)}}
+aside.controls{position:sticky;top:64px;max-height:calc(100vh - 76px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+@media(max-width:920px){aside.controls{position:static;max-height:none}}
+.controls h2{font:600 11.5px/1 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.controls h2:first-child{margin-top:2px;padding-top:0;border-top:0}
+label.f{display:block;font-size:13px;margin:9px 0 3px}
+.val{font:12px var(--mono);color:var(--muted);float:right}
+.hint{font-size:12px;color:var(--muted);margin:3px 0 0}
+select,input[type=text],input[type=number],input[type=url]{width:100%;font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+input[type=checkbox]{accent-color:var(--accent)}
+.check{display:flex;gap:7px;align-items:center;font-size:13px;margin:6px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row2 label.f{margin-top:6px}
+button{font:600 14px var(--sans);padding:8px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--panel);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button:disabled{opacity:.55;cursor:progress}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btnrow button{flex:1}
+details.gen{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+details.gen summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+.status{font:12px/1.45 var(--mono);color:var(--muted);margin-top:12px;min-height:1.4em;white-space:pre-wrap}
+.status.err{color:var(--warn)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:18px;scrollbar-width:thin}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);border-radius:0;padding:10px 12px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel[hidden]{display:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1150px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.grid3{grid-template-columns:minmax(0,1fr)}}
+figure.chart{margin:0 0 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;min-width:0}
+.grid2 figure.chart{margin:0}
+figure.chart figcaption{font-weight:600;font-size:14px}
+.sub{font-size:12px;color:var(--muted);text-align:center;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12px;color:var(--muted);margin:5px 0 6px;min-height:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+canvas{display:block;width:100%}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card b{display:block;font:600 21px/1.25 var(--serif);font-variant-numeric:tabular-nums}
+.card span{font-size:12px;color:var(--muted)}
+h3.sec{font:600 19px var(--serif);margin:6px 0 4px}
+p.secnote{color:var(--muted);font-size:13.5px;margin:0 0 12px;max-width:860px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:18px}
+table.t{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.t th,.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.t tr:last-child td{border-bottom:0}
+.t th:first-child,.t td:first-child{text-align:left}
+.t thead th{color:var(--muted);font-weight:600;font-size:12px}
+.t td.best{color:var(--accent);font-weight:700}
+.t td.feat{background:var(--accent-soft)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:12px;font-size:13px}
+.toolbar label{display:flex;gap:6px;align-items:center}
+.toolbar input[type=range]{width:130px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:transparent;color:var(--muted);border:0;border-radius:0;padding:6px 11px;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.warn{color:var(--warn)}
+.dyngrid{display:grid;grid-template-columns:repeat(var(--np,2),minmax(0,1fr));gap:10px}
+@media(max-width:900px){.dyngrid{grid-template-columns:minmax(0,1fr)}}
+.dyngrid canvas{background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:crosshair}
+.mchips{display:inline-flex;flex-wrap:wrap;gap:6px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:3px 10px;font:500 12.5px var(--sans);cursor:pointer}
+.mchip[aria-pressed=true]{color:var(--ink);border-color:var(--ink);background:var(--accent-soft)}
+#dynStrip{margin-top:8px;cursor:pointer}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:12px var(--mono);padding:4px 7px;border-radius:5px;display:none;z-index:10}
+.prose{max-width:820px}
+.prose h3{font-family:var(--serif);font-size:21px;margin:26px 0 6px}
+.prose h3:first-child{margin-top:0}
+.prose li{margin:3px 0}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font:12.5px/1.5 var(--mono)}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:2rem 16px;text-align:center}
+.empty{padding:40px 12px;text-align:center;color:var(--muted);font-size:14px}
+.hint b{color:var(--muted);font-weight:600}
+dl.gloss{margin:8px 0 0;font-size:12px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 8px}
+dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{margin:0}
+.sidelink{font-size:12.5px;margin:0 0 4px}
+.steps{max-width:1040px}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin-bottom:16px}
+.stepnum{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--panel);font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:10px}
+.stepbody{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px 10px;min-width:0}
+.stepbody h4{margin:2px 0 6px;font:600 18px/1.3 var(--serif)}
+.algo{font-size:14px;margin:4px 0 8px;max-width:900px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px;font-size:12px;color:var(--muted)}
+.chip{font:12px var(--mono);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:2px 9px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;margin:8px 0 6px}
+.kv div{font-size:12px;color:var(--muted)}.kv b{display:block;font:600 16px var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.stepbody .tablewrap{margin:8px 0;padding:2px 8px}
+.stepbody .t td.l{white-space:normal}
+.stepbody canvas{margin-top:4px}
+.usedby{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.glyphs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
+@media(max-width:1180px){.glyphs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.glyphs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.glyph{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);font-weight:400}
+.glyph[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.glyph svg{display:block;width:100%;height:54px}
+.glyph b{display:block;font-size:13.5px;margin-top:2px}.glyph span{display:block;font-size:11.5px;color:var(--muted)}
+.glyph .gv{font:600 15px var(--serif);color:var(--ink);margin-top:3px}
+.mcurves{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.mcurves{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mcurves div{border:1px solid transparent;border-radius:8px;padding:4px}.mcurves div.on{border-color:var(--accent)}
+.mcurves .ttl{font-size:12.5px;font-weight:600;display:flex;gap:6px;align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.t td.good{color:var(--accent);font-weight:600}.t td.bad{color:var(--warn);font-weight:600}
+.t td.l,.t th.l{text-align:left}
+
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:10px;visibility:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+.fig{overflow-x:auto;min-height:40px}
+.fig svg{display:block;max-width:100%;height:auto}
+.card b.stable,.stable{color:var(--s1)}.card b.unstable,.unstable{color:var(--accent)}
+.card span .stable,.card span .unstable{font-weight:600}
+.card b.inline{display:inline;font:inherit;font-weight:600}
+.content{min-width:0}
+.toolbar input[type=file]{max-width:240px;font-size:13px}
+.legend span{white-space:nowrap}
+@media(max-width:520px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card b{font-size:18px}}
+</style>
+</head>
+<body>
+<header class="sitenav">
+ <nav>
+  <a class="name" href="index.html">Paolo Barucca</a>
+  <a href="research.html" aria-current="page">Research</a>
+  <a href="teaching.html">Teaching</a>
+  <a href="outreach.html">Outreach</a>
+  <a href="consultancy.html">Consultancy</a>
+  <a href="comedy.html">Comedy</a>
+  <a href="writing.html">Writing</a>
+ </nav>
+</header>
+<div class="pagehead">
+ <div class="wrap">
+  <p class="kicker"><a href="research.html">Research</a> › Interactive tools</p>
+  <h1>Looking stable, being unstable</h1>
+  <p class="lede">Multivariate Ornstein–Uhlenbeck inference near May's instability. Simulate a linear stochastic system \(dX=-AX\,dt+dW\) tuned a hair past the edge of stability, observe it for a finite time, and estimate \(A\) by maximum likelihood: very often the estimate says the system is stable. Run single trajectories, ensembles, horizon sweeps and a full phase diagram, or fit your own multivariate time series. Everything runs locally in your browser; no data leaves your machine.</p>
+ </div>
+</div>
+
+<main class="wrap layout">
+ <aside class="controls" aria-label="Controls">
+  <p class="sidelink">Each setting says where it enters; the <a href="#" data-goto="method">Method tab</a> has the equations.</p>
+  <h2>1 · System</h2>
+  <label class="f" for="N">System size \(N\) <span class="val" id="oN"></span></label>
+  <input type="range" id="N" min="2" max="30" step="1" value="10">
+  <p class="hint">Number of coupled variables. \(A\) is \(N\times N\).</p>
+  <label class="f" for="tau">Coupling ensemble</label>
+  <select id="tau">
+   <option value="1" selected>Symmetric J (Majumdar–Bialek, GOE)</option>
+   <option value="0.5">Elliptic, τ = 0.5</option>
+   <option value="0">Elliptic, τ = 0 (Ginibre)</option>
+   <option value="-0.5">Elliptic, τ = −0.5</option>
+  </select>
+  <p class="hint">\(A=I-\alpha J\). τ is the correlation between \(J_{ij}\) and \(J_{ji}\): τ = 1 is the symmetric model of the original study; τ &lt; 1 gives complex spectra and non-normal dynamics.</p>
+  <label class="f" for="delta">Distance from instability \(\delta\) <span class="val" id="odelta"></span></label>
+  <input type="range" id="delta" min="-0.1" max="0.1" step="0.001" value="-0.02">
+  <p class="hint">Each draw of \(J\) gets the \(\alpha\) that puts \(\min\operatorname{Re}\lambda(A)\) exactly at \(\delta\). Negative \(\delta\): one mode grows like \(e^{|\delta|t}\), so the true system is <b>unstable</b>.</p>
+
+  <h2>2 · Observation</h2>
+  <label class="f" for="q">Observation ratio \(q=T/N\) <span class="val" id="oq"></span></label>
+  <input type="range" id="q" min="0" max="1000" step="1" value="370">
+  <p class="hint">Log scale from 2 to 1000. \(T\) samples, started at rest.</p>
+  <label class="f" for="dt">Sampling interval \(\Delta t\) <span class="val" id="odt"></span></label>
+  <input type="range" id="dt" min="0" max="1000" step="1" value="500">
+  <p class="hint">Log scale from 0.01 to 1. Sampling is exact (no Euler error).</p>
+  <p class="hint mono" id="derived" style="white-space:pre-line"></p>
+
+  <h2>3 · Estimation</h2>
+  <p class="hint">Exact VAR(1) maximum likelihood from sufficient statistics, \(\hat A=-\log\hat\Lambda/\Delta t\). Verdict: <b>looks stable</b> when every eigenvalue of \(\hat A\) has positive real part.</p>
+  <label class="check"><input type="checkbox" id="lyap" checked> Also show the Lyapunov (equilibrium) estimate</label>
+  <p class="hint">The inverse method of <a href="https://github.com/paolobarucca/OUinference">OUinference</a>: solve \(\{C,J\}=2\tilde T\) from the sample covariance and increment temperatures. It assumes stationarity.</p>
+
+  <h2>4 · Runs</h2>
+  <label class="f" for="M">Realisations per ensemble <span class="val" id="oM"></span></label>
+  <input type="range" id="M" min="50" max="600" step="10" value="200">
+  <p class="hint">Each realisation draws a fresh \(J\) and a fresh trajectory. Sweeps use up to 100 per point, the phase diagram up to 40 per cell.</p>
+  <div class="row2">
+   <div><label class="f" for="seed">Seed</label><input type="number" id="seed" value="20260708"></div>
+   <div><label class="f" for="grid">Phase grid</label><select id="grid"><option value="c" selected>Coarse 9 × 6</option><option value="f">Fine 13 × 9</option></select></div>
+  </div>
+  <div class="btnrow"><button id="bOne">Simulate trajectory</button></div>
+  <div class="btnrow"><button id="bEns" class="ghost">Run ensemble</button><button id="bSweep" class="ghost">Sweep horizon</button></div>
+  <div class="btnrow"><button id="bPhase" class="ghost">Phase diagram</button><button id="bSeed" class="ghost">New seed</button></div>
+  <div class="progress" id="prog"><span></span></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <div class="btnrow"><button id="dlCsv" class="ghost">Trajectory CSV</button><button id="dlJson" class="ghost">Results JSON</button></div>
+ </aside>
+
+ <div class="content">
+  <nav class="tabs" role="tablist">
+   <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+   <button role="tab" data-tab="ensemble" aria-selected="false">Ensemble</button>
+   <button role="tab" data-tab="sweep" aria-selected="false">Horizon sweep</button>
+   <button role="tab" data-tab="phase" aria-selected="false">Phase diagram</button>
+   <button role="tab" data-tab="data" aria-selected="false">Your data</button>
+   <button role="tab" data-tab="method" aria-selected="false">Method</button>
+  </nav>
+
+  <section class="panel" id="p-overview" role="tabpanel">
+   <div class="cards" id="cards"></div>
+   <figure class="chart"><figcaption>One trajectory, projected on the soft and stiff modes</figcaption><div class="fig" id="figTraj"></div>
+    <p class="note" id="capTraj">Projection on the softest eigenmode of \(A\) (the one that is unstable when \(\delta&lt;0\)) and on the stiffest one. Over a short window the soft mode is indistinguishable from a random walk.</p></figure>
+   <figure class="chart"><figcaption>Spectra: true \(A\) and estimates</figcaption><div class="legend" id="lgSpec"></div><div class="fig" id="figSpec"></div>
+    <p class="note" id="capSpec"></p></figure>
+  </section>
+
+  <section class="panel" id="p-ensemble" role="tabpanel" hidden>
+   <p class="secnote">Many independent systems and trajectories at the current settings. Press <i>Run ensemble</i>.</p>
+   <div class="cards" id="ensCards"></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Estimated smallest real part of \(\hat A\)</figcaption><div class="fig" id="figHist"><div class="empty">No ensemble yet.</div></div>
+     <p class="note">Mass to the right of zero is a verdict of stability (teal); the dashed rule marks the true \(\delta\).</p></figure>
+    <figure class="chart"><figcaption>Frobenius error \(\lVert A-\hat A\rVert_F\)</figcaption><div class="fig" id="figErr"><div class="empty">No ensemble yet.</div></div>
+     <p class="note">Runs where \(\hat\Lambda\) has a negative real eigenvalue have no real logarithm and are dropped.</p></figure>
+   </div>
+  </section>
+
+  <section class="panel" id="p-sweep" role="tabpanel" hidden>
+   <p class="secnote">Vary the number of samples \(T\) at fixed \(N\), \(\Delta t\) and \(\delta\). Press <i>Sweep horizon</i>.</p>
+   <div class="cards" id="sweepCards"></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Share of estimates that look stable</figcaption><div class="fig" id="figSweep"><div class="empty">No sweep yet.</div></div>
+     <p class="note" id="capSweep"></p></figure>
+    <figure class="chart"><figcaption>Mean Frobenius error against horizon</figcaption><div class="fig" id="figSweepErr"><div class="empty">No sweep yet.</div></div>
+     <p class="note">Mean \(\lVert A-\hat A\rVert_F\) over up to 40 realisations per point, log–log. The dotted guide has slope \(-1/2\), anchored at the longest horizon.</p></figure>
+   </div>
+  </section>
+
+  <section class="panel" id="p-phase" role="tabpanel" hidden>
+   <p class="secnote">Share of realisations whose estimate looks stable, over a grid of distances \(\delta\) and observation horizons \(T\Delta t\), at the current \(N\), \(\Delta t\) and coupling ensemble. Left of the vertical rule the true system is unstable, so teal there means the estimator is fooled. Press <i>Phase diagram</i>.</p>
+   <figure class="chart"><figcaption>Phase diagram of the stability verdict</figcaption><div class="fig" id="figPhase"><div class="empty">No phase diagram yet.</div></div>
+    <p class="note" id="capPhase">Dashed curves: \(|\delta|\,T\Delta t=1.78\), the scalar unit-root bias scale. Cells needing more than 40 000 samples are skipped.</p></figure>
+  </section>
+
+  <section class="panel" id="p-data" role="tabpanel" hidden>
+   <p class="secnote">Fit a multivariate time series: one column per variable, one row per time step, comma, semicolon, tab or space separated, with an optional header row. The data are demeaned, then fitted by the same VAR(1) maximum likelihood and, for comparison, by the Lyapunov inverse method.</p>
+   <div class="toolbar">
+    <label>File <input type="file" id="file" accept=".csv,.tsv,.txt,.dat"></label>
+    <label>\(\Delta t\) <input type="number" id="dDt" value="1" min="0" step="any" style="width:90px"></label>
+    <button id="bUseSim" class="ghost">Use simulated trajectory</button>
+   </div>
+   <div class="toolbar">
+    <label>Bootstrap paths <select id="dB"><option>100</option><option selected>200</option><option>500</option></select></label>
+    <button id="bBoot">Run stability check</button>
+   </div>
+   <p class="hint mono" id="dataInfo"></p>
+   <div class="cards" id="dataCards"></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Your series (first five columns, standardised)</figcaption><div class="fig" id="figData"><div class="empty">Load a file or use the simulated trajectory.</div></div></figure>
+    <figure class="chart"><figcaption>Estimated rates</figcaption><div class="legend" id="lgDSpec"></div><div class="fig" id="figDSpec"><div class="empty">No fit yet.</div></div></figure>
+   </div>
+   <figure class="chart"><figcaption>Is the smallest rate distinguishable from zero?</figcaption><div class="legend" id="lgBoot"></div><div class="fig" id="figBoot"><div class="empty">Run the stability check after fitting.</div></div>
+    <p class="note" id="capBoot">Parametric bootstrap with the fitted noise covariance and the same length and \(\Delta t\). <b>Null</b>: the fitted model with its softest mode moved exactly onto the stability boundary. <b>Fitted</b>: the fitted model itself. The rule marks your estimate.</p></figure>
+  </section>
+
+  <section class="panel prose" id="p-method" role="tabpanel" hidden>
+   <h3>The model</h3>
+   <p>We use the Majumdar–Bialek parametrisation of a random linear system,</p>
+   $$dX=-AX\,dt+dW,\qquad A=I-\alpha J,$$
+   <p>with \(W\) a standard Brownian motion (noise covariance \(I\,dt\)). In the symmetric case \(J\) is a Gaussian matrix with off-diagonal variance \(1/(2N)\) and diagonal variance \(1/N\), so its spectrum fills a semicircle of radius \(\sqrt2\) and the transition sits at \(\alpha_c=1/\sqrt2\). Rather than fixing \(\alpha\), each sample of \(J\) gets the \(\alpha\) that puts the smallest real part of the spectrum of \(A\) exactly at a chosen \(\delta\):</p>
+   $$\alpha=\frac{1-\delta}{\max\operatorname{Re}\lambda(J)}\quad\Longrightarrow\quad\min\operatorname{Re}\lambda(A)=\delta .$$
+   <p>Negative \(\delta\) means one mode grows as \(e^{|\delta|t}\): the true system is unstable. The elliptic options draw pairs \((J_{ij},J_{ji})\) with correlation τ (same off-diagonal variance, diagonal variance \((1+\tau)/(2N)\)); τ = 1 recovers the symmetric model, τ = 0 is the real Ginibre ensemble. The same tuning of \(\alpha\) applies, now to the rightmost eigenvalue of \(J\), which may be complex.</p>
+
+   <h3>Exact simulation</h3>
+   <p>Trajectories start at rest and are sampled every \(\Delta t\) as a VAR(1),</p>
+   $$X_{n+1}=e^{-A\Delta t}X_n+\varepsilon_n,\qquad \varepsilon_n\sim\mathcal N\!\Big(0,\ \textstyle\int_0^{\Delta t}e^{-As}e^{-A^\top s}\,ds\Big).$$
+   <p>For symmetric \(A\) this is done in its eigenbasis, mode by mode, with variance \((1-e^{-2a_k\Delta t})/(2a_k)\). For non-symmetric \(A\) the propagator and the noise covariance come from one matrix exponential of a \(2N\times2N\) block matrix (Van Loan's method).</p>
+
+   <h3>The estimator</h3>
+   <p>The exact maximum-likelihood estimate from sufficient statistics is</p>
+   $$\hat\Lambda=\Big(\sum_n X_{n+1}X_n^\top\Big)\Big(\sum_n X_nX_n^\top\Big)^{-1},\qquad \hat A=-\frac{\log\hat\Lambda}{\Delta t}.$$
+   <p>The estimated system looks stable when every eigenvalue of \(\hat\Lambda\) lies inside the unit circle, which is the same as every eigenvalue of \(\hat A\) having positive real part. Rates are read from the eigenvalues \(\mu\) of \(\hat\Lambda\) as \(-\log\mu/\Delta t\).</p>
+
+   <h3>Why it happens</h3>
+   <p>Least squares on an autoregression is biased toward stationarity. For a scalar unit root started at rest, the mean bias of the AR coefficient is about \(-1.78/T\), so the implied rate is pushed up by roughly \(1.78/(T\Delta t)\), and the Dickey–Fuller distribution puts about two-thirds of its mass on the stable side even exactly at criticality. A slightly unstable mode keeps looking stable until the observation horizon \(T\Delta t\) is a few times \(1/|\delta|\). What matters is elapsed physical time, not the number of samples: shrinking \(\Delta t\) at fixed \(T\) makes things worse, not better.</p>
+   <p>In \(N\) dimensions the finite-\(q\) noise in \(\hat\Lambda\) adds a second, random-matrix effect: the whole estimated spectrum spreads out, which can push the soft eigenvalue either way, and inflates the Frobenius error \(\lVert A-\hat A\rVert_F\), which grows roughly like \(\sqrt{N/(q\Delta t)}\) because \(N^2\) entries are fitted from \(T\Delta t=qN\Delta t\) of physical time. Near the transition the Fisher information along the soft direction scales with the variance accumulated by that mode, so the uncertainty on \(\delta\) is set by the horizon, which is exactly what the sweep shows.</p>
+   <p>The practical message: a fitted drift matrix with a small positive gap is not evidence that a system is stable. If the gap is comparable to \(1/(T\Delta t)\), the data cannot tell stable from unstable.</p>
+
+   <h3>The Lyapunov (equilibrium) inverse method</h3>
+   <p>The <a href="https://github.com/paolobarucca/OUinference">OUinference</a> code fits coupled heterogeneous OU processes \(\dot x_i=-\sum_jJ_{ij}x_j+\sqrt{T_i}\,\eta_i\), \(\langle\eta_i(t)\eta_j(t')\rangle=2\delta_{ij}\delta(t-t')\), with symmetric \(J\), from the equilibrium covariance \(C\) (<a href="https://journals.aps.org/pre/abstract/10.1103/PhysRevE.90.062129">Barucca, Phys. Rev. E 90, 062129, 2014</a>). The covariance satisfies the Lyapunov equation \(\{C,J\}=2\tilde T\) with \(\tilde T_{ij}=T_i\delta_{ij}\), which inverts in the eigenbasis \(\{c_a,u^a\}\) of \(C\) as</p>
+   $$J=\sum_{a,b}\frac{2\,(u^{a\top}\tilde T\,u^b)}{c_a+c_b}\,u^a u^{b\top},\qquad T_i=\frac{\langle(\Delta x_i)^2\rangle}{2\,\Delta t}.$$
+   <p>This estimator assumes the series is stationary, and that assumption decides the verdict: if \(Jv=\lambda v\), then \(v^\top(CJ+JC)v=2\lambda\,v^\top Cv=2\,v^\top\tilde Tv&gt;0\), so with a positive-definite \(C\) every eigenvalue of \(J\) is positive. The equilibrium method can only ever return a stable system, which is why this page shows it next to the maximum-likelihood estimate.</p>
+
+   <h3>Checking your own data</h3>
+   <p>The stability check in <i>Your data</i> is a simple parametric bootstrap in the spirit of a Dickey–Fuller test. It fits \(\hat\Lambda\) and the residual covariance, builds a null model by moving the softest eigenvalue of \(\hat\Lambda\) exactly onto the unit circle (a rank-one change that leaves the other modes untouched when that eigenvalue is real; otherwise the whole matrix is rescaled to spectral radius one), simulates paths of the same length from the null and from the fitted model, and refits each one. The reported share is the fraction of null fits whose smallest rate is at least as large as yours: a small share means your positive gap is unlikely to be produced by the finite-horizon bias alone. It assumes a linear Gaussian VAR(1) with constant coefficients, so treat it as a sanity check rather than a formal test.</p>
+
+   <h3>Notes</h3>
+   <ul>
+    <li>Errors for symmetric systems are computed in the eigenbasis, where the Frobenius norm is unchanged.</li>
+    <li>The matrix logarithm uses inverse scaling and squaring. When \(\hat\Lambda\) has a negative real eigenvalue no real logarithm exists and that run's error is dropped.</li>
+    <li>Code: <a href="https://github.com/paolobarucca/OUinference">github.com/paolobarucca/OUinference</a> (MATLAB, Lyapunov inverse method for coupled OU processes).</li>
+   </ul>
+  </section>
+ </div>
+</main>
+
+<footer>© Paolo Barucca · <a href="research.html">Research</a> · <a href="contact.html">Get in touch</a></footer>
+<script src="https://cdn.jsdelivr.net/npm/numeric@1.2.6/numeric-1.2.6.min.js"></script>
+<script>
+'use strict';
+// ===== MOU core: simulation, estimation, Lyapunov inverse method =====
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeGauss(rng){let spare=null;return function(){if(spare!==null){const s=spare;spare=null;return s}let u,v,s;do{u=2*rng()-1;v=2*rng()-1;s=u*u+v*v}while(s>=1||s===0);const m=Math.sqrt(-2*Math.log(s)/s);spare=v*m;return u*m}}
+
+function zeros(n,m){const r=[];for(let i=0;i<n;i++)r.push(new Float64Array(m));return r}
+function eye(n){const r=zeros(n,n);for(let i=0;i<n;i++)r[i][i]=1;return r}
+function matmul(A,B){const n=A.length,m=B[0].length,k=B.length,C=zeros(n,m);for(let i=0;i<n;i++){const Ci=C[i],Ai=A[i];for(let l=0;l<k;l++){const a=Ai[l];if(a===0)continue;const Bl=B[l];for(let j=0;j<m;j++)Ci[j]+=a*Bl[j]}}return C}
+function transpose(A){const n=A.length,m=A[0].length,T=zeros(m,n);for(let i=0;i<n;i++)for(let j=0;j<m;j++)T[j][i]=A[i][j];return T}
+function inv(M){const n=M.length,A=M.map(r=>Float64Array.from(r)),I=eye(n);for(let c=0;c<n;c++){let p=c,mx=Math.abs(A[c][c]);for(let r=c+1;r<n;r++){const v=Math.abs(A[r][c]);if(v>mx){mx=v;p=r}}if(mx<1e-300)return null;[A[c],A[p]]=[A[p],A[c]];[I[c],I[p]]=[I[p],I[c]];const d=A[c][c];for(let j=0;j<n;j++){A[c][j]/=d;I[c][j]/=d}for(let r=0;r<n;r++){if(r===c)continue;const f=A[r][c];if(f===0)continue;for(let j=0;j<n;j++){A[r][j]-=f*A[c][j];I[r][j]-=f*I[c][j]}}}return I}
+function fro(A){let s=0;for(const r of A)for(const v of r)s+=v*v;return Math.sqrt(s)}
+function norm1(A){let m=0;const n=A.length;for(let j=0;j<A[0].length;j++){let s=0;for(let i=0;i<n;i++)s+=Math.abs(A[i][j]);if(s>m)m=s}return m}
+function chol(S){const n=S.length,L=zeros(n,n);for(let i=0;i<n;i++)for(let j=0;j<=i;j++){let s=S[i][j];for(let k=0;k<j;k++)s-=L[i][k]*L[j][k];if(i===j){if(s<=0)s=1e-300;L[i][i]=Math.sqrt(s)}else L[i][j]=s/L[j][j]}return L}
+// Matrix exponential: scaling and squaring with a truncated Taylor series
+function expm(M){const n=M.length;const nr=norm1(M);let s=Math.max(0,Math.ceil(Math.log2(nr||1))+1);const sc=Math.pow(2,-s);
+  const X=M.map(r=>r.map(v=>v*sc));let E=eye(n),P=eye(n);
+  for(let k=1;k<=20;k++){P=matmul(P,X);const f=1/k;for(let i=0;i<n;i++)for(let j=0;j<n;j++)P[i][j]*=f;let mx=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++){E[i][j]+=P[i][j];mx=Math.max(mx,Math.abs(P[i][j]))}if(mx<1e-18)break}
+  for(let i=0;i<s;i++)E=matmul(E,E);return E}
+
+// Jacobi eigen-decomposition for symmetric matrices. Returns vals and V (columns = eigenvectors)
+function symEig(S){const n=S.length,A=S.map(r=>Float64Array.from(r)),V=eye(n);
+  for(let sweep=0;sweep<100;sweep++){let off=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)off+=A[i][j]*A[i][j];if(off<1e-22)break;
+    for(let p=0;p<n;p++)for(let q=p+1;q<n;q++){const apq=A[p][q];if(Math.abs(apq)<1e-300)continue;
+      const th=(A[q][q]-A[p][p])/(2*apq),t=Math.sign(th||1)/(Math.abs(th)+Math.sqrt(th*th+1)),c=1/Math.sqrt(t*t+1),s=t*c;
+      for(let k=0;k<n;k++){const akp=A[k][p],akq=A[k][q];A[k][p]=c*akp-s*akq;A[k][q]=s*akp+c*akq}
+      for(let k=0;k<n;k++){const apk=A[p][k],aqk=A[q][k];A[p][k]=c*apk-s*aqk;A[q][k]=s*apk+c*aqk}
+      for(let k=0;k<n;k++){const vkp=V[k][p],vkq=V[k][q];V[k][p]=c*vkp-s*vkq;V[k][q]=s*vkp+c*vkq}}}
+  return {vals:Array.from({length:n},(_,i)=>A[i][i]),V}}
+
+// General (non-symmetric) eigenvalues via numeric.js
+const eigFn=M=>{const e=numeric.eig(M.map(r=>Array.from(r)));const x=e.lambda.x,y=e.lambda.y||x.map(()=>0);return x.map((v,i)=>({re:v,im:y[i]}))};
+
+// Real eigenvector for a real eigenvalue mu of M by inverse iteration
+function realEigvec(M,mu){const n=M.length;const S=M.map((r,i)=>r.map((v,j)=>v-(i===j?mu+1e-7*(1+Math.abs(mu)):0)));const Si=inv(S);if(!Si)return null;
+  let v=new Float64Array(n).fill(1/Math.sqrt(n));for(let it=0;it<30;it++){const w=new Float64Array(n);for(let i=0;i<n;i++){let s=0;for(let j=0;j<n;j++)s+=Si[i][j]*v[j];w[i]=s}let nr=0;for(const x of w)nr+=x*x;nr=Math.sqrt(nr);if(!(nr>0)||!isFinite(nr))return null;for(let i=0;i<n;i++)w[i]/=nr;v=w}return v}
+
+// ---- Coupling ensembles ----
+// tau = 1: Majumdar–Bialek symmetric J (GOE, off-diagonal variance 1/(2N), diagonal 1/N), simulated exactly in the eigenbasis.
+// tau < 1: elliptic ensemble, corr(J_ij, J_ji) = tau, simulated exactly in the original basis (Van Loan).
+// In both cases alpha is tuned on the sample so that min Re lambda(A) = delta, A = I - alpha J.
+function buildSystem(N,delta,tau,gauss){
+  if(tau>=0.9999){const J=zeros(N,N);
+    for(let i=0;i<N;i++){J[i][i]=gauss()*Math.sqrt(1/N);for(let j=i+1;j<N;j++){const v=gauss()*Math.sqrt(1/(2*N));J[i][j]=v;J[j][i]=v}}
+    const {vals,V}=symEig(J);const lmax=Math.max(...vals);const alpha=(1-delta)/lmax;
+    const a=vals.map(l=>1-alpha*l);const order=a.map((v,i)=>i).sort((i,j)=>a[i]-a[j]);
+    return {sym:true,N,alpha,lmaxJ:lmax,a:order.map(i=>a[i]),eigA:order.map(i=>({re:a[i],im:0})),U:V.map(r=>Float64Array.from(order.map(i=>r[i]))),cache:{}}}
+  for(let tries=0;tries<20;tries++){const J=zeros(N,N),s=Math.sqrt(1/(2*N)),c=Math.sqrt(Math.max(0,1-tau*tau));
+    for(let i=0;i<N;i++){J[i][i]=gauss()*Math.sqrt((1+tau)/(2*N));for(let j=i+1;j<N;j++){const a=gauss()*s,b=gauss()*s;J[i][j]=a;J[j][i]=tau*a+c*b}}
+    const ev=eigFn(J);let m=-Infinity;for(const z of ev)if(z.re>m)m=z.re;if(!(m>1e-6))continue;
+    const alpha=(1-delta)/m;const A=J.map((r,i)=>r.map((v,j)=>(i===j?1:0)-alpha*v));
+    const eigA=ev.map(z=>({re:1-alpha*z.re,im:-alpha*z.im})).sort((p,q)=>p.re-q.re||p.im-q.im);
+    return {sym:false,N,alpha,lmaxJ:m,A,eigA,cache:{}}}
+  throw new Error('Could not draw a coupling matrix')}
+
+// One-step propagator and noise Cholesky factor for the non-symmetric path (noise covariance I dt)
+function stepMats(sys,dt){const key=String(dt);if(sys.cache[key])return sys.cache[key];const N=sys.N,A=sys.A;
+  // Van Loan: C = [[A, I],[0, -A^T]] dt ; expm(C) = [[F11,F12],[0,F22]] ; Phi = F22^T = e^{-A dt}, Q = Phi F12
+  const C=zeros(2*N,2*N);for(let i=0;i<N;i++){for(let j=0;j<N;j++){C[i][j]=A[i][j]*dt;C[N+i][N+j]=-A[j][i]*dt}C[i][N+i]=dt}
+  const E=expm(C);const Phi=zeros(N,N),F12=zeros(N,N);for(let i=0;i<N;i++)for(let j=0;j<N;j++){Phi[i][j]=E[N+j][N+i];F12[i][j]=E[i][N+j]}
+  let Q=matmul(Phi,F12);Q=Q.map((r,i)=>r.map((v,j)=>.5*(v+Q[j][i])));const L=chol(Q);const out={Phi,L};sys.cache[key]=out;return out}
+
+function eigCoefs(sys,dt){const N=sys.N,f=new Float64Array(N),s=new Float64Array(N);
+  for(let k=0;k<N;k++){const ak=sys.a[k];f[k]=Math.exp(-ak*dt);s[k]=Math.abs(ak*dt)<1e-10?Math.sqrt(dt):Math.sqrt((1-Math.exp(-2*ak*dt))/(2*ak))}return{f,s}}
+
+// Full path (rows = time). Symmetric path is in the eigenbasis of A; use toOriginal() to rotate back.
+function simulate(sys,T,dt,gauss){const N=sys.N;const Y=[new Float64Array(N)];
+  if(sys.sym){const{f,s}=eigCoefs(sys,dt);for(let n=0;n<T;n++){const p=Y[n],y=new Float64Array(N);for(let k=0;k<N;k++)y[k]=f[k]*p[k]+s[k]*gauss();Y.push(y)}return Y}
+  const{Phi,L}=stepMats(sys,dt);const xi=new Float64Array(N);
+  for(let n=0;n<T;n++){const p=Y[n],y=new Float64Array(N);for(let k=0;k<N;k++)xi[k]=gauss();
+    for(let i=0;i<N;i++){let v=0;const Pi=Phi[i],Li=L[i];for(let j=0;j<N;j++)v+=Pi[j]*p[j];for(let j=0;j<=i;j++)v+=Li[j]*xi[j];y[i]=v}Y.push(y)}return Y}
+function toOriginal(sys,Y){if(!sys.sym)return Y;const N=sys.N,U=sys.U;return Y.map(y=>{const x=new Float64Array(N);for(let i=0;i<N;i++){let v=0;for(let k=0;k<N;k++)v+=U[i][k]*y[k];x[i]=v}return x})}
+
+// Sufficient statistics T2 = sum X_{n+1} X_n^T, T3 = sum X_n X_n^T (flat arrays)
+function statsFromPath(Y){const N=Y[0].length,T2=new Float64Array(N*N),T3=new Float64Array(N*N);
+  for(let n=1;n<Y.length;n++){const x=Y[n],p=Y[n-1];for(let i=0;i<N;i++){const xi=x[i],pi=p[i],b=i*N;for(let j=0;j<N;j++){const pj=p[j];T2[b+j]+=xi*pj;T3[b+j]+=pi*pj}}}return{T2,T3}}
+// Fused simulate + statistics without storing the path
+function simStats(sys,T,dt,gauss){const N=sys.N;const T2=new Float64Array(N*N),T3=new Float64Array(N*N);let y=new Float64Array(N),yn=new Float64Array(N);
+  const acc=()=>{for(let i=0;i<N;i++){const xi=yn[i],pi=y[i],b=i*N;for(let j=0;j<N;j++){T2[b+j]+=xi*y[j]}for(let j=i;j<N;j++){T3[b+j]+=pi*y[j]}}};
+  if(sys.sym){const{f,s}=eigCoefs(sys,dt);for(let n=0;n<T;n++){for(let k=0;k<N;k++)yn[k]=f[k]*y[k]+s[k]*gauss();acc();const t=y;y=yn;yn=t}}
+  else{const{Phi,L}=stepMats(sys,dt);const xi=new Float64Array(N);
+    for(let n=0;n<T;n++){for(let k=0;k<N;k++)xi[k]=gauss();for(let i=0;i<N;i++){let v=0;const Pi=Phi[i],Li=L[i];for(let j=0;j<N;j++)v+=Pi[j]*y[j];for(let j=0;j<=i;j++)v+=Li[j]*xi[j];yn[i]=v}acc();const t=y;y=yn;yn=t}}
+  for(let i=0;i<N;i++)for(let j=0;j<i;j++)T3[i*N+j]=T3[j*N+i];return{T2,T3}}
+
+// Real matrix logarithm by inverse scaling & squaring (Denman–Beavers square roots + atanh series)
+function sqrtm(M){const n=M.length;let Y=M.map(r=>Float64Array.from(r)),Z=eye(n);
+  for(let it=0;it<60;it++){const Yi=inv(Y),Zi=inv(Z);if(!Yi||!Zi)return null;const Yn=zeros(n,n),Zn=zeros(n,n);let d=0;
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++){Yn[i][j]=.5*(Y[i][j]+Zi[i][j]);Zn[i][j]=.5*(Z[i][j]+Yi[i][j]);d+=Math.abs(Yn[i][j]-Y[i][j])}
+    Y=Yn;Z=Zn;if(d<1e-13*n*n)break}if(!Y.every(r=>r.every(Number.isFinite)))return null;return Y}
+function logm(M){const n=M.length;let Y=M.map(r=>Float64Array.from(r)),k=0;
+  const dist=X=>{let s=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++){const v=X[i][j]-(i===j?1:0);s+=v*v}return Math.sqrt(s)};
+  while(dist(Y)>0.2&&k<40){Y=sqrtm(Y);if(!Y)return null;k++}
+  const Ym=Y.map((r,i)=>r.map((v,j)=>v-(i===j?1:0))),Yp=Y.map((r,i)=>r.map((v,j)=>v+(i===j?1:0)));const Ypi=inv(Yp);if(!Ypi)return null;
+  const Z=matmul(Ym,Ypi),Z2=matmul(Z,Z);let P=Z,L=zeros(n,n);
+  for(let j=0;j<25;j++){const c=2/(2*j+1);for(let a=0;a<n;a++)for(let b=0;b<n;b++)L[a][b]+=c*P[a][b];P=matmul(P,Z2)}
+  const sc=Math.pow(2,k);return L.map(r=>r.map(v=>v*sc))}
+
+const toM=(F,N)=>{const r=zeros(N,N);for(let i=0;i<N;i++)for(let j=0;j<N;j++)r[i][j]=F[i*N+j];return r};
+// MLE: Lambda_hat = T2 T3^{-1}; A_hat = -log(Lambda_hat)/dt. Rates are the eigenvalues of A_hat.
+function lambdaHat(st,N){const T3i=inv(toM(st.T3,N));if(!T3i)return null;return matmul(toM(st.T2,N),T3i)}
+function ratesOf(Lam,dt){const mu=eigFn(Lam);const rates=mu.map(z=>{const r=Math.hypot(z.re,z.im);return{re:-Math.log(r)/dt,im:-Math.atan2(z.im,z.re)/dt}});
+  let lamMin=Infinity;for(const z of rates)if(z.re<lamMin)lamMin=z.re;return{mu,rates,lamMin}}
+function trueA(sys){if(!sys.sym)return sys.A;const N=sys.N,D=zeros(N,N);for(let i=0;i<N;i++)D[i][i]=sys.a[i];return D}
+function estimateStats(sys,st,dt,withErr=true){const N=sys.N;const Lam=lambdaHat(st,N);if(!Lam)return null;
+  const{mu,rates,lamMin}=ratesOf(Lam,dt);const negReal=mu.some(z=>Math.abs(z.im)<1e-12&&z.re<=0);
+  let err=NaN;if(withErr&&!negReal){const L=logm(Lam);if(L){const A=trueA(sys);let s=0;for(let i=0;i<N;i++)for(let j=0;j<N;j++){const v=-L[i][j]/dt-A[i][j];s+=v*v}err=Math.sqrt(s)}}
+  return{rates,lamMin,err,Lam}}
+
+// ---- Lyapunov inverse method (OUinference, Barucca PRE 2014) ----
+// dynamics x' = -J x + sqrt(T) eta, <eta eta> = 2 delta  =>  {C, J} = 2 T~ ; temperatures from increments.
+function lyapunovFit(X,dt){const T=X.length,N=X[0].length;const mean=new Float64Array(N);for(const x of X)for(let i=0;i<N;i++)mean[i]+=x[i]/T;
+  const C=zeros(N,N),temp=new Float64Array(N);for(const x of X)for(let i=0;i<N;i++){const di=x[i]-mean[i];for(let j=i;j<N;j++)C[i][j]+=di*(x[j]-mean[j])}
+  for(let i=0;i<N;i++)for(let j=i;j<N;j++){C[i][j]/=(T-1);C[j][i]=C[i][j]}
+  for(let n=1;n<T;n++)for(let i=0;i<N;i++){const d=X[n][i]-X[n-1][i];temp[i]+=d*d}for(let i=0;i<N;i++)temp[i]=temp[i]/(T-1)/(2*dt);
+  const{vals:c,V:U}=symEig(C);if(c.some(v=>!(v>0)))return null;
+  const E=zeros(N,N);for(let a=0;a<N;a++)for(let b=0;b<N;b++){let s=0;for(let k=0;k<N;k++)s+=U[k][a]*temp[k]*U[k][b];E[a][b]=2*s/(c[a]+c[b])}
+  const J=matmul(matmul(U,E),transpose(U));const sj=symEig(J.map((r,i)=>r.map((v,j)=>.5*(v+J[j][i]))));
+  return{J,vals:sj.vals.slice().sort((p,q)=>p-q),temp,C}}
+
+// ---- Data fitting (demeaned VAR(1) MLE) ----
+function demean(X){const T=X.length,N=X[0].length;const m=new Float64Array(N);for(const x of X)for(let i=0;i<N;i++)m[i]+=x[i]/T;return X.map(x=>x.map((v,i)=>v-m[i]))}
+function fitVAR(X,dt){const N=X[0].length;const Z=demean(X);const st=statsFromPath(Z);const Lam=lambdaHat(st,N);if(!Lam)return null;
+  const r=ratesOf(Lam,dt);const S=zeros(N,N);let n=0;
+  for(let t=1;t<Z.length;t++){const e=new Float64Array(N);for(let i=0;i<N;i++){let v=Z[t][i];for(let j=0;j<N;j++)v-=Lam[i][j]*Z[t-1][j];e[i]=v}for(let i=0;i<N;i++)for(let j=0;j<=i;j++)S[i][j]+=e[i]*e[j];n++}
+  for(let i=0;i<N;i++)for(let j=0;j<=i;j++){S[i][j]/=Math.max(1,n-N);S[j][i]=S[i][j]}
+  return{Lam,rates:r.rates,mu:r.mu,lamMin:r.lamMin,Sigma:S}}
+// Null model: softest mode set exactly to the unit circle (marginal), others unchanged when the leading eigenvalue is real
+function marginalNull(Lam,mu){let k=0;for(let i=1;i<mu.length;i++)if(Math.hypot(mu[i].re,mu[i].im)>Math.hypot(mu[k].re,mu[k].im))k=i;
+  const m=mu[k],N=Lam.length;
+  if(Math.abs(m.im)<1e-10&&m.re>0){const v=realEigvec(Lam,m.re),w=realEigvec(transpose(Lam),m.re);
+    if(v&&w){let wv=0;for(let i=0;i<N;i++)wv+=w[i]*v[i];if(Math.abs(wv)>1e-8){const d=(1-m.re)/wv;return{Lam0:Lam.map((r,i)=>r.map((x,j)=>x+d*v[i]*w[j])),how:'deflate'}}}}
+  const r=Math.hypot(m.re,m.im);return{Lam0:Lam.map(row=>row.map(x=>x/r)),how:'scale'}}
+function simVAR(Lam,L,T,gauss){const N=Lam.length;const X=[new Float64Array(N)];const xi=new Float64Array(N);
+  for(let n=0;n<T;n++){const p=X[n],y=new Float64Array(N);for(let k=0;k<N;k++)xi[k]=gauss();
+    for(let i=0;i<N;i++){let v=0;const Li=Lam[i],Ci=L[i];for(let j=0;j<N;j++)v+=Li[j]*p[j];for(let j=0;j<=i;j++)v+=Ci[j]*xi[j];y[i]=v}X.push(y)}return X}
+
+if(typeof module!=='undefined'&&module.exports)module.exports={mulberry32,makeGauss,buildSystem,simulate,simStats,statsFromPath,estimateStats,toOriginal,lyapunovFit,fitVAR,marginalNull,simVAR,chol,expm,stepMats,matmul,eigFn,ratesOf,lambdaHat};
+
+</script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const fmt=(v,d=3)=>!isFinite(v)?'–':(v>=0?'+':'−')+Math.abs(v).toFixed(d);
+const sig=v=>!isFinite(v)?'–':v>=100?v.toFixed(0):v>=10?v.toFixed(1):v>=1?v.toFixed(2):v.toPrecision(2);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const R={one:null,ens:null,sweep:null,phase:null,data:null,boot:null};
+let busy=false;
+
+function P(){return{N:+$('N').value,tau:+$('tau').value,delta:+$('delta').value,
+  q:Math.pow(10,Math.log10(2)+(+$('q').value/1000)*(Math.log10(1000)-Math.log10(2))),
+  dt:Math.pow(10,-2+2*(+$('dt').value/1000)),M:+$('M').value,seed:(+$('seed').value)>>>0,lyap:$('lyap').checked}}
+const Tof=p=>Math.max(Math.round(p.q*p.N),p.N+2);
+function refresh(){const p=P();const T=Tof(p);
+  $('oN').textContent=p.N;$('oq').textContent=sig(p.q);$('odt').textContent=sig(p.dt);$('odelta').textContent=fmt(p.delta);$('oM').textContent=p.M;
+  const H=T*p.dt;let s=`T = ${T} samples\nhorizon TΔt = ${sig(H)}`;
+  if(p.delta!==0)s+=`\ninstability time 1/|δ| = ${sig(1/Math.abs(p.delta))}\n|δ|TΔt = ${sig(Math.abs(p.delta)*H)}`;
+  $('derived').textContent=s}
+['N','q','dt','delta','M','tau'].forEach(id=>$(id).addEventListener('input',refresh));refresh();
+
+// ---------- tabs ----------
+function showTab(name){for(const b of document.querySelectorAll('.tabs button'))b.setAttribute('aria-selected',String(b.dataset.tab===name));
+  for(const s of document.querySelectorAll('.panel'))s.hidden=s.id!=='p-'+name;if(history.replaceState)history.replaceState(null,'','#'+name);renderTab(name)}
+for(const b of document.querySelectorAll('.tabs button'))b.addEventListener('click',()=>showTab(b.dataset.tab));
+for(const a of document.querySelectorAll('[data-goto]'))a.addEventListener('click',e=>{e.preventDefault();showTab(a.dataset.goto)});
+const curTab=()=>{const b=document.querySelector('.tabs button[aria-selected=true]');return b?b.dataset.tab:'overview'};
+
+// ---------- SVG plotting ----------
+function widthOf(id){const el=$(id);const w=el?el.clientWidth:640;return Math.round(Math.max(300,Math.min(900,w||640)))}
+function axes(o){const{W,h=260,ml=54,mr=14,mt=14,mb=44,xlim,ylim,xlog=false,ylog=false}=o;
+  const f=(v,lim,lg)=>lg?(Math.log10(v)-Math.log10(lim[0]))/(Math.log10(lim[1])-Math.log10(lim[0])):(v-lim[0])/(lim[1]-lim[0]);
+  const tx=v=>ml+f(v,xlim,xlog)*(W-ml-mr);const ty=v=>mt+(1-f(v,ylim,ylog))*(h-mt-mb);return{W,tx,ty,h,ml,mr,mt,mb}}
+function ticks(lo,hi,n=5){const span=hi-lo,step0=span/n,mag=Math.pow(10,Math.floor(Math.log10(step0))),r=step0/mag,step=(r<1.5?1:r<3?2:r<7?5:10)*mag;
+  const out=[];for(let v=Math.ceil(lo/step)*step;v<=hi+1e-12;v+=step)out.push(+v.toPrecision(10));return out}
+function logTicks(lim){const t=[];for(let e=Math.floor(Math.log10(lim[0]));e<=Math.ceil(Math.log10(lim[1]));e++)for(const m of[1,3]){const v=m*Math.pow(10,e);if(v>=lim[0]*0.999&&v<=lim[1]*1.001)t.push(v)}return t}
+function tlab(v){return Math.abs(v)<1e-12?'0':(Math.abs(v)>=10000||Math.abs(v)<0.01)?v.toExponential(0):String(+v.toPrecision(3)).replace('-','−')}
+function frame(ax,o){let s='';const W=ax.W;
+  const xt=o.xlog?logTicks(o.xlim):ticks(o.xlim[0],o.xlim[1],o.nx||6);const yt=o.noy?[]:(o.ylog?logTicks(o.ylim):ticks(o.ylim[0],o.ylim[1],4));
+  for(const v of yt){const y=ax.ty(v);s+=`<line x1="${ax.ml}" x2="${W-ax.mr}" y1="${y}" y2="${y}" stroke="var(--grid)"/><text x="${ax.ml-6}" y="${y+4}" text-anchor="end" font-size="11.5" fill="var(--muted)">${o.ylab?o.ylab(v):tlab(v)}</text>`}
+  for(const v of xt){const x=ax.tx(v);s+=`<line x1="${x}" x2="${x}" y1="${ax.h-ax.mb}" y2="${ax.h-ax.mb+5}" stroke="var(--muted)"/><text x="${x}" y="${ax.h-ax.mb+18}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${o.xlab?o.xlab(v):tlab(v)}</text>`}
+  s+=`<line x1="${ax.ml}" x2="${W-ax.mr}" y1="${ax.h-ax.mb}" y2="${ax.h-ax.mb}" stroke="var(--muted)"/>`;
+  if(o.xlabel)s+=`<text x="${(ax.ml+W-ax.mr)/2}" y="${ax.h-6}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Source Serif 4, Georgia, serif" font-style="italic">${o.xlabel}</text>`;
+  if(o.ylabel)s+=`<text transform="translate(14 ${(ax.mt+ax.h-ax.mb)/2}) rotate(-90)" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Source Serif 4, Georgia, serif" font-style="italic">${o.ylabel}</text>`;
+  return s}
+const svg=(W,h,inner,label)=>`<svg viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" role="img" aria-label="${esc(label)}" font-family="Inter, system-ui, sans-serif">${inner}</svg>`;
+function unstableShade(ax,xlim){if(xlim[0]>=0)return'';const x0=ax.tx(xlim[0]),x1=ax.tx(Math.min(0,xlim[1]));
+  return `<rect x="${x0}" y="${ax.mt}" width="${Math.max(0,x1-x0)}" height="${ax.h-ax.mt-ax.mb}" fill="var(--accent-soft)"/><text x="${x0+6}" y="${ax.mt+15}" font-size="12" fill="var(--accent)">unstable</text>`}
+const poly=(ax,pts,c,w,extra='')=>`<polyline fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round" ${extra} points="${pts.filter(([x,y])=>isFinite(x)&&isFinite(y)).map(([x,y])=>ax.tx(x).toFixed(1)+','+ax.ty(y).toFixed(1)).join(' ')}"/>`;
+function histogram(id,vals,o){const W=widthOf(id);if(!vals.length){$(id).innerHTML='<div class="empty">Nothing to show.</div>';return}
+  const s=vals.slice().sort((a,b)=>a-b);let lo=s[Math.floor(.005*s.length)],hi=s[Math.ceil(.995*s.length)-1];
+  for(const v of(o.include||[]))if(isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}const pad=(hi-lo)*.06||.05;lo-=pad;hi+=pad;
+  const nb=o.nb||36,w=(hi-lo)/nb;const series=o.series||[{vals,color:null}];const counts=series.map(S=>{const c=new Array(nb).fill(0);for(const v of S.vals){const k=Math.floor((v-lo)/w);if(k>=0&&k<nb)c[k]++}return c});
+  const ymax=Math.max(...counts.flat())*1.12||1;const oo={W,xlim:[lo,hi],ylim:[0,ymax],xlabel:o.xlabel,ylabel:o.ylabel||'count'};const ax=axes(oo);
+  let inner=(o.shade?unstableShade(ax,oo.xlim):'')+frame(ax,oo);
+  counts.forEach((c,si)=>{const S=series[si];for(let k=0;k<nb;k++){if(!c[k])continue;const x0=lo+k*w,mid=x0+w/2;
+    const col=S.color||(o.shade?(mid>0?'var(--s1)':'var(--accent)'):'var(--s0)');
+    inner+=`<rect x="${ax.tx(x0)+.5}" y="${ax.ty(c[k])}" width="${Math.max(ax.tx(x0+w)-ax.tx(x0)-1,1)}" height="${ax.ty(0)-ax.ty(c[k])}" fill="${col}" opacity="${S.opacity||.85}"/>`}});
+  for(const L of(o.lines||[]))if(isFinite(L.x)&&L.x>=lo&&L.x<=hi)inner+=`<line x1="${ax.tx(L.x)}" x2="${ax.tx(L.x)}" y1="${ax.mt}" y2="${ax.h-ax.mb}" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="${L.dash||'4 3'}"/><text x="${ax.tx(L.x)+5}" y="${ax.mt+(L.dy||40)}" font-size="12" fill="var(--ink)">${esc(L.label)}</text>`;
+  $(id).innerHTML=svg(W,ax.h,inner,o.label||'histogram')}
+// complex-plane spectrum plot: groups = [{pts:[{re,im}], kind:'fill'|'open'|'square', color, label}]
+function spectrumPlot(id,groups,label){const W=widthOf(id);const all=groups.flatMap(g=>g.pts);
+  let lo=Math.min(...all.map(z=>z.re),-0.05),hi=Math.max(...all.map(z=>z.re),0.1);const pad=(hi-lo)*0.06;lo-=pad;hi+=pad;
+  let im=Math.max(...all.map(z=>Math.abs(z.im)),0);const flat=im<1e-9;if(flat)im=1;else im*=1.15;
+  const h=flat?170:280;const o={W,h,xlim:[lo,hi],ylim:[-im,im],noy:flat,xlabel:'Re λ',ylabel:flat?'':'Im λ',mb:42};const ax=axes(o);
+  let s=unstableShade(ax,o.xlim)+frame(ax,o);
+  if(lo<0&&hi>0)s+=`<line x1="${ax.tx(0)}" x2="${ax.tx(0)}" y1="${ax.mt}" y2="${ax.h-ax.mb}" stroke="var(--accent)" stroke-width="1.2"/>`;
+  if(!flat)s+=`<line x1="${ax.ml}" x2="${W-ax.mr}" y1="${ax.ty(0)}" y2="${ax.ty(0)}" stroke="var(--line)"/>`;
+  const rows=groups.length;groups.forEach((g,gi)=>{const yoff=flat?(rows===1?0:(-1+2*gi/(rows-1))*0.55*im):0;
+    for(const z of g.pts){const x=ax.tx(z.re),y=ax.ty(flat?yoff:z.im);if(!isFinite(x)||!isFinite(y))continue;
+      if(g.kind==='fill')s+=`<circle cx="${x}" cy="${y}" r="4.5" fill="${g.color}" opacity=".85"/>`;
+      else if(g.kind==='square')s+=`<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="none" stroke="${g.color}" stroke-width="1.6"/>`;
+      else s+=`<circle cx="${x}" cy="${y}" r="5" fill="none" stroke="${g.color}" stroke-width="1.6"/>`}
+    if(flat)s+=`<text x="${W-ax.mr}" y="${ax.ty(yoff)-10}" text-anchor="end" font-size="11.5" fill="var(--muted)">${esc(g.label)}</text>`});
+  $(id).innerHTML=svg(W,ax.h,s,label)}
+const legend=items=>items.map(([c,l,shape])=>`<span><i style="background:${shape==='open'?'transparent':c};border:1.6px solid ${c};${shape==='open'?'border-radius:50%':''}"></i>${esc(l)}</span>`).join('');
+
+// ---------- progress / locking ----------
+function prog(f){const p=$('prog');p.style.visibility=f==null?'hidden':'visible';p.firstElementChild.style.width=((f||0)*100)+'%'}
+function lock(b){busy=b;['bOne','bEns','bSweep','bPhase','bSeed','bBoot','bUseSim'].forEach(id=>$(id).disabled=b)}
+function status(msg,err){const s=$('status');s.textContent=msg||'';s.classList.toggle('err',!!err)}
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function guard(fn){return async()=>{if(busy)return;if(typeof numeric==='undefined'){status('The linear-algebra library did not load. Check your connection and reload the page.',true);return}
+  lock(true);try{await fn()}catch(e){console.error(e);status('Error: '+e.message,true)}finally{prog(null);lock(false)}}}
+
+// ---------- Overview: one trajectory ----------
+function runOne(){const p=P();const T=Tof(p);const g=makeGauss(mulberry32(p.seed));const t0=performance.now();
+  const sys=buildSystem(p.N,p.delta,p.tau,g);const Y=simulate(sys,T,p.dt,g);const r=estimateStats(sys,statsFromPath(Y),p.dt,true);
+  const X=toOriginal(sys,Y);let ly=null;if(p.lyap)ly=lyapunovFit(X,p.dt);
+  R.one={p,T,sys,Y,X,r,ly};status(`Trajectory: N = ${p.N}, T = ${T}, ${(performance.now()-t0).toFixed(0)} ms.`);renderOne()}
+function softProjection(sys,Y){const N=sys.N;if(sys.sym)return{soft:Y.map(y=>y[0]),stiff:Y.map(y=>y[N-1]),softLab:`soft mode, λ = ${fmt(sys.a[0])}`,stiffLab:`stiffest mode, λ = ${sys.a[N-1].toFixed(2)}`,isMode:true};
+  const z=sys.eigA[0];let w=null;if(Math.abs(z.im)<1e-9)w=realEigvec(transpose(sys.A),z.re);
+  const rms=Y.map(y=>{let s=0;for(const v of y)s+=v*v;return Math.sqrt(s/N)});
+  if(w)return{soft:Y.map(y=>{let s=0;for(let i=0;i<N;i++)s+=w[i]*y[i];return s}),stiff:rms,softLab:`soft mode (left eigenvector), λ = ${fmt(z.re)}`,stiffLab:'rms amplitude over all variables',isMode:true};
+  return{soft:rms,stiff:Y.map(y=>y[0]),softLab:`rms amplitude (soft mode is complex, λ = ${fmt(z.re)} ± ${Math.abs(z.im).toFixed(3)}i)`,stiffLab:'variable 1',isMode:false}}
+function renderOne(){const o=R.one;if(!o)return;const{p,T,sys,Y,r,ly}=o;
+  const fooled=p.delta<0&&r.lamMin>0;const wrongU=p.delta>0&&r.lamMin<=0;
+  const verdict=v=>v>0?'<span class="stable">looks stable</span>':'<span class="unstable">looks unstable</span>';
+  let c=`<div class="card"><b>${fmt(p.delta)}</b><span>true min Re λ(A): ${p.delta<0?'<span class="unstable">unstable</span>':p.delta>0?'<span class="stable">stable</span>':'marginal'}</span></div>`;
+  c+=`<div class="card"><b>${fmt(r.lamMin)}</b><span>estimated min Re λ(Â): ${verdict(r.lamMin)}${fooled||wrongU?' <b class="inline warn">(wrong)</b>':''}</span></div>`;
+  if(ly)c+=`<div class="card"><b>${fmt(ly.vals[0])}</b><span>Lyapunov estimate, min λ(Ĵ): ${verdict(ly.vals[0])}${p.delta<0&&ly.vals[0]>0?' <b class="inline warn">(wrong)</b>':''}</span></div>`;
+  c+=`<div class="card"><b>${isFinite(r.err)?r.err.toFixed(3):'–'}</b><span>‖A − Â‖<sub>F</sub>${isFinite(r.err)?'':' (no real log)'}</span></div>`;
+  c+=`<div class="card"><b>${sig(T*p.dt)}</b><span>horizon TΔt${p.delta!==0?` · |δ|TΔt = ${sig(Math.abs(p.delta)*T*p.dt)}`:''}</span></div>`;
+  c+=`<div class="card"><b>${sys.alpha.toFixed(4)}</b><span>α for this draw${sys.sym?` (α<sub>c</sub> = ${(1/Math.SQRT2).toFixed(4)})`:''}</span></div>`;
+  $('cards').innerHTML=c;
+  // trajectory
+  const W=widthOf('figTraj');const pr=softProjection(sys,Y);const tmax=T*p.dt,stride=Math.max(1,Math.floor(T/600));const soft=[],stiff=[];
+  for(let n=0;n<=T;n+=stride){soft.push([n*p.dt,pr.soft[n]]);stiff.push([n*p.dt,pr.stiff[n]])}
+  let ym=0;for(const s of[soft,stiff])for(const[,v]of s)ym=Math.max(ym,Math.abs(v));ym=(ym||1)*1.08;
+  const ylim=[-ym,ym];
+  const oo={W,xlim:[0,tmax],ylim,xlabel:'time t',ylabel:'amplitude'};const ax=axes(oo);
+  let inner=frame(ax,oo)+poly(ax,stiff,'var(--muted)',1)+poly(ax,soft,'var(--accent)',1.8);
+  inner+=`<text x="${ax.ml+8}" y="${ax.mt+14}" font-size="12" fill="var(--accent)">${esc(pr.softLab)}</text><text x="${ax.ml+8}" y="${ax.mt+30}" font-size="12" fill="var(--muted)">${esc(pr.stiffLab)}</text>`;
+  $('figTraj').innerHTML=svg(W,ax.h,inner,'Trajectory projected on soft and stiff modes');
+  $('capTraj').innerHTML=sys.sym?'Projection on the softest eigenmode of \\(A\\) (the one that is unstable when \\(\\delta<0\\)) and on the stiffest one. Over a short window the soft mode is indistinguishable from a random walk.':(pr.isMode?'Projection on the left eigenvector of the softest mode of \\(A\\) (unstable when \\(\\delta<0\\)), with the root-mean-square amplitude of all variables for scale. Over a short window the soft mode is indistinguishable from a random walk.':'The softest mode of this draw is a complex pair, so the plot shows the root-mean-square amplitude of all variables and the first variable.');typeset($('capTraj'));
+  // spectrum
+  const groups=[{pts:sys.eigA,kind:'fill',color:'var(--ink)',label:'true A'},{pts:r.rates,kind:'open',color:'var(--s1)',label:'MLE Â'}];
+  if(ly)groups.push({pts:ly.vals.map(v=>({re:v,im:0})),kind:'square',color:'var(--s3)',label:'Lyapunov Ĵ'});
+  $('lgSpec').innerHTML=legend([['var(--ink)','true A'],['var(--s1)','maximum likelihood Â','open'],...(ly?[['var(--s3)','Lyapunov Ĵ (equilibrium)','open']]:[])]);
+  spectrumPlot('figSpec',groups,'Spectra of true and estimated drift');
+  $('capSpec').innerHTML=`Eigenvalues of the true \\(A\\) and of the estimates. The shaded side of zero is unstable.${sys.sym?'':' With non-symmetric couplings the spectra are complex.'}${ly?' The Lyapunov estimate assumes stationarity, so all its eigenvalues are positive by construction (see Method).':''}`;
+  typeset($('capSpec'))}
+
+// ---------- Ensemble ----------
+async function runEnsemble(){const p=P();const T=Tof(p);const g=makeGauss(mulberry32(p.seed+1));const lm=[],er=[];let t0=performance.now();const start=t0;
+  for(let m=0;m<p.M;m++){const sys=buildSystem(p.N,p.delta,p.tau,g);const r=estimateStats(sys,simStats(sys,T,p.dt,g),p.dt,true);if(!r)continue;lm.push(r.lamMin);if(isFinite(r.err))er.push(r.err);
+    if(performance.now()-t0>40){prog(m/p.M);status(`Ensemble: ${m}/${p.M}`);await tick();t0=performance.now()}}
+  R.ens={p,T,lm,er};status(`Ensemble: ${lm.length} realisations in ${((performance.now()-start)/1000).toFixed(1)} s.`);showTab('ensemble')}
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length,sd=a=>{const m=mean(a);return Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/Math.max(1,a.length-1))};
+function renderEns(){const o=R.ens;if(!o)return;const{p,T,lm,er}=o;const fs=lm.filter(v=>v>0).length/lm.length;
+  $('ensCards').innerHTML=`<div class="card"><b class="${p.delta<0?'unstable':'stable'}">${(100*fs).toFixed(0)}%</b><span>look stable (true δ = ${fmt(p.delta)})</span></div>
+   <div class="card"><b>${fmt(mean(lm))}</b><span>mean λ̂<sub>min</sub> ± ${sd(lm).toFixed(3)}</span></div>
+   <div class="card"><b>${er.length?mean(er).toFixed(2):'–'}</b><span>‖A − Â‖<sub>F</sub> ± ${er.length?sd(er).toFixed(2):'–'}</span></div>
+   <div class="card"><b>${lm.length}</b><span>realisations · N = ${p.N} · T = ${T}</span></div>`;
+  histogram('figHist',lm,{shade:true,xlabel:'estimated min Re λ(Â)',include:[p.delta,0],lines:[{x:p.delta,label:'true δ'}],label:'Histogram of estimated smallest eigenvalue'});
+  histogram('figErr',er,{xlabel:'Frobenius error ‖A − Â‖',nb:30,label:'Histogram of Frobenius error'})}
+
+// ---------- Horizon sweep ----------
+async function runSweep(){const p=P();const g=makeGauss(mulberry32(p.seed+2));const M=Math.min(p.M,100);const unst=p.delta<0;const xs=[];const nPts=9;
+  const xmin=unst?0.05:2,xmax=unst?25:2000;
+  for(let i=0;i<nPts;i++){const x=xmin*Math.pow(xmax/xmin,i/(nPts-1));const T=Math.round(unst?x/(Math.abs(p.delta)*p.dt):x/p.dt);if(T>=p.N+2&&T<=40000)xs.push({x,T,H:T*p.dt})}
+  if(!xs.length){R.sweep={p,xs:[],M,unst};status('No horizons fit at these settings: raise Δt or |δ|, or lower N.',true);showTab('sweep');return}
+  const tot=xs.reduce((a,b)=>a+b.T,0)*M;let done=0,t0=performance.now();
+  for(const pt of xs){let st=0;const errs=[];for(let m=0;m<M;m++){const sys=buildSystem(p.N,p.delta,p.tau,g);const r=estimateStats(sys,simStats(sys,pt.T,p.dt,g),p.dt,m<40);if(r){if(r.lamMin>0)st++;if(isFinite(r.err))errs.push(r.err)}done+=pt.T;
+      if(performance.now()-t0>40){prog(done/tot);status(`Sweep: T = ${pt.T}`);await tick();t0=performance.now()}}pt.f=st/M;pt.err=errs.length?mean(errs):NaN}
+  R.sweep={p,xs,M,unst};status(`Sweep: ${xs.length} horizons × ${M} realisations.`);showTab('sweep')}
+function renderSweep(){const o=R.sweep;if(!o)return;const{p,xs,M,unst}=o;
+  if(!xs.length){$('figSweep').innerHTML='<div class="empty">No horizons fit at these settings: raise Δt or |δ|, or lower N.</div>';$('figSweepErr').innerHTML='';$('sweepCards').innerHTML='';return}
+  const W=widthOf('figSweep');const oo={W,xlim:[xs[0].x/1.15,xs[xs.length-1].x*1.15],ylim:[0,1],xlog:true,xlabel:unst?'|δ| T Δt':'observation horizon T Δt',ylabel:'share looking stable'};const ax=axes(oo);
+  let inner=frame(ax,oo);if(unst&&oo.xlim[0]<1.78&&oo.xlim[1]>1.78)inner+=`<line x1="${ax.tx(1.78)}" x2="${ax.tx(1.78)}" y1="${ax.mt}" y2="${ax.h-ax.mb}" stroke="var(--muted)" stroke-dasharray="5 4"/><text x="${ax.tx(1.78)+5}" y="${ax.mt+14}" font-size="11.5" fill="var(--muted)">1.78</text>`;
+  inner+=poly(ax,xs.map(d=>[d.x,d.f]),'var(--accent)',2);for(const d of xs)inner+=`<circle cx="${ax.tx(d.x)}" cy="${ax.ty(d.f)}" r="4" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/>`;
+  $('figSweep').innerHTML=svg(W,ax.h,inner,'Share of stable-looking estimates versus horizon');
+  const cross=xs.find(d=>d.f<0.1);
+  $('sweepCards').innerHTML=`<div class="card"><b>${M}</b><span>realisations per point · N = ${p.N} · Δt = ${sig(p.dt)}</span></div>`+(unst?`<div class="card"><b>${cross?sig(cross.x):'> '+sig(xs[xs.length-1].x)}</b><span>|δ|TΔt where fewer than 10% are fooled${cross?` (T ≈ ${cross.T})`:''}</span></div>`:`<div class="card"><b>${(100*xs[xs.length-1].f).toFixed(0)}%</b><span>correctly stable at the longest horizon</span></div>`);
+  $('capSweep').innerHTML=unst?'Against the horizon in units of the instability time \\(1/|\\delta|\\). The dashed rule is the scalar unit-root bias scale \\(|\\delta|T\\Delta t\\approx1.78\\). At the shortest horizons \\(q\\) is small, and random-matrix noise in \\(\\hat\\Lambda\\) scatters the soft eigenvalue to both sides of zero.':'The system is truly stable here, so the curve shows how often the estimate gets that right.';
+  typeset($('capSweep'));
+  const ep=xs.filter(d=>isFinite(d.err)&&d.err>0);if(ep.length<2){$('figSweepErr').innerHTML='<div class="empty">Not enough finite errors.</div>';return}
+  const W2=widthOf('figSweepErr');const yv=ep.map(d=>d.err);const o2={W:W2,xlim:[ep[0].H/1.15,ep[ep.length-1].H*1.15],ylim:[Math.min(...yv)/1.4,Math.max(...yv)*1.4],xlog:true,ylog:true,xlabel:'horizon T Δt',ylabel:'mean Frobenius error'};const a2=axes(o2);
+  let s2=frame(a2,o2);const g0=ep[ep.length-1];const guide=[[ep[0].H,g0.err*Math.sqrt(g0.H/ep[0].H)],[g0.H,g0.err]];
+  s2+=poly(a2,guide,'var(--muted)',1.2,'stroke-dasharray="2 4"')+poly(a2,ep.map(d=>[d.H,d.err]),'var(--s1)',2);for(const d of ep)s2+=`<circle cx="${a2.tx(d.H)}" cy="${a2.ty(d.err)}" r="4" fill="var(--panel)" stroke="var(--s1)" stroke-width="2"/>`;
+  $('figSweepErr').innerHTML=svg(W2,a2.h,s2,'Frobenius error versus horizon')}
+
+// ---------- Phase diagram ----------
+async function runPhase(){const p=P();const fine=$('grid').value==='f';const nd=fine?13:9,nh=fine?9:6;const M=Math.min(p.M,40);
+  const ds=[];for(let i=0;i<nd;i++)ds.push(+(-0.1+0.2*i/(nd-1)).toFixed(4));const hs=[];for(let j=0;j<nh;j++)hs.push(5*Math.pow(1000/5,j/(nh-1)));
+  const g=makeGauss(mulberry32(p.seed+3));const cells=[];let tot=0;for(const d of ds)for(const H of hs){const T=Math.round(H/p.dt);cells.push({d,H,T,skip:T<p.N+2||T>40000});if(!(T<p.N+2||T>40000))tot+=T*M}
+  let done=0,t0=performance.now();const start=t0;
+  for(const c of cells){if(c.skip)continue;let st=0;for(let m=0;m<M;m++){const sys=buildSystem(p.N,c.d,p.tau,g);const r=estimateStats(sys,simStats(sys,c.T,p.dt,g),p.dt,false);if(r&&r.lamMin>0)st++;done+=c.T;
+      if(performance.now()-t0>40){prog(done/tot);status(`Phase diagram: δ = ${fmt(c.d)}, TΔt = ${sig(c.H)}`);await tick();t0=performance.now()}}c.f=st/M}
+  R.phase={p,ds,hs,cells,M};status(`Phase diagram: ${cells.filter(c=>!c.skip).length} cells × ${M} realisations in ${((performance.now()-start)/1000).toFixed(1)} s.`);showTab('phase')}
+function renderPhase(){const o=R.phase;if(!o)return;const{p,ds,hs,cells,M}=o;const W=widthOf('figPhase');const nd=ds.length,nh=hs.length;
+  const ml=60,mr=14,mt=30,mb=46,h=Math.max(260,Math.min(420,nh*44+mt+mb));const cw=(W-ml-mr)/nd,ch=(h-mt-mb)/nh;
+  const lx=d=>ml+((d-ds[0])/(ds[nd-1]-ds[0]))*(W-ml-mr-cw)+cw/2;const ly=H=>mt+(1-Math.log(H/hs[0])/Math.log(hs[nh-1]/hs[0]))*(h-mt-mb-ch)+ch/2;
+  let s='';for(const c of cells){const i=ds.indexOf(c.d),j=hs.indexOf(c.H);const x=ml+i*cw,y=mt+(nh-1-j)*ch;
+    if(c.skip){s+=`<rect x="${x+1}" y="${y+1}" width="${cw-2}" height="${ch-2}" fill="var(--grid)"/>`;continue}
+    s+=`<rect x="${x+1}" y="${y+1}" width="${cw-2}" height="${ch-2}" fill="var(--s1)" fill-opacity="${(0.06+0.86*c.f).toFixed(3)}" stroke="${c.d<0&&c.f>0.5?'var(--accent)':'none'}" stroke-width="1.5"><title>δ = ${fmt(c.d)}, TΔt = ${sig(c.H)}: ${(100*c.f).toFixed(0)}% look stable</title></rect>`;
+    if(cw>30&&ch>18)s+=`<text x="${x+cw/2}" y="${y+ch/2+4}" text-anchor="middle" font-size="${cw>44?11.5:10}" fill="${c.f>0.55?'var(--panel)':'var(--ink)'}">${(100*c.f).toFixed(0)}</text>`}
+  // axes
+  for(let i=0;i<nd;i++)if(nd<=9||i%2===0)s+=`<text x="${ml+i*cw+cw/2}" y="${h-mb+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${ds[i]===0?'0':ds[i].toFixed(nd>9?3:3).replace('-','−')}</text>`;
+  for(let j=0;j<nh;j++)s+=`<text x="${ml-6}" y="${mt+(nh-1-j)*ch+ch/2+4}" text-anchor="end" font-size="11" fill="var(--muted)">${sig(hs[j])}</text>`;
+  s+=`<text x="${(ml+W-mr)/2}" y="${h-6}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Source Serif 4, Georgia, serif" font-style="italic">distance from instability δ</text>`;
+  s+=`<text transform="translate(14 ${(mt+h-mb)/2}) rotate(-90)" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Source Serif 4, Georgia, serif" font-style="italic">horizon T Δt</text>`;
+  if(ds[0]<0&&ds[nd-1]>0){const x0=ml+((0-ds[0])/(ds[nd-1]-ds[0]))*(W-ml-mr-cw)+cw/2;s+=`<line x1="${x0}" x2="${x0}" y1="${mt}" y2="${h-mb}" stroke="var(--accent)" stroke-width="1.5"/><text x="${x0-6}" y="${mt-10}" text-anchor="end" font-size="11.5" fill="var(--accent)">unstable</text><text x="${x0+6}" y="${mt-10}" font-size="11.5" fill="var(--muted)">stable</text>`}
+  // |delta| H = 1.78 curves
+  for(const sgn of[-1,1]){const pts=[];for(let k=0;k<=60;k++){const H=hs[0]*Math.pow(hs[nh-1]/hs[0],k/60);const d=sgn*1.78/H;if(d>=ds[0]&&d<=ds[nd-1])pts.push([lx(d),ly(H)])}
+    if(pts.length>1)s+=`<polyline fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-dasharray="5 4" points="${pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}"/>`}
+  $('figPhase').innerHTML=svg(W,h,s,'Phase diagram of the stability verdict');
+  $('capPhase').innerHTML=`Cell values are the percentage of ${M} realisations whose estimate looks stable (darker teal = more). Outlined cells: truly unstable but judged stable by the majority. Dashed curves: \\(|\\delta|\\,T\\Delta t=1.78\\), the scalar unit-root bias scale. Grey cells needed fewer than \\(N+2\\) or more than 40 000 samples and were skipped. \\(N\\) = ${p.N}, \\(\\Delta t\\) = ${sig(p.dt)}.`;typeset($('capPhase'))}
+
+// ---------- Your data ----------
+function parseSeries(text){const rows=[];let skipped=0,ncol=-1;
+  for(const raw of text.split(/\r?\n/)){const line=raw.trim();if(!line||line[0]==='#')continue;const parts=line.split(/[\s,;]+/).filter(Boolean);const nums=parts.map(Number);
+    if(nums.some(v=>!isFinite(v))){skipped++;continue}if(ncol<0)ncol=nums.length;if(nums.length!==ncol){skipped++;continue}rows.push(Float64Array.from(nums))}
+  return{rows,skipped,ncol}}
+function setData(rows,name,dt){if(!rows.length||rows[0].length<1)throw new Error('No numeric rows found.');
+  if(rows[0].length>50)throw new Error(`${rows[0].length} columns: at most 50 variables are supported.`);
+  if(rows.length>100000)rows=rows.slice(0,100000);if(rows.length<rows[0].length+5)throw new Error('Too few rows for this many columns.');
+  if(dt)$('dDt').value=dt;R.data={name,rows};R.boot=null;fitData()}
+function fitData(){const d=R.data;if(!d)return;const dt=+$('dDt').value;if(!(dt>0)){status('Δt must be positive.',true);return}
+  const f=fitVAR(d.rows,dt);if(!f){status('Could not fit: the covariance of the series is singular.',true);return}
+  d.fit=f;d.dt=dt;d.ly=lyapunovFit(d.rows,dt);R.boot=null;renderData()}
+async function runBoot(){const d=R.data;if(!d||!d.fit){status('Load data first.',true);return}const B=+$('dB').value;const f=d.fit,dt=d.dt,T=d.rows.length-1,N=d.rows[0].length;
+  const g=makeGauss(mulberry32(P().seed+4));const L=chol(f.Sigma);const nul=marginalNull(f.Lam,f.mu);const res={null:[],fitted:[],how:nul.how};let t0=performance.now();const start=t0;
+  for(let b=0;b<2*B;b++){const useNull=b<B;const X=simVAR(useNull?nul.Lam0:f.Lam,L,T,g);const fb=fitVAR(X,dt);if(fb)(useNull?res.null:res.fitted).push(fb.lamMin);
+    if(performance.now()-t0>40){prog(b/(2*B));status(`Bootstrap: ${b}/${2*B}`);await tick();t0=performance.now()}}
+  res.p=res.null.filter(v=>v>=f.lamMin).length/Math.max(1,res.null.length);const s=res.fitted.slice().sort((a,b)=>a-b);
+  res.lo=s[Math.floor(.05*s.length)];res.hi=s[Math.min(s.length-1,Math.ceil(.95*s.length)-1)];res.bc=2*f.lamMin-mean(res.fitted);
+  R.boot=res;status(`Bootstrap: ${B} null and ${B} fitted paths in ${((performance.now()-start)/1000).toFixed(1)} s.`);renderData()}
+function renderData(){const d=R.data;if(!d||!d.fit)return;const{rows,fit:f,ly,dt}=d;const T=rows.length,N=rows[0].length;
+  $('dataInfo').textContent=`${d.name}: ${T} rows × ${N} columns${d.skipped?` (skipped ${d.skipped} header or non-numeric row${d.skipped>1?'s':''})`:''}`;
+  const verdict=v=>v>0?'<span class="stable">looks stable</span>':'<span class="unstable">looks unstable</span>';const b=R.boot;
+  let c=`<div class="card"><b>${sig((T-1)*dt)}</b><span>horizon TΔt · ${T} × ${N}</span></div>
+   <div class="card"><b>${fmt(f.lamMin)}</b><span>MLE min Re λ(Â): ${verdict(f.lamMin)}</span></div>`;
+  if(ly)c+=`<div class="card"><b>${fmt(ly.vals[0])}</b><span>Lyapunov min λ(Ĵ): ${verdict(ly.vals[0])} (always, by construction)</span></div>`;
+  c+=`<div class="card"><b>${isFinite(f.lamMin)&&f.lamMin!==0?sig(1/Math.abs(f.lamMin)):'–'}</b><span>relaxation time 1/|λ̂<sub>min</sub>|, against a horizon of ${sig((T-1)*dt)}</span></div>`;
+  if(b)c+=`<div class="card"><b>${(100*b.p).toFixed(1)}%</b><span>null fits with λ̂<sub>min</sub> ≥ yours${b.p<0.05?' · gap is significant':' · <span class="warn">gap not distinguishable from 0</span>'}</span></div>
+    <div class="card"><b>${fmt(b.bc)}</b><span>bias-corrected λ<sub>min</sub>; 90% range of refits ${fmt(b.lo)} to ${fmt(b.hi)}</span></div>`;
+  $('dataCards').innerHTML=c;
+  // series plot
+  const W=widthOf('figData');const k=Math.min(5,N);const stride=Math.max(1,Math.floor(T/600));const cols=['var(--s0)','var(--s1)','var(--s2)','var(--s3)','var(--s4)'];
+  const ser=[];let ym=0;for(let j=0;j<k;j++){let m=0,s=0;for(const r of rows)m+=r[j]/T;for(const r of rows)s+=(r[j]-m)**2;s=Math.sqrt(s/T)||1;const pts=[];for(let n=0;n<T;n+=stride){const v=(rows[n][j]-m)/s;pts.push([n*dt,v]);ym=Math.max(ym,Math.abs(v))}ser.push(pts)}
+  const oo={W,xlim:[0,(T-1)*dt||1],ylim:[-ym*1.05,ym*1.05],xlabel:'time',ylabel:'standardised value'};const ax=axes(oo);let inner=frame(ax,oo);ser.forEach((pts,j)=>inner+=poly(ax,pts,cols[j],1.1));
+  $('figData').innerHTML=svg(W,ax.h,inner,'Input series');
+  const groups=[{pts:f.rates,kind:'open',color:'var(--s1)',label:'MLE Â'}];if(ly)groups.push({pts:ly.vals.map(v=>({re:v,im:0})),kind:'square',color:'var(--s3)',label:'Lyapunov Ĵ'});
+  $('lgDSpec').innerHTML=legend([['var(--s1)','maximum likelihood Â','open'],...(ly?[['var(--s3)','Lyapunov Ĵ','open']]:[])]);spectrumPlot('figDSpec',groups,'Estimated rates');
+  if(b){$('lgBoot').innerHTML=legend([['var(--accent)','null: softest mode marginal'],['var(--s1)','fitted model']]);
+    histogram('figBoot',b.null.concat(b.fitted),{series:[{vals:b.null,color:'var(--accent)',opacity:.55},{vals:b.fitted,color:'var(--s1)',opacity:.55}],xlabel:'refitted min Re λ(Â)',include:[f.lamMin,0],lines:[{x:f.lamMin,label:'your estimate',dash:'none'},{x:0,label:'',dash:'2 3'}],label:'Bootstrap distributions'});
+    $('capBoot').innerHTML=`Parametric bootstrap with the fitted noise covariance, ${T} steps and \\(\\Delta t\\) = ${sig(dt)}. <b>Null</b>: the fitted model with its softest mode moved exactly onto the stability boundary (${b.how==='deflate'?'rank-one change of the real leading eigenvalue':'whole matrix rescaled to spectral radius one, since the leading eigenvalue is complex'}). <b>Fitted</b>: the fitted model itself. The solid rule marks your estimate; ${(100*b.p).toFixed(1)}% of null refits reach it.`;typeset($('capBoot'))}
+  else{$('figBoot').innerHTML='<div class="empty">Run the stability check after fitting.</div>';$('lgBoot').innerHTML=''}}
+$('file').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();
+  rd.onload=()=>{try{const s=parseSeries(String(rd.result));setData(s.rows,file.name);R.data.skipped=s.skipped;renderData();status(`Loaded ${file.name}.`)}catch(err){status(err.message,true)}};rd.readAsText(file)});
+$('dDt').addEventListener('change',()=>{if(R.data)fitData()});
+$('bUseSim').addEventListener('click',()=>{if(!R.one)runOne();const o=R.one;try{setData(o.X.slice(1).map(x=>Float64Array.from(x)),`Simulated trajectory (δ = ${fmt(o.p.delta)}, seed ${o.p.seed})`,o.p.dt);status('Loaded the simulated trajectory from Overview.')}catch(err){status(err.message,true)}});
+
+// ---------- downloads ----------
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$('dlCsv').addEventListener('click',()=>{if(!R.one)runOne();const o=R.one;const N=o.p.N;let s='t,'+Array.from({length:N},(_,i)=>'x'+(i+1)).join(',')+'\n';
+  o.X.forEach((x,n)=>{s+=(n*o.p.dt).toPrecision(8)+','+Array.from(x,v=>v.toPrecision(8)).join(',')+'\n'});download(`mou_trajectory_N${N}_seed${o.p.seed}.csv`,s,'text/csv')});
+$('dlJson').addEventListener('click',()=>{const out={generated:new Date().toISOString(),settings:P()};
+  if(R.one)out.trajectory={T:R.one.T,alpha:R.one.sys.alpha,trueEigenvalues:R.one.sys.eigA,estimatedRates:R.one.r.rates,lamMinHat:R.one.r.lamMin,frobeniusError:R.one.r.err,lyapunovEigenvalues:R.one.ly?R.one.ly.vals:null};
+  if(R.ens)out.ensemble={settings:R.ens.p,T:R.ens.T,lamMinHat:R.ens.lm,frobeniusError:R.ens.er};
+  if(R.sweep)out.sweep={settings:R.sweep.p,perPoint:R.sweep.M,points:R.sweep.xs};
+  if(R.phase)out.phase={settings:R.phase.p,perCell:R.phase.M,deltas:R.phase.ds,horizons:R.phase.hs,cells:R.phase.cells};
+  if(R.data&&R.data.fit)out.data={name:R.data.name,rows:R.data.rows.length,cols:R.data.rows[0].length,dt:R.data.dt,rates:R.data.fit.rates,lamMinHat:R.data.fit.lamMin,lyapunovEigenvalues:R.data.ly?R.data.ly.vals:null,bootstrap:R.boot};
+  download('mou_results.json',JSON.stringify(out,(k,v)=>v instanceof Float64Array?Array.from(v):v,1),'application/json')});
+
+// ---------- wiring ----------
+function typeset(el){if(window.renderMathInElement)renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})}
+function renderTab(name){if(name==='overview')renderOne();else if(name==='ensemble')renderEns();else if(name==='sweep')renderSweep();else if(name==='phase')renderPhase();else if(name==='data')renderData()}
+$('bOne').addEventListener('click',guard(async()=>{runOne();showTab('overview')}));
+$('bEns').addEventListener('click',guard(runEnsemble));
+$('bSweep').addEventListener('click',guard(runSweep));
+$('bPhase').addEventListener('click',guard(runPhase));
+$('bBoot').addEventListener('click',guard(async()=>{showTab('data');await runBoot()}));
+$('bSeed').addEventListener('click',guard(async()=>{$('seed').value=(Math.random()*2**31)>>>0;runOne();showTab('overview')}));
+let rz=0;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>renderTab(curTab()),150)});
+window.addEventListener('load',()=>{if(typeof numeric==='undefined'){status('The linear-algebra library did not load. Check your connection and reload the page.',true);return}
+  try{runOne()}catch(e){console.error(e);status('Error: '+e.message,true)}const h=location.hash.slice(1);if(['overview','ensemble','sweep','phase','data','method'].includes(h))showTab(h)});
+
+</script>
+</body>
+</html>

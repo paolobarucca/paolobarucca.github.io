@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hessian Eigenvector Lab · Paolo Barucca</title>
+<meta name="description" content="Train small networks in the browser and track the full Hessian or Gauss–Newton spectrum: eigenvector displacement, localisation, gradient and update alignment, and layer-resolved curvature across SGD, Adam, SAM and Gauss–Newton methods.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:light dark;
+ --bg:#fbfaf7;--panel:#ffffff;--ink:#1f2328;--muted:#5b6168;--faint:#9aa1a8;--line:#e6e2da;--grid:#efece6;
+ --accent:#b4412c;--accent-soft:#f6e4df;--warn:#9a4a12;
+ --s0:#22313f;--s1:#0e7c7b;--s2:#d1603d;--s3:#6a4c93;--s4:#3d8b37;--s5:#b8972c;--s6:#b5446e;
+ --serif:"Source Serif 4",Georgia,serif;
+ --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+@media (prefers-color-scheme:dark){:root{
+ --bg:#16181b;--panel:#1f2226;--ink:#e8e6e1;--muted:#a3a8ae;--faint:#6f7880;--line:#2e3237;--grid:#272a2f;
+ --accent:#f07a5f;--accent-soft:#3a2520;--warn:#e39a62;
+ --s0:#dfe5ea;--s1:#4fb3b0;--s2:#ee8a63;--s3:#a68bd6;--s4:#7cc47f;--s5:#e2c96a;--s6:#e07aa0;}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+a{color:var(--accent)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px}
+header.sitenav{border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:20}
+.sitenav nav{max-width:1360px;margin:0 auto;padding:.8rem 16px;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1.1rem}
+.sitenav .name{font:700 1.1rem var(--serif);color:var(--ink);text-decoration:none;margin-right:auto}
+.sitenav a:not(.name){color:var(--muted);text-decoration:none;font-size:.95rem}
+.sitenav a:not(.name):hover,.sitenav a[aria-current=page]{color:var(--accent)}
+.pagehead{border-bottom:1px solid var(--line);padding:26px 0 20px}
+.kicker{margin:0;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.kicker a{color:var(--muted)}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
+.lede{max-width:820px;color:var(--muted);margin:0}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:24px;padding-top:20px;padding-bottom:40px;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:minmax(0,1fr)}}
+aside.controls{position:sticky;top:64px;max-height:calc(100vh - 76px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+@media(max-width:920px){aside.controls{position:static;max-height:none}}
+.controls h2{font:600 11.5px/1 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.controls h2:first-child{margin-top:2px;padding-top:0;border-top:0}
+label.f{display:block;font-size:13px;margin:9px 0 3px}
+.val{font:12px var(--mono);color:var(--muted);float:right}
+.hint{font-size:12px;color:var(--muted);margin:3px 0 0}
+select,input[type=text],input[type=number],input[type=url]{width:100%;font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+input[type=checkbox]{accent-color:var(--accent)}
+.check{display:flex;gap:7px;align-items:center;font-size:13px;margin:6px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row2 label.f{margin-top:6px}
+button{font:600 14px var(--sans);padding:8px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--panel);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button:disabled{opacity:.55;cursor:progress}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btnrow button{flex:1}
+details.gen{margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+details.gen summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)}
+.status{font:12px/1.45 var(--mono);color:var(--muted);margin-top:12px;min-height:1.4em;white-space:pre-wrap}
+.status.err{color:var(--warn)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:18px;scrollbar-width:thin}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);border-radius:0;padding:10px 12px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel[hidden]{display:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:1150px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.grid3{grid-template-columns:minmax(0,1fr)}}
+figure.chart{margin:0 0 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;min-width:0}
+.grid2 figure.chart{margin:0}
+figure.chart figcaption{font-weight:600;font-size:14px}
+.sub{font-size:12px;color:var(--muted);text-align:center;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12px;color:var(--muted);margin:5px 0 6px;min-height:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+canvas{display:block;width:100%}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card b{display:block;font:600 21px/1.25 var(--serif);font-variant-numeric:tabular-nums}
+.card span{font-size:12px;color:var(--muted)}
+h3.sec{font:600 19px var(--serif);margin:6px 0 4px}
+p.secnote{color:var(--muted);font-size:13.5px;margin:0 0 12px;max-width:860px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:18px}
+table.t{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.t th,.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.t tr:last-child td{border-bottom:0}
+.t th:first-child,.t td:first-child{text-align:left}
+.t thead th{color:var(--muted);font-weight:600;font-size:12px}
+.t td.best{color:var(--accent);font-weight:700}
+.t td.feat{background:var(--accent-soft)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:12px;font-size:13px}
+.toolbar label{display:flex;gap:6px;align-items:center}
+.toolbar input[type=range]{width:130px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:transparent;color:var(--muted);border:0;border-radius:0;padding:6px 11px;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.warn{color:var(--warn)}
+.dyngrid{display:grid;grid-template-columns:repeat(var(--np,2),minmax(0,1fr));gap:10px}
+@media(max-width:900px){.dyngrid{grid-template-columns:minmax(0,1fr)}}
+.dyngrid canvas{background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:crosshair}
+.mchips{display:inline-flex;flex-wrap:wrap;gap:6px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:3px 10px;font:500 12.5px var(--sans);cursor:pointer}
+.mchip[aria-pressed=true]{color:var(--ink);border-color:var(--ink);background:var(--accent-soft)}
+#dynStrip{margin-top:8px;cursor:pointer}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:12px var(--mono);padding:4px 7px;border-radius:5px;display:none;z-index:10}
+.prose{max-width:820px}
+.prose h3{font-family:var(--serif);font-size:21px;margin:26px 0 6px}
+.prose h3:first-child{margin-top:0}
+.prose li{margin:3px 0}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font:12.5px/1.5 var(--mono)}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;padding:2rem 16px;text-align:center}
+.empty{padding:40px 12px;text-align:center;color:var(--muted);font-size:14px}
+.hint b{color:var(--muted);font-weight:600}
+dl.gloss{margin:8px 0 0;font-size:12px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 8px}
+dl.gloss dt{font-weight:600;color:var(--ink);white-space:nowrap}dl.gloss dd{margin:0}
+.sidelink{font-size:12.5px;margin:0 0 4px}
+.steps{max-width:1040px}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;margin-bottom:16px}
+.stepnum{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--panel);font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:10px}
+.stepbody{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px 10px;min-width:0}
+.stepbody h4{margin:2px 0 6px;font:600 18px/1.3 var(--serif)}
+.algo{font-size:14px;margin:4px 0 8px;max-width:900px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px;font-size:12px;color:var(--muted)}
+.chip{font:12px var(--mono);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:2px 9px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;margin:8px 0 6px}
+.kv div{font-size:12px;color:var(--muted)}.kv b{display:block;font:600 16px var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.stepbody .tablewrap{margin:8px 0;padding:2px 8px}
+.stepbody .t td.l{white-space:normal}
+.stepbody canvas{margin-top:4px}
+.usedby{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.glyphs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
+@media(max-width:1180px){.glyphs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.glyphs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.glyph{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);font-weight:400}
+.glyph[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.glyph svg{display:block;width:100%;height:54px}
+.glyph b{display:block;font-size:13.5px;margin-top:2px}.glyph span{display:block;font-size:11.5px;color:var(--muted)}
+.glyph .gv{font:600 15px var(--serif);color:var(--ink);margin-top:3px}
+.mcurves{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.mcurves{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mcurves div{border:1px solid transparent;border-radius:8px;padding:4px}.mcurves div.on{border-color:var(--accent)}
+.mcurves .ttl{font-size:12.5px;font-weight:600;display:flex;gap:6px;align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.t td.good{color:var(--accent);font-weight:600}.t td.bad{color:var(--warn);font-weight:600}
+.t td.l,.t th.l{text-align:left}
+
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:10px}
+.progress span{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+.mchip:disabled{opacity:.4;cursor:not-allowed}
+.seg i.sw{vertical-align:-1px}
+.mchip:focus-visible,.seg button:focus-visible,.tabs button:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.t td .sw{vertical-align:-1px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="sitenav">
+ <nav>
+  <a class="name" href="index.html">Paolo Barucca</a>
+  <a href="research.html" aria-current="page">Research</a>
+  <a href="teaching.html">Teaching</a>
+  <a href="outreach.html">Outreach</a>
+  <a href="consultancy.html">Consultancy</a>
+  <a href="comedy.html">Comedy</a>
+  <a href="writing.html">Writing</a>
+ </nav>
+</header>
+<div class="pagehead">
+ <div class="wrap">
+  <p class="kicker"><a href="research.html">Research</a> › Interactive tools</p>
+  <h1>Hessian eigenvectors during training, interactively</h1>
+  <p class="lede">A companion to <a href="https://arxiv.org/abs/2606.30226"><i>Characterizing optimizer-dependent training dynamics through Hessian eigenvector displacement and localization</i></a>, with the layer-resolved curvature analysis of LANCE. Pick an objective, a small network and a set of optimisers; the page trains them from the same initialisation, computes the full curvature matrix at regular checkpoints and tracks how its leading eigenvectors drift, localise and align with the gradient and the update. Everything runs locally in your browser.</p>
+ </div>
+</div>
+
+<main class="wrap layout">
+ <aside class="controls" aria-label="Controls">
+  <h2>1 · Objective</h2>
+  <label class="f" for="obj">Problem</label>
+  <select id="obj">
+   <option value="digits">Digits classification (cross-entropy)</option>
+   <option value="teacher">Teacher regression (MSE)</option>
+   <option value="poisson">PINN Poisson-1D (least squares)</option>
+   <option value="helmholtz">PINN Helmholtz-1D (least squares)</option>
+  </select>
+  <p class="hint">Changing the problem loads sensible defaults for the network and optimisers below.</p>
+  <div id="boxDigits">
+   <div class="row2">
+    <div><label class="f" for="pool">Input</label><select id="pool"><option value="1">4×4 pooled (16)</option><option value="0">8×8 full (64)</option></select></div>
+    <div><label class="f" for="classes">Classes</label><select id="classes"><option value="10">0–9</option><option value="5">0–4</option><option value="3">0–2</option></select></div>
+   </div>
+   <p class="hint">600 handwritten digits from the UCI/scikit-learn 8×8 set (60 per class), centred; 80% train, 20% test. Pooling to 4×4 keeps P small, as the 14×14 pooling does for MNIST in the reference script.</p>
+  </div>
+  <div id="boxTeacher" hidden>
+   <div class="row2">
+    <div><label class="f" for="tdim">Input dimension</label><input type="number" id="tdim" min="1" max="10" value="3"></div>
+    <div><label class="f" for="twidth">Teacher width</label><input type="number" id="twidth" min="1" max="20" value="6"></div>
+    <div><label class="f" for="noise">Label noise σ</label><input type="number" id="noise" min="0" max="1" step="0.01" value="0.05"></div>
+   </div>
+   <p class="hint">Gaussian inputs, targets from a random one-hidden-layer tanh teacher plus noise; 256 train and 64 test points.</p>
+  </div>
+  <div id="boxPinn" hidden>
+   <div class="row2">
+    <div><label class="f" for="ncol">Collocation points</label><input type="number" id="ncol" min="8" max="256" value="64"></div>
+    <div id="kRow"><label class="f" for="kwave">Wavenumber k</label><input type="number" id="kwave" min="0" max="40" value="20"></div>
+   </div>
+   <p class="hint">Hard-constrained ansatz u(x) = x(1−x)·NN(x) on (0, 1), so the loss is the mean squared PDE residual only, normalised by the RMS of f. Exact solutions: u* = x(1−x)sin(2πx) for Poisson and x(1−x)sin(6πx) for Helmholtz, as in LANCE.</p>
+  </div>
+  <label class="f" for="l2">Weight decay ℓ₂</label>
+  <input type="number" id="l2" min="0" step="0.0001" value="0.0001">
+  <p class="hint">Adds (ℓ₂/2)‖W‖² to the loss, which shifts the weight block of the curvature by ℓ₂.</p>
+
+  <h2>2 · Network</h2>
+  <div class="row2">
+   <div><label class="f" for="depth">Hidden layers</label><select id="depth"><option>1</option><option>2</option><option>3</option></select></div>
+   <div><label class="f" for="act">Activation</label><select id="act"><option value="tanh">tanh</option><option value="softplus">softplus</option><option value="sin">sin</option><option value="relu">ReLU</option></select></div>
+  </div>
+  <label class="f" for="width">Width <span class="val" id="valWidth"></span></label>
+  <input type="range" id="width" min="2" max="32" value="6">
+  <p class="hint" id="pInfo"></p>
+  <p class="hint warn" id="actWarn" hidden>ReLU has a zero second derivative, so a PINN with ReLU cannot represent u″. Use tanh, softplus or sin.</p>
+
+  <h2>3 · Optimisers</h2>
+  <div class="mchips" role="group" aria-label="Optimisers to run">
+   <button type="button" class="mchip" id="op_SGD" aria-pressed="true">SGD</button>
+   <button type="button" class="mchip" id="op_Adam" aria-pressed="true">Adam</button>
+   <button type="button" class="mchip" id="op_SAM" aria-pressed="false">SAM</button>
+   <button type="button" class="mchip" id="op_GN-CG" aria-pressed="false">GN-CG</button>
+   <button type="button" class="mchip" id="op_LANCE" aria-pressed="false">LANCE</button>
+  </div>
+  <p class="hint">All runs start from the same weights and see the same mini-batches. GN-CG and LANCE are damped Gauss–Newton methods and need a least-squares objective.</p>
+  <div class="row2">
+   <div><label class="f" for="steps">Steps (first order)</label><input type="number" id="steps" min="10" max="20000" step="50" value="1000"></div>
+   <div id="batchRow"><label class="f" for="batch">Batch size</label><input type="number" id="batch" min="1" max="480" value="64"></div>
+   <div><label class="f" for="lrSGD">SGD η</label><input type="number" id="lrSGD" min="0" step="0.001" value="0.2"></div>
+   <div><label class="f" for="lrAdam">Adam η</label><input type="number" id="lrAdam" min="0" step="0.0005" value="0.005"></div>
+   <div><label class="f" for="lrSAM">SAM η</label><input type="number" id="lrSAM" min="0" step="0.001" value="0.2"></div>
+   <div><label class="f" for="rho">SAM radius ρ</label><input type="number" id="rho" min="0" step="0.01" value="0.05"></div>
+   <div><label class="f" for="halve">Halve η every</label><input type="number" id="halve" min="0" step="50" value="0"></div>
+   <div><label class="f" for="seed">Seed</label><input type="number" id="seed" value="1"></div>
+  </div>
+  <p class="hint"><b>Halve η every</b> N steps reproduces the step-decay schedule of the reference script (0 keeps η fixed). PINN problems always train full batch.</p>
+  <details class="gen">
+   <summary>Gauss–Newton settings</summary>
+   <div class="row2">
+    <div><label class="f" for="stepsGN">GN iterations</label><input type="number" id="stepsGN" min="5" max="1000" value="100"></div>
+    <div><label class="f" for="Kcg">CG steps K</label><input type="number" id="Kcg" min="1" max="200" value="10"></div>
+    <div><label class="f" for="lam0">Initial damping λ₀</label><input type="number" id="lam0" min="0" step="0.0001" value="0.001"></div>
+   </div>
+   <p class="hint">Each iteration solves (G + λI)d = ∇L with K conjugate-gradient steps, backtracks along d (Armijo) and adapts λ (×0.7 after a full step, ×1.5 otherwise). LANCE preconditions CG with exact blocks on layers whose curvature density ρ_ℓ exceeds 1 and the mean diagonal elsewhere.</p>
+  </details>
+
+  <h2>4 · Curvature</h2>
+  <label class="f" for="curv">Matrix</label>
+  <select id="curv"><option value="hessian">Hessian (central differences of the exact gradient)</option><option value="gn">Gauss–Newton 2JᵀJ (least squares only)</option></select>
+  <div class="row2">
+   <div><label class="f" for="ckpts">Checkpoints</label><input type="number" id="ckpts" min="3" max="60" value="12"></div>
+   <div id="hessNRow"><label class="f" for="hessN">Curvature samples</label><input type="number" id="hessN" min="20" max="480" value="200"></div>
+   <div><label class="f" for="topk">Tracked eigenvectors</label><input type="number" id="topk" min="3" max="15" value="5"></div>
+   <div><label class="f" for="nBase">Baseline inits</label><input type="number" id="nBase" min="0" max="30" value="6"></div>
+   <div><label class="f" for="eps">FD step ε</label><input type="number" id="eps" min="1e-7" step="0.00001" value="0.0001"></div>
+  </div>
+  <p class="hint">Every checkpoint forms the full P × P matrix on the first <b>curvature samples</b> training points (2P gradient evaluations for the Hessian) and diagonalises it exactly. <b>Baseline inits</b> sets how many independent random networks define the decorrelation level τ (0 skips it).</p>
+  <div class="btnrow"><button id="runBtn">Run</button><button id="stopBtn" class="ghost" disabled>Stop</button></div>
+  <div class="progress" id="prog" hidden><span></span></div>
+  <div class="btnrow"><button id="dlCsv" class="ghost">Checkpoints CSV</button><button id="dlJson" class="ghost">Spectra JSON</button></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+ </aside>
+
+ <div class="content">
+  <nav class="tabs" role="tablist">
+   <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+   <button role="tab" data-tab="spectrum" aria-selected="false">Spectrum</button>
+   <button role="tab" data-tab="disp" aria-selected="false">Displacement</button>
+   <button role="tab" data-tab="align" aria-selected="false">Alignment</button>
+   <button role="tab" data-tab="loc" aria-selected="false">Localisation</button>
+   <button role="tab" data-tab="layers" aria-selected="false">Layers</button>
+   <button role="tab" data-tab="compare" aria-selected="false">Compare</button>
+   <button role="tab" data-tab="method" aria-selected="false">Method</button>
+  </nav>
+  <p class="empty" id="emptyMsg">Running the default experiment…</p>
+  <div id="results" hidden>
+  <div class="toolbar" id="toolbar">
+   <label>Run <span class="seg" id="runSeg"></span></label>
+   <label for="ckSlider">Checkpoint <input type="range" id="ckSlider" min="0" max="1" value="0"> <span class="mono" id="ckVal"></span></label>
+  </div>
+
+  <section class="panel" id="p-overview" role="tabpanel">
+   <div class="cards" id="cards"></div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Training loss</figcaption><div class="legend" id="lgLoss"></div><canvas id="cvLoss"></canvas>
+     <p class="note">Per-step loss on the batch actually used (binned), and the loss on the full training set at each checkpoint. The dotted line marks the selected checkpoint.</p></figure>
+    <figure class="chart"><figcaption>Leading eigenvalues</figcaption><div class="legend" id="lgTop"></div><canvas id="cvTop"></canvas>
+     <p class="note">Top eigenvalues of the curvature matrix. For gradient descent on a quadratic, λ_max above 2/η is unstable; with mini-batches and Adam the relevant threshold differs.</p></figure>
+   </div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Most negative eigenvalue</figcaption><div class="legend" id="lgMin"></div><canvas id="cvMin"></canvas>
+     <p class="note">λ_min on a symmetric log axis, every optimiser. Negative values mean the iterate still sits near a saddle direction.</p></figure>
+    <figure class="chart"><figcaption>Gradient norm on the curvature set</figcaption><canvas id="cvG"></canvas>
+     <p class="note">‖∇L‖ at each checkpoint, computed on the same samples as the curvature.</p></figure>
+   </div>
+   <figure class="chart" id="figMetric"><figcaption>Held-out performance</figcaption><div class="legend" id="lgMetric"></div><canvas id="cvMetric"></canvas></figure>
+   <figure class="chart" id="figPred" hidden><figcaption>Solution at the selected checkpoint</figcaption><div class="legend" id="lgPred"></div><canvas id="cvPred"></canvas></figure>
+  </section>
+
+  <section class="panel" id="p-spectrum" role="tabpanel" hidden>
+   <figure class="chart"><figcaption>Eigenvalue distribution</figcaption><div class="legend" id="lgHist"></div><canvas id="cvHist"></canvas>
+    <p class="note" id="specNote"></p></figure>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Negative curvature over training</figcaption><div class="legend" id="lgNeg"></div><canvas id="cvNeg"></canvas>
+     <p class="note">Share of negative eigenvalues by count (solid) and by absolute spectral mass (dashed).</p></figure>
+    <figure class="chart"><figcaption>Leading eigenvalues by checkpoint</figcaption><div class="tablewrap" style="margin:6px 0 0"><table class="t" id="tblTop"></table></div></figure>
+   </div>
+  </section>
+
+  <section class="panel" id="p-disp" role="tabpanel" hidden>
+   <div class="toolbar"><label>Eigenvector <span class="seg" id="dispSeg"></span></label></div>
+   <figure class="chart"><figcaption>Two-time displacement</figcaption><div class="legend" id="lgDisp"></div><canvas id="cvDisp"></canvas>
+    <p class="note">\(\Delta^{(i)}(t_w,t_w+t)=\frac1P\min\{\|v^{(i)}(t_w)\mp v^{(i)}(t_w+t)\|^2\}\), one curve per waiting time \(t_w\). Curves that collapse are stationary; curves that relax more slowly as \(t_w\) grows show ageing. Reaching the random baseline τ means the eigenvector has fully decorrelated.</p></figure>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Convergence to the final eigenvectors</figcaption><div class="legend" id="lgCos"></div><canvas id="cvCos"></canvas>
+     <p class="note">\(|\cos(v^{(i)}(t),v^{(i)}(t_{\rm final}))|\). Leading eigenvectors usually settle before the lower ones.</p></figure>
+    <figure class="chart"><figcaption>Two-time update alignment</figcaption><div class="legend" id="lgTwoUpd"></div><canvas id="cvTwoUpd"></canvas>
+     <p class="note">How much of the weight change after \(t_w\) lies along the leading eigenvector at \(t_w\).</p></figure>
+   </div>
+  </section>
+
+  <section class="panel" id="p-align" role="tabpanel" hidden>
+   <figure class="chart"><figcaption>Alignment with the whole spectrum</figcaption><div class="legend" id="lgAL"></div><canvas id="cvAL"></canvas>
+    <p class="note">Every eigenvector at the selected checkpoint, against its eigenvalue: alignment with the gradient, and with the weight change since the previous checkpoint (the <code>AL</code> field of the reference script). Gradient energy concentrated on the top of the spectrum is the dominant-subspace effect.</p></figure>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Gradient versus update alignment</figcaption><div class="legend" id="lgDiag"></div><canvas id="cvDiag"></canvas>
+     <p class="note">\(a_{\rm grad}^{(i)}=|v^{(i)}\cdot\nabla L|/\|\nabla L\|\) against \(a_{\rm upd}^{(i)}=|v^{(i)}\cdot\Delta\theta|/\|\Delta\theta\|\) for the next step. SGD sits on the diagonal; Adam's per-coordinate scaling and momentum pull the update off the leading directions.</p></figure>
+    <figure class="chart"><figcaption>Gradient captured by the top eigenvectors</figcaption><div class="legend" id="lgCap"></div><canvas id="cvCap"></canvas>
+     <p class="note">\(\sum_{i\le k}(a^{(i)}_{\rm grad})^2\): the share of the squared gradient norm lying in the tracked top-k subspace.</p></figure>
+   </div>
+  </section>
+
+  <section class="panel" id="p-loc" role="tabpanel" hidden>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Localisation of the leading eigenvectors</figcaption><div class="legend" id="lgIPR"></div><canvas id="cvIPR"></canvas>
+     <p class="note">\({\rm IPR}(v)=\sum_j v_j^4\in[1/P,1]\). Near 1/P the vector spreads over all parameters; IPR ≈ 1/k means it lives on about k of them.</p></figure>
+    <figure class="chart"><figcaption>IPR across the spectrum</figcaption><canvas id="cvIPRall"></canvas>
+     <p class="note">Every eigenvector at the selected checkpoint. Bulk eigenvectors near zero are often the most localised, on dead or saturated units.</p></figure>
+   </div>
+   <figure class="chart"><figcaption>Eigenvector reshaped into the weights</figcaption>
+    <div class="toolbar" style="margin:6px 0"><label>Eigenvector <span class="seg" id="vecSeg"></span></label></div>
+    <canvas id="cvVec"></canvas><p class="note" id="vecNote"></p></figure>
+  </section>
+
+  <section class="panel" id="p-layers" role="tabpanel" hidden>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Curvature energy by layer</figcaption><div class="legend" id="lgE"></div><canvas id="cvE"></canvas></figure>
+    <figure class="chart"><figcaption>Curvature density by layer</figcaption><div class="legend" id="lgRho"></div><canvas id="cvRho"></canvas></figure>
+   </div>
+   <figure class="chart"><figcaption>Layer energy shares over training</figcaption><div class="legend" id="lgEt"></div><canvas id="cvEt"></canvas></figure>
+   <div class="tablewrap"><table class="t" id="tblLay"></table></div>
+   <p class="secnote" id="layNote"></p>
+  </section>
+
+  <section class="panel" id="p-compare" role="tabpanel" hidden>
+   <p class="secnote">All optimisers from the same initialisation, the same data and, for first-order methods, the same mini-batch sequence.</p>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Training loss</figcaption><div class="legend" id="lgCLoss"></div><canvas id="cvCLoss"></canvas></figure>
+    <figure class="chart"><figcaption>Sharpness λ_max</figcaption><div class="legend" id="lgCLmax"></div><canvas id="cvCLmax"></canvas></figure>
+   </div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Localisation of v₁</figcaption><div class="legend" id="lgCIpr"></div><canvas id="cvCIpr"></canvas></figure>
+    <figure class="chart"><figcaption>Displacement of v₁, averaged over waiting times</figcaption><div class="legend" id="lgCDisp"></div><canvas id="cvCDisp"></canvas></figure>
+   </div>
+   <div class="grid2">
+    <figure class="chart"><figcaption>Gradient versus update alignment, v₁–v₃</figcaption><div class="legend" id="lgCDiag"></div><canvas id="cvCDiag"></canvas>
+     <p class="note">Each marker is one eigenvector index, averaged over checkpoints; dashed is the diagonal.</p></figure>
+    <figure class="chart"><figcaption>Summary</figcaption><div class="tablewrap" style="margin:6px 0 0"><table class="t" id="tblCmp"></table></div></figure>
+   </div>
+  </section>
+
+  <section class="panel prose" id="p-method" role="tabpanel" hidden>
+   <h3>What is computed</h3>
+   <p>A multilayer perceptron with parameters \(\theta\in\mathbb R^P\) is trained on a loss \(L(\theta)\). At every checkpoint the page forms the curvature matrix \(C\) on a fixed set of samples and diagonalises it exactly, \(C=\sum_i\lambda_i v^{(i)}v^{(i)\top}\) with \(\lambda_1\ge\dots\ge\lambda_P\). Eigenvectors are tracked by index, and their sign is fixed so that \(v^{(i)}\cdot\nabla L\le0\), as in the reference script.</p>
+   <h3>Curvature</h3>
+   <p><b>Hessian.</b> Column \(j\) is a central difference of the exact (reverse-mode) gradient,
+   $$H_{:,j}=\frac{\nabla L(\theta+\varepsilon e_j)-\nabla L(\theta-\varepsilon e_j)}{2\varepsilon},$$
+   then symmetrised. That costs 2P gradients per checkpoint.</p>
+   <p><b>Gauss–Newton.</b> For a least-squares loss \(L=\|r(\theta)\|^2\) with Jacobian \(J=\nabla_\theta r\), \(\nabla^2L=2J^\top J+2\sum_i r_i\nabla^2 r_i\). The Gauss–Newton matrix \(2J^\top J\) drops the second term, is positive semidefinite and coincides with the Hessian at an interpolating solution.</p>
+   <p>Both matrices are diagonalised by Householder tridiagonalisation followed by the implicit QL algorithm, in double precision.</p>
+   <h3>Eigenvector statistics</h3>
+   <p><b>Two-time displacement</b>, sign-invariant:
+   $$\Delta^{(i)}(t_w,t_w+t)=\tfrac1P\min\big\{\|v^{(i)}(t_w)-v^{(i)}(t_w+t)\|^2,\ \|v^{(i)}(t_w)+v^{(i)}(t_w+t)\|^2\big\}=\tfrac2P\big(1-|\cos|\big).$$
+   The <b>random baseline</b> \(\tau^{(i)}\) is the mean displacement between the \(i\)-th eigenvectors of independently initialised networks.</p>
+   <p><b>Localisation</b>: \({\rm IPR}(v)=\sum_j v_j^4\), between \(1/P\) (spread evenly) and 1 (one coordinate).</p>
+   <p><b>Alignment</b> with the gradient and with the update:
+   $$a^{(i)}_{\rm grad}=\frac{|v^{(i)}\cdot\nabla L|}{\|\nabla L\|},\qquad a^{(i)}_{\rm upd}=\frac{|v^{(i)}\cdot(\theta_{t+1}-\theta_t)|}{\|\theta_{t+1}-\theta_t\|}.$$
+   Adam rescales each coordinate and mixes past gradients into the step, so its update can leave the sharp directions almost untouched even when the current gradient points along them.</p>
+   <h3>Layer-resolved curvature</h3>
+   <p>With \(P_\ell\) parameters in layer \(\ell\) (weights and biases), the block trace, energy share and curvature density are
+   $$\tau_\ell=\sum_{j\in\ell}C_{jj},\qquad E_\ell=\frac{\tau_\ell}{\sum_{\ell'}\tau_{\ell'}},\qquad \rho_\ell=\frac{E_\ell}{P_\ell/P}.$$
+   \(\rho_\ell>1\) means the layer carries more than its share of the curvature. LANCE uses this to choose which diagonal blocks of the Gauss–Newton matrix to treat exactly.</p>
+   <h3>Optimisers</h3>
+   <ul>
+    <li><b>SGD</b>: \(\theta\leftarrow\theta-\eta\nabla L_B\).</li>
+    <li><b>Adam</b>: \(\beta_1=0.9,\ \beta_2=0.999,\ \epsilon=10^{-8}\), with bias correction.</li>
+    <li><b>SAM</b>: gradient taken at \(\theta+\rho\,\nabla L_B/\|\nabla L_B\|\), then an SGD step.</li>
+    <li><b>GN-CG</b>: \(K\) conjugate-gradient steps on \((J^\top J+\lambda I)d=\nabla L\), Armijo backtracking from the unit step, damping ×0.7 after a full step and ×1.5 otherwise.</li>
+    <li><b>LANCE</b>: GN-CG preconditioned by \(M={\rm blkdiag}\big([J_\ell^\top J_\ell+\lambda I]_{\ell\in S},\ [(\mu_\ell+\lambda)I]_{\ell\notin S}\big)\), with \(S=\{\ell:\rho_\ell>1,\ P_\ell\le512\}\) and \(\mu_\ell\) the layer's mean diagonal. Here the residual Jacobian is small enough to form explicitly; the method itself only needs Jacobian–vector products.</li>
+   </ul>
+   <h3>PINN residuals</h3>
+   <p>Input derivatives are propagated forward through the network: for a layer \(z=Wh+b\), \(h'=\sigma'(z)\odot z'\) and \(h''=\sigma''(z)\odot z'^2+\sigma'(z)\odot z''\). With the hard constraint \(u=x(1-x)\,{\rm NN}(x)\) the residual \(r_i=\big(u''(x_i)+k^2u(x_i)-f(x_i)\big)/(\|f\|_{\rm rms}\sqrt N)\) is an ordinary differentiable function of \(\theta\), so its gradient, Jacobian and Hessian follow from reverse mode.</p>
+   <h3>Limits of this page</h3>
+   <ul>
+    <li>Full matrices cost \(O(P^2)\) memory and \(O(P^3)\) time, so the page stops at P = 700. The paper's MLP has about 90,000 parameters and uses Lanczos for the top eigenpairs instead.</li>
+    <li>Finite-difference Hessians are accurate to roughly \(\varepsilon^2\); with ReLU the kinks add noise.</li>
+    <li>Runs are single seeds; repeat with a few seeds before reading much into one curve.</li>
+   </ul>
+   <h3>References</h3>
+   <ul>
+    <li>M. Marjankowska, V. Modugno, P. Barucca, <a href="https://arxiv.org/abs/2606.30226"><i>Characterizing optimizer-dependent training dynamics through Hessian eigenvector displacement and localization</i></a>, arXiv:2606.30226.</li>
+    <li><i>LANCE: exact matrix-free Gauss–Newton training for physics-informed neural networks</i> (NeurIPS 2026 OPT workshop submission).</li>
+   </ul>
+  </section>
+  </div>
+ </div>
+</main>
+
+<footer>© Paolo Barucca · <a href="research.html">Research</a> · <a href="contact.html">Get in touch</a></footer>
+
+<script>
+const DIGITS_RAW='2abnqqeaaajpgniaaafkamkaaaaagqfaaaafqkaaaacqlaaaaafqniifaabkoqqqa1aaaknaaaaaanqfaaaaaqqeaaaadqqhaaaahqqjaaaajqqkaaaakqqoaaaabfhpia3aajkcaaaaiqqkaaaahheqcaaaaaiqfaaaaakqocaaaaacohaaalkelmaaaioqpga7aaboqqpbaaloinlaaapgaodaaafbfnbaaaanqqjaaacqpjbaaaaljaaaaadqcaaa3aapqngaaaammonaaaaaaljaaaablpcaaaaiqqmbaabiejqdaafohkpbaacmqogaa2aagoiaaaagqkoeaaalfaleaaaegcqcaaaaanhaaaaahoaaaaaamkiieaaahooona4aaajlaaaaacpiaaaaalpbdiaagqeaomaamqelqfaajqqqlaaaaglqhaaaaakqeaa1aaabjqhaaaenqqcaaiqpnqdaadhaiqcaaaaaiqfaaaaaiqeaaaaaiqiaaaaamqha2aaaipiaaaadqmqeaaackbqeaaaaaioaaaaajpdaaadqoeaaaaepohbaaaaajmoea8aadniaaaaeqqoaaaalljkaaaaiopjaaaaahqpfaaaaeqdnjaaafpenlaaabppica1aafobaaaaajqeaaaaamqeaaaaamqiaaaaajqlaaaaaaiqcaaaadipnliaafqqqqk2aampdaaaagpmoaaaahfbqcaaaaaalhaaaaacpdaaaaaiobaaaamqmifaaajinpha8aakjokaaacppeocaaanfjmaaaaeqocaaaalmkaaaaapbmaaaadmcnaaaaajqhaaa2aagppdaaafqnpiaaainaniaaaaadqdaaaaalmaaaaadqfjiaaaipppdaaafqmbaa3aahpqkaaaaojkqbaaacfpoaaaaalqfaaaaacqiaaaaaaknaaaaljpqbaaaiqqmaa1aaafpnbaaacoqqeaaaiqqqeaagpqqqbaadhkqqeaaaalqqbaaaamqqbaaaagomba9aaekngaaabqomqdaaeqgdqeaaamqqqfaaaaeeqiaaaaaapfaaafhhqeaaacopjaa7aabipkaaadnpooaaafkakmaaaadfpkcaaaqqqqmaabimoidaaaaknaaaaaaljaaa6aadlaaaaaamlaaaaabobaaaaacpaaaaaaeppqpcaabqieilaabqlhkmaaafkmpha8aafpphaaacqlqqiaacqfeqiaabmqqkaaaahqqfaaaapjokaaaaomqiaaaafombaa8aahnpfaaaaiqqmaaaahqpdaaaagqfaaaaafqcaaaaaiqgaaaaammnaaaaafnkaaa7acpqfaaaaaeljaaaaaanhcbaabiqoqkaakqphbaaaaoiaaaaabqdaaaaacpbaaaa7aabppcaaaadmqgaaaaaeqeaaaadiqeaaakqqqqiaailoofbaaaapgaaaaabpcaaa2aepqnbaaajokqgaaabbgqcaaaaaiobaaaafqfaaaaanoaaaaafqjiikaaepqqqja8aafnniaaaaqlnqgaabqfcojaaajqqpaaaakqooaaafpeaqgaagohgqeaaahpqkaa2aagpjaaaajqoqbaaaomdqeaaajldqdaaaacjqaaaaaanlaaaaaeqmjkdaaiqqqqo4aaamiaaaaagqdmeaabqfioaaajpankcaakpmqqjaagqqpjbaaaaofaaaaaapaaaa9aackqgaaaakqqoaaaapkqqcaaamqmniaaabhbklaaffaaimaadpkclmaaadkqqka4aaanmaaaaagqhaaaaappbbeaagqkjpoaajqqqqeaacimqjaaaaanqaaaaaaopbaa0aacqmbaaaalpnlaaacqjaocaaeqmalfaaeqgamhaaapbbpjaaakjkpcaaacnqiaa3ablqqeaaahqiolaaaaakqgaaaaapqgaaaaaaiqcaabfaaojaaeqklqgaabnqqkaa3aagondaaaamcdoaaaaaainaaaaamqdaaaaaainbaabhaahlaadncahnaaafoopga8aaephaaaabnmqccaahlalmbaaeigndaaadqpbaaaacqogaaaadqkodaaaacjmdaa3aakpoeaaaaegnqcaaaadqjaaaaabqgaaaaaakmaaaaaabqeaabjfgqhaaaomplca7aaemqkaaaapmmlaaaabajhaaaaehpnhaagqqpkdaabemhaaaaacqcaaaaagmaaaa9aaahmqqpaajqkeqkaaoqnombaaeqqqmaaaaaaqkaaaaahpaaaaabphaaaaamgaaa3aadlomdaacnkekmaaclcajjaaaadkkbaaahqqcaaaadaodaaaaabncaaadhofaaa0aackphaaaaophpcaaeqdaleaaeoaahiaahmaaghaaeqbameaabomkqbaaabonfaa7aaenqoaaaanklpaaaaaajlaaaabgoqiaaalqpifaaaclkaaaaabogaaaaafqcaaa5acmnqqeaalqnhebaanoaaaaaabpmaaaaaagqdaaaaaanhaaaadfqhaaaadnpaaaa4aaabnhaaaaakobaaaadqfaaaaanladiaagpcaohaaiqmnqeaadllpmaaaaaaqjaa8aafmiabaaalqfngaaacpqmbaaaakqgaaaabpqhaaaaiqqlaaaalqqjaaaagmmdaa9aablmjfaaaogbpkaacmemhkaabnmdeiaaaaaaeiaaadeahgaaamhdlaaaadnpdaa1aahkaaaaaajqaaaaaagqfaaaaajqjaaaaaagobaaaaacqeaaaabeomebaahqqqqf4aaakkaaaaagpdaaaaapgfbaaahpcqdfaallgqpkaamqqqibaaeinmaaaaaanjaaa7aaadjqqcaaeqnlqbaadfagnaaaachojaaaeqqpdaaajilmaaaaaameaaaaacpbaa2abmqoiaaaeqikpdaaaaafqdaaaabmpaaaaakqfaaaafqkaaaabopgklaaanqqoib6aabnhaaaaahocaaaaanfaaaaaaqdaaaaadqkmmdaadqlfjmaabnlenlaaabmqlca2aalqqhaaacqklpaaaapeeqdaaaddfqbaaaaajnaaaaabqhaaaacmpgebaakqqqqk7aaclqqqeaafliiqbaaaaaogaaacknqnaaamqqjcaaacfoaaaaaaljaaaaaaqgaaa6aaahlaaaaabqkaaaaahlaaaaaalibbaaaamqqpfaaaolabpaaaglbdocaaaiqqha0aafpmbaaaaiigmaaacfaamcaaeoaaigaahlaajhaadnaamdaaaqfjobaaafpleaa2adpofaaaaooopaaaaibgqcaaaaajqcaaaabolaaaaajqcabaaeqpijpaadqqqpfa3abmqkaaaahlhobaaaccdoaaaaadogaaaaamqqgaaaacafpgaableeniaacoqqnba7aabjqqqbaaipkonaaaogaogaaagcgqdaaaamqqkaaaagqiaaaaahnaaaaaaogaaa2admqjaaaanpipcaaalgameaaabaapdaaaaaeqbaaaaamlaaaaalqkegbacpqqqqd2aafqpfaaaainjpaaaaaeapfaaaaaamgaaaaaapeaaalkkpaaaaqqqpneaahqnkid5aakqpbaaaaqmfaaaacqjeaaaaeqqqocaabkebqeaaaaacqhaaahioqdaaagnkeaa9aankbaaaafqohaaaaeqioaaaacoqqgaaaabejnbaaaaaangaaafifjoaaannpqna5aacppqlaaaiqldaaaanjaaaaafqdjldaakppqqlaagqkhqfaaadepiaaaaephaaa9aagmoeaaacpcbpaaacoadqcaaanfoogaaaciehjaaaaaajjaaafafodaaahnmeaa2aafppcaaadqjqfaaafjbqbaaaaakjaaaaabqdaaaaajjaaaaaalohgcaaagqqpca2acnqhaaaamnonaaaacaimaaaaaaljaaaaaanfaaaaaipcaaaaaqqqjcaabqonqja6aaaikaaaaadpfaaaaahnaaaaaahofbaaaagqqqdaaagqhniaaacphphaaaahpmaa2abpqkaaaaeqjqeaaacmfqdaaaaagqdaaaabpnaaaaaiqeaaaacqneedaacnqqqqc9aackokaaabpjjqbaahjajmaaahhdppaaacpphqbaaabcajeaaafneijaaabkpqga6aacobaaaaalmbaaaabpeaaaaafnaaaaaahmmqncaaeqmgglaaaojafnaaadlpoba0aafqpbaaabpjkmaaadqbaqeaagqaalgaadqbaliaaeqedpeaabnnnobaaaenobaa1aaknbaaaaahqfaaaaagqgaaaaagqnaaaaaagqcaaaaadqiaaaahlqojeaagpnoqp6aadmqgaaaanqmeaaadqjaaaaagnfeaaaaiodqcaaaeqenhaaaallloaaaadmqpaa0aacpfaaaaalqqgaaadodhqdaahiaaiiaafiaaeiaaemaaiiaaaojiqcaaadopgaa7aahqqfaaabplolaaaaaamiaaaadiomfaaaoqqkfaaacioaaaaabpiaaaaaiobaaa7aacnqqhaaampmqkaaaqjaogaaadaeqbaaaakoqgaaadqqlcaaaajoaaaaacpgaaa0aafqiaaaaakfmgaaaeoacnaaaekaajiaafiaaiiaaclaajgaaapgipbaaaenmdaa5aadijlobaajqqqnaaaqfiaaaaeqqqgaaacjcjkaaaaaaiiaaaaimnfaaaafnkbaa4aaadpfaaaabplaaaaakpcdaaafqegqbaakpejqcaamqqqncaabehqeaaaaaepaaa3aagoqqcaafqnlqaaaahcpmaaaaahqnbaaaaagpkaaaaaapjaaadliqgaaahqqiaa3aadmqoaaadpqpoaaadmbpiaaaaajqiaaaaakqqiaaaacfniaaacllpfaaadqqjaa2aeqpcaaaalpphaaaajkgoaaaaaahpaaaaaankaaaaabqhccaabmqpqpaaeqqqmla3aacpqjaaaadnlqaaaaacnmaaaaajqlaaaddbgpiaalnaakmaadqmhqiaaadpqkaa8aagmnhaaaaqkqmaaaanhqjaaaabpnaaaaacqnaaaaakhkcaaaanendaaaahpjaaa0aacnpiaaaakokliaaaqbaajaadnaaaiaaemaabiaafmaakaaaapihkaaaaeoobaa5aakqpicaajqmijdaanqjaaaaahqqkaaaahniqeaaaaabqfaaaacmpbaaaanqgaaa3aaimmodaaallkqcaaaaajnaaaaaoqnaaaaaiiqeaaadaaqeaabqjjpcaablopdaa3abmqnhaaamleepaaaidagocaaaajqiaaaaabfndaaaaaahiaaaaaajkaaakknoba1aafmmibaaakqqpaaaalqqiaaaeqqqeaaadqqkaaaaanqqdaaaanqqaaaaackmaaa2aafmbaaaaapohaaaaanbmaaaackaoaaaaacaqbaaaaagpaaaaajqpjicaadlinme8aapnaddaaappipfaaaiqqhaaaahqqbaaaammpkaaadqakpbaacqfhpdaabmqphaa5abiijniaacqqqojaadqcaaaaafqqpbaaafkipfaaaaaanhaaaapmqcaaaalqjaaa5acqmmohaadqjiieaacqkeaaaaeqnqeaaaadamkaaagdajlaaalljqdaaadmphaaa6aacolaaaaakqbaaaabqjaaaaaeqfaaaaafqmmlbaaeqokolaacpkgqkaaadpqkba9aadlnfaaaakmfqaaaahkgpeaaacnqogaaaaaahjaaaaaaelaaajhailaaadjqqga6aaaklaaaaajqgaaaaapnaaaaaaokaaaaabpmicaaaamqqqkbaahqmmqeaaajpmfa7aaaenqpcaacpnnqgaahhadqeaaaeeioaaaoqqqgaaaljkmaaaaaandaaaaaekaaa0aakmobaaaaqqqmaaafqidqaaainaaihaaimaagiaainaemiaahqqqnaaaaloibaa8aadmqjaaaamjnqjaadqfaimaaajqkncaaaaeqmaaaaaljqaaaabpcmaaaacqqgaa6aaaincaaaajqndaaabpobaaaacqlebaaadqqopcaacqnbqjaaajpjqhaaaaiqnca9aafoliaaaepcqqaaaimamqaaacpqqpeaaaaekqcaaaaaeqcaadnioqaaaahpmfaa2acpqgaaaafqpoaaaafnkoaaaaaammaaaaabqhaaaaakpcaaaadqkigbaacpqqqha1aaiqpiaaabqqqcaaacqqkaaaacqqmaaaagqqnaaaabqqlaaaaaqqkaaaaahppaaa6aaalqmbaaafqkqeaacpkaibaafqjbaaaaiqqjaaaacqkqgaaaalqqhaaaabinaaa2acpqhaaaakpkqcaaajlfqaaaaaamlaaaaafqcaaaadpiaaaaaipffidaadpqqqka6aaaipkaaaaingbaaabqcaaaaaelaaaaaaeqmmjcaabpbajkaaakjendaaaalpfaa2aafnhaaaaammocaaaamamgaaaagbpdaaaaaglaaaaafodaaaaalqicgdaaeikqmb9aampncaaabqffnaaabhnaieaaglnnpeaabjmmnbaaaaaalgaaaaaafoaaaknmpga7aaepomlaaahpnqkaaakhgqcaaahbmmaaaafiqmbaaeqqqocaaaapjbaaaafpcaaa0aahoieaaaaqipobaaeqeaieaaioaaeeaaiqaaefaadqbaleaaapqqmaaaagnhaaa8aaeglfaaacohcpaaaeiaakcaaaoiinbaaapkqhaaabkabkeaaamcagiaaagklhba8aaagplcaaagnenfaaahlandaaacpnhaaadnmqcaaaipbjiaaaahoiqbaaaafmqca2aaiqiaaaaakqqdaaaaceoeaaaaaioaaaaafqiaaaacpohgdaafqpqpdaaaknicaa8acmodaaaahqbaebaaanqqpbaaahqobaaaapoqaaaacqbphaaafqgphaaabqojaaa0aahpjfaaaaoqopaaabqiegeaaepbagfaadlaahfaadlabncaabninnaaaagplbaa6aaaimbaaaabpmbaaaagqdaaaaahqbaaaabqqofaaabmqgojaaacqgkpaaaagqqla4aaanjaaaaaepdaaaaaljgeaaafqdnibaaoqjqqjaamqqqldaaaemoaaaaaamkaaa2aajpnaaaafohncaaamkbnaaaaehglaaaaaakgaaaaabpaaaaaajlagfaaalqqqqd5aajmogaaaaqgaaaaacpaaaaaaipmqjbaabigcmhaaaaaalhaaaaaipcaaamojcaa6aaaihaaaaacqgaaaaafqcaaaaalpmjaaaalqnjiaaalqcijaaadqfmkaaaagqoca1aaabonbaaaabqqdaaflpqqaaaepqqpaaaaaiqhaaaaakqdaaaaaiqgaaaaacnpca1aaabpmaaaaamqnaaaalqqnaaalqlnnaaadhamoaaaaaalnaaaaaapnaaaaacpnaa8aaflihaaadqljqeaaaodhpaaaafppdaaaakpobaaaenajhaaadlfnhaaaagkgaaa6aaeofaaaaanoaaaaacqkaaaaaeqhaaaaagqqpeaaaeqjeqcaabpngqlaaaenqpfa8aahmkaaaadqqqjbaaaiqqlbaaakqqaaaadqoqeaaaenahpaaaeoccqaaaaglkfaa4aaaahgaaaaagpgaaaabpfodaaamieqaaafqjkqeaablmooeaaaaaiiaaaaaalhaa2aadnmcaaaaonplaaaahaipaaaaaangaaaaadqeaaaaanlaaaaadqmibaaadqliaa5aahmpgaaaoqpgaaaaqqnaaaaakqoiaaaaacinaaaaaakpaaaaaenpaaaaahqhaaa1aaemmhaaaaqqqfaaaaqqqqaaaeqqqmaaaeqqqmaaadpqqjaaaamqqiaaabhmlfaa8aadkodaaaiqlknaaahoabpcaacqjqqbaaamqppcaaamkaiiaaajmehmaaaclqqja5aeqqqqfaalqifidaakqcaaaaadqgaaaaaaqjaaaaaamqcaaaaagqlaaaaeqmbaaa1aabppcaaaaamqhaaaaaoqfaaaaanqcaaaacqnaaaaagqnaaaaagqlaaaaaboqhaa9aahqlbaaabpmmmaaacqcgqcaabqggqgaaahqpqjaaaaaamlaaaddgqfaaaiqogaa1aabplbaaaacqqhaaaagqqfaaaaiqqeaaaajqnaaaaalqnaaaaalqlaaaaaboqdaa0aafpmiaaaanqkndaafqjaieaaenbaeiaaeiaaieaaboaaldaaamjjpaaaaeopeaa6aacnmaaaaaiqhaaaaanqeaaaaeqqqlaaadqkdpiaaaqiankaaampbpjaaaclqqca7aabikplaacopnqhaaagagocaaaadlmcaaacqqpiaaadnpcaaaaankaaaaabqfaaa7aacnqobaaalmhqdaaajdcqdaaaaajlaaaaclpndaaaepqndaaaaoiaaaaafpeaaa5admmopdaaepeeeaaafmaacaaafpmppfaafmgaiiaaaaaakhaabjahobaacpqodaa9aaeopgaaafqqqqaaafqqqqdaaacinqfaaaaaiqgaaaaaeqiaaabgnqgaaaenpjaa1aaaaonbaaaafqqcaaaaoqmaaabkqqmaaadmoqjaaaaafqpaaaaaeqoaaaaabnqba8aaepokbaaahjajiaaaljcnhaaaepoeaaaagppbaaaeobnhaaahnbfnaaaahoqqba3ablpqjaaadqkkqbaaacbolaaaaaoqhaaaaanqqfaaaaacqiaaaginpfaaapqmfaa4aaaandaaaaalneaaaagoeqbaacodgoaaagqlmmaaachoqoaaaaaamiaaaaaapdaa4aaajlaaaaafodcaaaapcbodaafnanibaaindqogaagpqndaaaaajlaaaaaalhaaa7aagqqhaaaanmpkaaaadgnjaaaaiqqpgaaabjoifaaaaljaaaaaeqdaaaaakkaaaa6aaakiaaaaagodaaaaaliaaaaadqicaaaagqqqpdaaaqcaimaaalmflmaaabiqpca7aakqqiaaaafinnaaaaaajnaaaaacnmaaaacpqqhaaaannfbaaabofaaaaajnbaaa0aafnlbaaadqlimaaafqaandaafnaaghaahkaaihaaenabofaabpfmkaaaahqkbaa7aabnqkaaaaionoaaabpffpaaahmajlaaabclpqhaaaepqjbaaaaklaaaaabphaaa0aacmmbaaacmmglaaaknaakcaailaaggaahjaaejaadnaaimaaammjqhaaabmqjba2aadmqqdaacqqlqeaaiockqbaaffdqeaaaaalmaaaaadqfcdaaadqmpgaaaapqiaa6aabloaaaaajqmaaaabqhaaaaahqffeaaahqqqqfaaaqnenhaaajqoqeaaablojaa7aadlqnaaadppnqaaagicjoaaaaehpofaaeqqqogaabinmaaaaabqeaaaaadpbaaa5aalnmmdaafoeehcaahkbebaaaipompcaachaameaaaaabqdaabidkmaaabmqmcaa6aaaoobaaaahqkcaaaaoobaaaaaoqoeaaabqqiqcaaaolanjaaajogqhaaaaoqoaa5adpiigaaaeqqqncaadqjcaaaacqqpdaaaahgmjaaaaabokaaaafopcaaabpobaaa9aakqjbaaahqjolaaaiobhocaacooopdaaaceeqeaaadaanjaacpiioiaaaipnkaa4aaacpeaaaaaipbaaaabomaaaaagqmaaaaanqpecaajqqqqlaadiiqdaaaaadpaaa1aacooaaaaabpqcaaaaaoqdaaaaakqfaaaaamobaaaaannaaaaabqlaaaaacpmaaa1aafpnmeaaalqqoaaaaqqqiaaaeqqpdaaacqqiaaaaaqpdaaaaakqeaaaaaipdaaa7aaekpqeaaanojqdaaacbfpaaaadenocaafqqqqiaaejmobaaaafpkaaaaagqeaaa9aajqmcaaaaqdfkaaaaneoqeaaaeqqqhaaaadekeaaaaaaigaaambbndaaaipqjaa6aabjolbaaakpjnfaadqhaaaaafqqqkaaahqlkqfaacqfamiaaakpnqfaaaajmhaa2ablncaaaaippgaaaakjgoaaaadkekaaaaaalhaaaaacpdaaaacnqnlcaabmmmpla1aakjaaaaaaiqcaaaaaiqgaaaaafqnbaaaabfogaaaaaailaaaaimjqgeaahqqqqo7adnqnaaaajniqfbaaaioqqfaaaiqpcaaaacqhaaaaahqeaaaaapjaaaaacpdaaaa5aannnmeaabqffjeaaenacbaaafolqncaafpgajiaaadaakiaadofhpbaabjopeaa3aamqpbaaafqkpiaaabhdogaaaaamqhaaaaadnqgaaaeaaplaacqklqhaaakqqkba3aanqqjaaacqhhqaaaaealkaaaabnodaaaaahplbaaaabcnkaaaijbmlaaalqqpba1aacqfaaaaaeqkaaaaafqhaaaaaiqjaaaaapqocaaaahiokaaaampoqojaacknqkd1aaabnnaaaaeppqaaaiqkgoaaakgainaaaaaaknaaaaaanjaaaaaaohaaaaaaqhaa6aaajnaaaaadpeaaaaamlaaaaaaqlieaaaapqimfaaaonabpbaaimaeqcaaaimnkb9aaiomdaaagqgooaaagnaioaaacoooqdaaacegqfaaaaaaqfaaaaafqdaaahqqiaa2acppfaaaafqqlaaaajpqmaaaaaeqgaaaaaiqcaaaabonaaaaaeqooqfaacoqnjba8aaemnfaaadpikpcaadoccpdaaakqqhaaaaahnpdaaaclbmfaaahjbocaaaeqqhaa0aaaqmbaaaagqohaaaaopblaaaaqpaobaabqkaocaaapndpdaaajqqpaaaaanqiaa3aagnmcaaaahhkmaaaaabmjaaaaahqhaaaaaafobaabhaahlaabqeajlaaafnmqda7aabjqqdaaaoliqiaaaeaapgaaaaahqdaaagmqqjaabqoqfaaaaciqaaaaaamhaaa0aakkmhaaaapnfmfaaeneaciaaieaadiaaieaahfaaggaalcaabnddmaaaahpqhaa8aboogaaaacqbocaaaakhkgeaaabmqofaaadoqeaaabpfgmaaaekabpaaabmmmfaa8aabipldaaalmjolaacoaangaahpimjaaaagnqiaaaaanjpeaaaaqiodaaaalpiaa2aboqmaaaafqjqgaaadlaojaaaaaakkaaaaaaokaaaaakqfaaacpqoimcaalqqqpf4aaconaaaaaopdaaaagqcbfaaaknafqcaahqjmqlaaafmqkcaaaammbaaaaaqfaaa9aajnhaaaaamqqcaaaamnqgaaaagqqoaaaaaacqdaaaaaajkaaadhmoqcaahmmmla4aaacoaaaaaaepaaaaaalkfhaaalpcnhaakqiiqgaaimmnpbaaaaakkaaaaabndaa2aakqqkaaaeqgbqcaaakabqdaaaaafpaaaaaallaaaaacpeaaaacnqmiaaanplioh1aaaimjcaaafqqqeaaajqqlaaadqqqfaaaeqqqeaaabpqqdaaaaiqqjaaaaajmgaa1aaabqfaaaaafqlaaaaamqlaaahmqqhaaaeimqeaaaaajqcaaaaakqcaaaaadnfaa0aafilfaaaanqmmaaabqjajdaadqgaggaadlbafgaaamaalgaaaofmpbaaagqncaa3aajqqkaaaajjjpaaaaaagoaaaaacphaaaaboqeaaaafqqiaaaaagqeaaaalqmaaa8abnocaaaahojfaaaagndmgeaabomoqeaaacqqhaaaaloinaaaeqecocaabmongaa7aaaioocaaaagkplaaaaaaokaacilmqiaaiqqqqhaaaaalpbaaaajqhaaaaamnbaa7aabgmqjaaakpknjaaacbaocaaaagmqpaaafqqohaaadgpaaaaaahjaaaaaalcaaa0aaemfaaaaamophaaacobcqaaaeiaakeaahiaagiaaelaafiaaaoldnfaaaclqlaa2aahppfaaagqmqmaaabhaqkaaaaakpaaaaabqhaaaaaknbfbaaammnpdaaakqndaa4aadphaaaadplbbhaaiqcanpaaiqnoqfaaaijpnaaaaaiqcaaaaammaaaaadqeaaa7aaepqlaaaahjjqaaaaaaenaaaabjpqkaaanpqicaaadhnaaaaabneaaaaaglaaaa5acjlmpgaagqjiibaaenaaaaaaeqmlfaaabfeiofaaaaaaiiaabgefpdaadqqqiaa6aaeogaaaaakpcaaaaaqlaaaaaanlaaaaadqmidaaacqoimjaaaqnemmaaagpqmba9aaaikodaabnnjmiaagqiiqeaafqqqjaaaafiomaaaaadqfaaaaapiaaaaabmcaaa2aeqqdaaaalollaaaalhcqbaaaaadqaaaaaakmaaaaadqifdaaamqqqqaadqpihea7aagqpcaaaahnqeaaaaabqdaaaabkqgbaaajqqqiaaabqieaaaafnaaaaaalhaaaa0aajnqfaaadqienaaagkbajcaafeaaeiaaieaaeiaaggaaejaaancahiaaaimnpca5acoqqnfaahqniibaakpaaaaaakqaaaaaahqgaaaaabmqiaaaabiqkaaaadqpbaaa3abkplbaaadiilmaaaaafopbaaaalpcaaaaaepcaaaaaamkaaaadekqbaaanqpkaa0aafokhaaaaqqqqdaadqkcqhaahqdamiaaiqbamiaahqfcqeaacqponaaaahpncaa9aaaaiokaaaajhjmaaajiamjaaeqimqcaafqqkpaaaaeaflaaaaaaijaaaaaakkaa1aaanjaaaaaaopbaaaaanqaaaaaalqaaaaaakqcaaaaaoqbaaaaapqbaaaaampaaa4aaaflagaaadphgqbaanjbnhaagpcgpaaaokaomdaaoqqqodaafloncaaaaahjaaa6aaamkaaaaaephaaaaapeaaaaabqhbaaaaeqoqnbaabqabklaaaojbimaaackqqfa4aaaapjaaaaaiqfaaaabqqfaaaalqqbbaagqqqpjaahpqqkbaaabhqbaaaaabpfaa4aaaepcaaaaannaaaaadqgakbaammbhpbafqdaokacqniiqdaiqqqqnaaaaahqgaa4aaaipaaaaadpdaaaaamkabaaaeqellaaalpcokbaanqqqnbaaaemmaaaaaaljaaa0aacqpfaaaakqopaaaapkaqhaaeqbamfaaepaamfaafqgaqaaaaonipaaaadoqgaa9abmneaaaaeqqqdaaaeqqqkaaaagqoqaaaaaaaqeaaaaaanhaabcdhokaacmqomda0aahlpjaaaappeleaadlfackaahiaadiaagiaaeiaafiaaifaabmcbnaaaafqodaa4aaaaniaaaaafqdaaaaaokcjaablnakpaampfhokabpqqqqeaaeedkoaaaaaaphaa3abmmnibaaaijpqcaaaadqkaaaaahqgaaaaafqkaaaaaahqhaaadipncaacoqkbaa6aafnbaaaaamnbaaaaaqdaaaaadqaaaaaadqqojaaacqidijaaaocadqbaagpqofa7aadpqqgaaadohpdaaaaaeoaaaacjpqoaaahqogcaaaaiiaaaaacqcaaaaafmaaaa1aabocaaaaaaqfaaaaaaokaaaaaalqbaaaaadogaaaaaaimaaaakonqidaaclmpqp5acqqqofaajqlgidaajqcaaaaadqnbaaaaaiqmaaaaaamqeaaaablqgaaaeqqiaaa8aadonbaaaajqqjaaaaiqlpbaaacoqpcaaagqqgaaaaplkmaaabqllpaaaafnphaa2aahqmaaaabqhndaaaapckgaaaaeamfaaaaaapbaaaaafnaaaaagpoihbaagnmmpm7aaflqqfaadplkqeaaaeakoaaaahpqqmaaajqoebaaabohaaaaaeqeaaaaaiqaaaa1aakpbaaaaalqbaaaabqqbaaaaaiqfaaaaaaokaaaaaakoaaaaaflpgebaakqqqqk3aaoqpdaaaagfniaaaaaiqfaaaaalqkaaabdaepiaagpaajpaafqfgooaablqqoca2aeplbaaaaiqqeaaaacgniaaaaaaifaaaaaaleaaaaafqaaaaacnqnmgaafqpqmda5agnfiibaaiqqqqgaagqjgeaaagqqpfaaaaefpmaaaaadqjaaabinpdaaaeqpdaaa2aamqmaaaadqmqdaaabieqdaaaaahqbaaaaakmaaaaaeqcaaaaalpiicaaamqqmba8aaboneaaadpmlpaaailbhnaaabnoqbaaaaaonocaaacmajiaaadnemgaaaajonba2aanqnbaaagqkpfaaadpaljaaaaeamiaaaaaapiaaaaaiqeaaaafqqnkbaanqqqqj3aagqpfaaaacnonaaaaacoobaaaadqkaaaaaaokaaaaaakoaaaaihmqaaaagqqmba1aaaafpgaaaaepqeaadlqkqeaaeldaqeaaaaabqeaaaaadqdaaaaafqeaaaaagpea7aagnqgaaadqopqbaaafaiqcaaaaaiqdaadpqqqjaafnoqldaaaampbaaaaeqhaaa7aacpqpaaaamjlmaaafpanhaaafgdofcaaaajqqjaaahqjcaaaabpdaaaaadqaaaa7aaeqqqdaaahmnqiaaaaabqfaabeehqbaakqqqqjaaflnqkcaaaalnaaaaafndaaa9aalqiaaaagqlnjaaahqajqaaacpmqqdaaafhhqeaaaaafqfaaadhqlaaaanqlbaa4aaaakaaaaaakiaiaaaenccoaacomhikaajqqqqhaaaaafpbaaaaaimaaaaaaqiaa6aaboqiaaaakqleaaaablbaaaabmdaaaaacqonibaadqqnqiaaamqhpmaaabnqqia5aakkoqoaaaoieaaaaaqaglfaadqokkjaadofajiaaaaagnaaaadjndaaaainbaaa5ahqqqqlaaiqjgabaadqdaaaaaalmaaaaaaeqbaaaaeaoeaaaajjqdaaaafpnaaaa4aaabqdaaaaaklaaaaabodaaaaahmadjaaaocakhaagnflobaalqqqjaaabcbobaa0aaflebaaaapqqlaaacqjcmeaagnaaggaadnaafjaadqaagiaaanmiqhaaaenmkaa7aachpnbaaaomjoiaaacaamiaaaaaangaafqqqqfaacfhnocaaaabpfaaaaaljaaa4aaalkaaaaaiqfaaaadqkelaaalnajqaaamnfoqiaadmoqldaaaaklaaaaaaliaaa0aajnlbaaaagejobaaabfaleaaanoahfaadobakeaadoacpbaacnimlaaaaiokbaa1aaaajqeaaaafpqcaadmqqoaaakqpqpaaabeaqnaaaaaapnaaaaaamqmaaaaamqga4aaaioaaaaafqlaaaabpobgaaahqfdqiaaiqioqcaaagoqlaaaaagqeaaaaakpaaa3abimpoeaadliimmaaaaacnhaaaacpmbaaaaanfaaaaaajnaaaahiopaaaaoplcaa5aakqqoaaaeqokiaaanqibaaaamqqncaaadijqfaaaaadqgaaaafmpcaaaampfaaa3aahqqqkaaakkfmqcaaaahpgaaabnqnaaaaahmqgaaaaacqgaaacjlobaaafqpfaa3abkqqlaaafkimqeaaaabkoaaaaagqeaaaaahqfaaaaabmqeaaacejqeaabpoleaa9aaemqmaaafqiemcaamgaaneaagqnqqhaaadebiiaaaaaaemaaaijcjjaaacnqpda3aahqqoaaaaqmkpbaaakeqkaaaaajqlbaaaaahqiaaaaaaqhaaaiekpcaaamqqgaa1aaaalodaaaacqqcaaaalqoaaaadqqpaaabnqqnaaagqjpnaaaaaamqbaaaaajoba0aagqpfaaabqoipbaajnbamgaafjaajkaagjaajlaahqballaadqlnqiaaaiqqmba4aalhaaaaafqdcodaajpampaaagqpqfaaaagplaaaaabqeaaaaajmaaaaaankaaaa5aaioqqaaaaoniiaaacqgaaaaagqnqnaaadqqmqhaaaebcogaaabgqlaaaalpibaa6aadobaaaaammaaaaadqgaaaaafqcaaaaagqcfcaaaeqcmpcaaboncnlaaadlqnea0aaaohaaaabjqqdaaaeqillaaadqheqeaaiqeaqiaafqkanlaaanqqqjaaackngaa4aadqaaaaaakkaaaaabqdnfaaainbqhgaaonjqqkaalqqojdaabeqiaaaaacqgaaa4aaaofaaaaafqfaaaaanmabdaaeqfbplaakpenqdaaiqqqkaaaclmpbaaaaaqjaaa8aaajqjaaaadpfqaaaahmhmaaaabqqfaaaacqobaaadqijlaaaamnemiaaaaioqoa9aadekaaaadpiodaaaihakgaaadliplaaaabhdndaaaaaagjaaajgbaqaaaadlqqd4aaafoaaaaabpnaaaaajqnaaaafqpnaaaaiqqqpjaaaekoifaaaaimaaaaaahkaaa2aclqpcaaamqpqeaaacdcqeaaaaakoaaaaaeqfaaaaammdljaaaqqqqgaaaopmfaa5aajqqncaacpcddaaahjabeaaaimhnohaagqiafiaabdaajgaaadebpaaaahqmhaa1aaaqlaaaaacqqcaaaadqqgaaaadqpcaaaacqqcaaaaeqpaaaaabqpbaaaaamqcaa9aahokhaaafqoqoaaahlajobaaeohlqfaaajppmiaaaabbijaaaolkpjaaajnnjaa9aaadmqpbaadqjkqaaaonhpkaacqqqqcaacmjniaaaaaapfaaaaadqbaaaaadobaa7aajmppcaabpolqhaaacacqeaaacekpcaaanqqqjaaanqkbaaaagqbaaaaaljaaaa4aacpmaaaaajqfacaacpkalqbakqegqkaagqqqpbaaagnqeaaaaapnaaaaagqfaaa9aajpndaaacocgfaaaejaapeaabnfhqgaaachhodaaaaabobaaadbkjaaaalpjbaa4aaablhaaaaalqfaaaajpphaaafqdqeaaaknjqoiaadpqqngaaaaaqdaaaaaaocaa1aadqmbaaaadqqfaaaacqqfaaaaaqqfaaaaeqqcaaaaeqoaaaaagqoaaaaacqoaaa6aacooaaaaahqhaaaaanmaaaaabqiecaaaeqqqpdaacqmegqcaanidgqgaacnoqmb8aanqjeaaaapjjpbaaaljnlaaaafqobaaaahqkaaaaaokqcaaaaqephaaaalqqdaa3agqqphaaaclmqqfaaaaaopcaaaabqlaaaaaaooaaaaaafqjaaadhmqhaadqqplba2aagqmbaaaafqnkaaaaaffpaaaaaaipaaaaaannaaaaagqjebaadqqqqkaafqljgc4aaabmgaaaaalpcaaaaiqgbcaaeqjbpjaanpgkqgaamqqqqbaabheonaaaaaaojaa6aaaepbaaaaanibaaaagmaaaaaaikaaaaaanmlkaaaeqpilkaabhpedmaaaahpqia1aablofaaaaapqlaaaafqqiaaaafqqfaaaaeqqdaaaajqqcaaaaiqoaaaaacnqjaa1aaimlgaaaaiqqncaacoqqocaacnqqiaaaeqqqiaaaeqqqkaaablqqiaaaaelmhaa7aadnqlaaaaomoqbaaagahpaaaaaamlaaaainqoeaafqqomeaaadqdaaaaainaaaa3acppgaaaaaknqfaaaaacqjaaaaadqlaaaaaanobaaaaahqfaabegnpbaadpolcaa8aagoqgaaagqqipaaahoomoaaaankqgaaaaeqkaaaaalnqcaaaapfpeaaaaiqpbaa0aaepmbaaaamlnnbaadmaaogaaimaaliaaimaaiiaagnaalhaaeqhkpcaaahnmcaa6aaagniaaaahqieaaadpcaaaaagmeaaaaaeqnndaaacpcfoaaaajkcpaaaaaipmaa3aaiqiaaaaaqgpbaaaekamcaaaaahqdaaaaafnqdaaaaaalgaaamjjqcaaaiqphaa6aabkaaaaaahmaaaaaamhaaaaaaodaaaaaapjmkcaaaqniilaaankejpaaadkpjca4aaakmaaaaaepbaaaaankbcaaafpcpjbaalngqqjaanqqqkcaachnlaaaaaanlaaa3adqqohbaabjjpqeaaaahqmbaaaajqcaaaaadphaaaaaajpaaabkkqqdaacnqmfaa9aafooicaadpdaniaafmacpiaacpjooiaaabdamfaaaaaameaagpcaobaabhomjaa4aaadpeaaaaeqmaaaaampdedaahqfdpiaanqnpqcaamqqqnaaaaefqiaaaaabqeaa6aaahpaaaaagpiaaaaanjaaaaacqfebaaafqqqmdaabpebimaaaioffpaaaagqqla7aadnqnbaadpnkqcaaekaeqbaaaadlocaaajqqqiaaajmqaaaaabmlaaaaadqiaaa4aaaoiaaaaadqdaaaaamjjhaaagpbolgaanoiqqhaaiqqqdaaaabloaaaaaaooaaa3aabhmdaaaeqmmkaaaojaliaaahfapeaaaaacohaaaaaacnjaaafkeaofaabjpqqi3aagmnjaaahoghqdaaegfogaaaaamoeaaaaaadocaaaaaajhaaadbajiaaafomnca9aahqpeaaaalqpmaaaafqqoaaaaadipfaaaaaakkaaaaaallaaabafpjaaagpqqca8aafejkaaaakilqcaaaimoobaaafphaaaaaomaaaaabondaaaaamnfaaaaahqfaaa8aakqofaaacqqiaaaaajqqfaaaahqqdaaaaoonlaaafqbgpaaahojnpbaablqpgaa7aafqqqjaaabgemoaaaaaapjaaaeglqbaaapqqqjaaacklabaaacpdaaaaalkaaaa3aaenocaaaapklkaaadpcmgaaaadiqhaaaaaejqcaaakdangaaaqfhqdaaahnniaa9aclnlcaaahmeniaaagnfonaaaadljlfaaaaaaiiaaaaaadlaaacabjkaabpqqoca1aalmaaaaaanqaaaaadpqeaaaanpqgaaaaddpkaaaaaalqaaaaackqgdaaahqqqqf6aabkoaaaaaioldaaaaqccaaaadnaaaaaaenagkdaadpnmkmaaakqefoaaaajpoja5adpnmibaaeqommcaaaqeaaaaaamjaaaaaahqdaaaaaaoiaaaaafpkaaaacpqcaaa4aaadogaaaadokbaaabnkaaaaajobahfaalpijqkaahqqppcaaaaamlaaaaadqcaa8aaholaaaabqnccbaadqjeneaaahqqoaaaalqqjaaaaqjkpaaabqcfqeaaahpqqda7aagoqnaaaajjjpaaaaaaojaaaackqqmaaanqmhdaaadogaaaaagqcaaaaaknaaaa9aaajpmbaablmfpeaagoaanhaafqmmqeaaadioiaaaaacpbaaaaajkaaaaaakjaaa2aahppeaaaiqqqeaaaipiqeaaaaakpaaaaabpjaaaaagqcaaaaaiqiljaaajqqmda5aadjojaaafqofaaaamldaaaaanqmbaaaaelniaaaaaahlaaaaabmmaaaaacphaaa5aagnpqlaaakliifaacnaaaaaaelhifaaahqokocaabhbcmdaaafiogaaaaimfaaa4aaafoaaaaabpfaaaaaljaadaaeobaipaakomnqgaafmjlpaaaaaaljaaaaaeobaa7aagqqqmaaankiqfaabpbjmaaaaeanhaaaakqqqjaaahomidaaadpfaaaaaipaaaa4aaakgaaaaaeqcdaaaanihoaaahpanofaaopoqqjaanqpqgaaaabjoaaaaaaokaaa7aaagnqqjaagqolqkaacdaepeaacjmqnaacpqqqdaaejdkkaaaaabqcaaaaahjaaa6aaaoobaaaadqoaaaaakqcaaaaaqqidaaadqpiocaaaqlalkaaajohqkaaaamqoba2aanoibaaabqqqgaaaadfqiaaaaajqcaaaabqjaaaabqnaaaaafqleeaaabnommaa5aapqqmcaacqpmmdaaeqiaaaaaiqmeaaaaamqqaaaaaadqiaaacgjqiaaabpqpdaa1aaadpqbaaahpqoaaaeqqpnaaaaicpnaaaaaaqpaaaaaaqmaaaaabqqcaaaadpnba9aaabjohaaafojikaacoqlndaadqqqqfaaaghblhaaaaabndaaaaagiaaaaaakaaa3ackolbaaahpiqeaaabbgpbaaaaapjaaaaabqpjbaaaabgpiaaciegphaacnqpjaa8aaoqnjbaaamkjqdaaajonnbaaadnqgaaaafqmjaaaaniogaaabqlpbaaabnqgaaa7ahmoqiaaaiqoplaaaclcqgaaaaajqifaainqqmfaahqmdaaaaeqeaaaaajmaaaaa0aacpndaaaakplpaaadqgakaaaeqiadiaaiodaeiaadpbadhaaaolgofaaaempgaa9aajngaaaaaohldaaaehifiaaaikpojaaaaehjnbaaaaaaflaaacacmgaaakoohaa4aadqeaaaaamncfaaacqgkpbaajpdqlhaamqqplfaadjqdaaaaacqdaaaaagoaaaa4aabldaaaaajqaaaaabqfabcaagqcbnkaahqjpnaaacjmqbaaaaaojaaaaacqhaaa8aaemqgaaaeqkfqeaainafpfaagmhpdaaaamqmbaaaalkjlaaaamgandaaagnniaa1aaeqpeaaaaiqqeaaaamqnaaaacqqkaaaadqqiaaaacqqmaaaaajqqeaaaadmolaa8aaknaaaaaaoplaaaaamjqicaaafoqlbaaadqkaaaaamlqaaaabqhqfaaaalqnbaa6aaepbaaaaajkaaaaabpcaaaaaemaaaaaaiojigbaahohfmiaacqebmgaaafoqlaa2abppdaaaaipmoaaaaiigqaaaaaaipaaaaaammaaaaabqkkfaabnqqqlaadqmifba6aaaliaaaaafqhaaaaakoaaaaaamjbdaaaaoopqhaaakqpmmaaagqnomaaaajppda3aakqqeaaaajinkaaaaaepgaaaaanqhaaaaafnqbaaaaaaqeaaahdfqcaaalqqkaa5abiqqqkaaiqoifbaajqcaaaaacqpcaaaaadpeaaaabdmeaaaafopeaaaabnmaaaa8aadkmmcaabnmgniaaiqiiobaafoqqdaaaamqpcaaadqcpkaaaeqimmaaaajqpdaa8aaaiojaaaajpqpaaaepfioaaaiobohaaabpnmaaaaanqnaaaaamkphaaaackqfaa4aaajqdaaaahqhaaaacpiabhaajoacnoaaiqopqgaabhiqmaaaaahqfaaaaammaaa8aaipohaaaamqoqaaaadpoobaaaalqbaaaafooeaaaamgiiaaabqcjhaaaajqlbaa8aaeloeaaafnejhaaahkkncaaabjqpcaaaaihjmaaaamabofaaalgahiaaacpqpea3abnqqiaaalnenhaaahbhqbaaaafqpjaaaadgipiaaagbahnaaeqfcnkaabmqqlba9aajqogaaagqfkqaaacphkqdaaaeimqeaaaaaaqhaaaaabqiaaadaiqbaaakqneaa0aaeojaaaaanqqkaaaeqefqgaaioabpfaagqaaneaaepbhqbaacpoqhaaaaenjaaa9aabknmfaaanneemaadqhemgaacpqpfaaaabjqaaaaaacpaaaaaalgaaaaaapaaaa9aagqqlaaabqiiqgaaaiqoqlaaabedkiaaaaaajhaaaaabobaaaehljaaaajqkbaa8aadnoeaaaapihlaaaaqaaldaaakgoobaaafqobaaaamkimaaaaodajiaaaeopmea7aadoqoaaaannnqcaaabajpaaaajmpqkaaeqqqldaaaejocaaaacpjaaaaaenbaaa0aaeqmbaaacqqliaaadqnbocaaeqaaneaaepaaniaabqbaofaaakihpbaaacnqiaa2acnqkaaaampjqcaaakibqgaaabbcqgaaaaakpcaaaacpjaaaacpqjigaabnqqqqd1aaacqqcaaaaeqqcaabemqmaaahqqqmaaaadkqoaaaaaiqmaaaaagqqcaaaacmpea5aahmneaaaaqggcaaaenhicaaahqkkobaaccaakgaaaaaaiiaaalbakiaaaipppca5acnqqqpcaiqmiebaafqnbaaaaaiqiaaaaaakqaaaaaajqaaaaadnmaaaacqqgaaa8aahnqlaaadqfeocaailbepcaadmoqiaaaaiqpbaaabpflmaaadqfhqbaaafoqpca8aaaipeaaaadqklaaaagmlnaaaakqqjaaabqmlfaaacnacjaaaaigcmaaaabjojaa0aackpbaaadqqnnaaafqmbmbaahnfahfaacoaahkaaamcamhaaajmmqeaaaakqgaa7aanqpcaaafofphaaaacamhaaaafjqhaaaaiqqqkaaacqdaaaaainaaaaaaphaaaa0aacoogaaaakplpcaadqdamgaadjaajkaaklaaimaahqbalnaaapompkaaadoqnfa1aaabkqiaabipqqjaakqnlqiaabeakqeaaaaamqaaaaaamqaaaaaamqdaaaaakqha5aafponcaaampjhbaafqiaaaaajqqhaaaagmohaaaaaalgaaaaacqdaaaaahoaaaa6aaanjaaaaaipfaaaaaoiaaaaacqdacaaaaqnqqgaabqlehmaaalmfnjaaabmplca3aaimnfaaaenejlaaaaagneaaaaakpeaaaaaaepcaahiaamhaaijbdqdaaakqqgaa4aaahiaaaaaapcadbaaikacqcabpedjmaaiqqqqgaabedjoaaaaaapdaaaaajkaaa8aadmpodaabqfaimaagqlcnhaacjpqeaaaadoqhaaaajfgpaaaalkhqcaaadmqnaa4aaapiaaaaafpcnfaaanjcpcaaeobkmcaakoiqqkaakqqpfaaaacmiaaaaaaqfaaa1aadpmcaaaabqqgaaaaeqqcaaaadqqgaaaaeqqaaaaabpqgaaaaeqqeaaaaeqqgaa8aaahmnbaaailbkiaaamcblhaaakkoiaaabhqjaaaahqhodaaaahnfoaaaaagpoca7aaepqnnkaamnkpocacqgcogaabfajlaaaahmqogaaaipplcaaacqiaaaaahpeaaa5adqqqcaaaeokfaaaagqqkdaaaepmonaaaacabpiaaaaaainaadqkhjqaadnpqqia6aaaqgaaaaadqgaaaaajqaaaaaamqmjbaaapqonmaaaophapgaajoehpiaabnqqmb8aaeppeaaagqqmoaaallgomaaadonobaaaamqfaaaabqnjaaaaankpaaaaadppaaa2aclqmbaaajqjqeaaaoheqbaaagfjoaaaaadqfaaaaanoaaaaadqlimjaacpqqnqb9aacngaaaaaeqpfaaaabpmpaaaaakqqbaaaaacqcaaaaaapfaaaeegqdaaacoqkaa4aaaephaaaadpmaaaabomaclaakoaanmaalpmpqfaaekiqlaaaaacqeaaaaagoaaa5acnqqqlaafqkfebaagqhdaaaajqqqgaaadielpaaaaabmpaaaaenqgaaacqpiaaa8aafmjbaaaaqjpjaaacobkmaaaajoqlaaaadpqjaaaamkdnbaaalifqdaaaekidaa5aajmmmgaabogeecaaepmjbaaaepillaaaabaaoeaaaaaakiaaakbaiiaaajqqpea9aackklaaaakjjqaaaaoagpaaaalojqbaaaaaandaaaaaamdaakjfapbaaacoqnaa0aaimmbaaadqqojaaagpjdmcaahjaajhaahiaahiaafkaahjaaaonkqgaaafnleaa3aaiqqnaaaakljqcaaaaeqmaaaacqpbaaaacplaaaaaaeqdaaadmcoeaaaajqqfaa9aagmncaaadqgbpaaafqnmqcaacnqmpeaaaaaaiiaaabaaiiaadqcakhaaaflqnba4aaaipfaaaadqnbaaaamqcaaaafqhjeaaaoqnqodaaioqqocaaaajqdaaaaaloaaa7aadmqqgaaaklhqlaaaaacokaaflijqdaajqqqqjaabejqgaaaaaloaaaaaeqfaaa6aaaqlaaaaagqkaaaaallaaaaaamplfaaaaopmplaaamnaaqfaagpelqeaaanqoja4aaacoaaaaaakjaaaaabpilaaaamhmiaaafqmpofaainjqndaaaaaqeaaaaaaqgaa5abhoqmbaahqjglbaalmebaaaamqqpgaaadjelmaaaaaaiqaaaaaaonaaaagqpdaa4aaafpeaaaabplaaaaamocaaaafqhhkaaamqqqmaaalmoqobaaaaaqjaaaaaeqgaa0aacmhaaaaapopgaaagkecobaaiiaaifaahiaaeiaacoaafgaaajmeodaaabnpjaa8aabknnbaabnkeoeaainahmaaacmopcaaaafppcaaaaihdndaaaiianeaaablqqca9aannbaaaahqnmnaaainbpqeaaepnppkaaagldjnaaaaaafqaabhabjpbabnqqqga2acnqkaaaagnkqaaaaaaioaaaaabojaaaaajobaaaabohaabaaeqfhmoaadpqqkba0aaiolcaaagqhgnbaailaakeaahiaafhaaieaahiaackaahkaaaodepdaaafqqhaa7aakqnmpfaeqimqgaagmcqhaaabfjobaaabhqmcaaaiqqmfaaablkaaaaaaogaaaa8aaemqiaaafqlkqeaainabneaadqnpndaaajqqhaaaaohfpgaaakmhnkaaadnnkba1aaagqgaaaaanqkaaaajqqgaaadqqqeaaafqqqgaaaaajqkaaaaaiqpaaaaaenlca9aadnoeaaaanmoqaaabqdoqeaabojqqgaaacieljaaaccamkaaaooeljaaaeilqja0aaakjaaaaadpnfaaaannbnaaaaqhaqaaaaqldpaaaaohqmaaaajnpgaaaaankaaa1aaaafpdaaaadpqeaadnqoqbaacheiqaaaaaaioaaaaaahqbaaaaajqgaaaaaipca2adpqhaaaamnlqaaaamfeqaaaaaadqeaaaaagqdaaaaalqaaaabmqoifaacnqqqqc0aaeqqeaaaakpmoaaaclaajgaafgaaefaaejaaheaaekacoaaaaopqiaaaaenkaaa1aaacqpdaaaaiqqeaaajqqoaaahqqqmaaaaaiqmaaaaahqmaaaaaeqqhaaaaanqha9aaacjqkaaahpihmaabpdalmaaiojnqiaabhhdneaaaaafnaaaaaakjaaaaaaoeaa3aakqqlaaablhgqdaaaaakpaaaaaaphaaaaaapjaaaaaahnaaaafekqaaaakqqkaa1aaekleaaablqqoaaaeqqqmaaaeqqqhaaaeqqqiaaaeqqqhaaadpqqmaaaafmmmba3aafnqkbaahqqqqhaaafclofaaaakpgaaaajqncaaaaelpoaaaaccnqbaaafopjaa5acqqqqeaaeqgihbaaeqhcaaaaeqqqgaaaafekpaaaaaabogaacoeeqiaadnqqpba8aafmncaaadqoqnbaaeqjqmbaabjqpbaaabnqqfaaadqfmqaaadphomaaaagqndaa0aaepiaaaaapopfaaaiqfdoaaaflaakfaafjaaiiaaaoaakiaaaonnqbaaacoohaa9aackqlbaaannkqiaaeobiobaaepmpiaaaaghofaaabcamfaaaipgneaaaaflqdaa6aaaklaaaaaaooaaaaaeqdaaaaagqkcaaaamqmlfaaalhdcoaaagnaenaaaajqpfa4aadpdaaaaaoqbaaaaiqgaifaamoafqiaampoqnaaabloqfaaaaepkaaaaaeqfaaa2adpqiaaaaonkqcaaafdcqcaaaaadqcaaaaajmaaaaabqiacaaaiqoqpaacqqpmja4aaahnaaaaaaogaaaaakkcgaaadqdjncaalmgoqkaalqqqkdaacikqbaaaaajnaaa9aacknmdaaalniqhaaamjjqiaaagknofaaaaaamiaaibaapcaaeojeqaaaacmqoaa0aahfonaaaaqpgjcaaeqhaeeaagmbafhaaihaamdaaeiaemaaacmfpeaaaagpgaaa4aaanjaaaaagqcaaaaamjacaaahpbfpbaaokelmdacqqqqncaadeloaaaaaapeaaa1aadpfaaaaafqkaaaaagqhaaaacmqjaaaaiqpoaaaaagdqgaaaagimpmkaacnqqpl0aahimgaaabolmpaaadpaakfaaejaaieaaiiaanaaahjajlaaacokofaaaajpgaaa1aaqiaaaaacqnaaaaacqqgaaaaaiqkaaaaaaomaaaaaakqcaaaafmqlidaamqqqqj1aaamkaaaaaaoqcaaaaanqaaaaaalqdaaaaakqdaaaaalqcaaaaaoqcaaaaaloaaa3abmqocaaahpenhaaaacamhaaaaagqiaaaaapnpjaaaabaipaaaiebmkaabnqqnba4aaamkaaaaaeqfaaaaaphcobaagqcjqlaajojqpgaafqqqbaaaaclnaaaaaamnaaa6aaajlaaaaabqlaaaaagqbaaaaallghbaaanopqiaaamnffnaaagoipmaaaakqmca7aacfflpfaamqonqdabojaglaaaqfbneaaabahlaaaaacmcaaaaakkaaaaaapfaaa9aabhnkaaacnooqeaaeqfmqcaaaglmqfaaaaaapiaabbaanlaaamieniaaaahpqka0aagppdaaadqoonaaagpcbofaaiocajiaaiqeaiiaafqgaljaabqqoqjaaafopkba1aaanmaaaaaaoqbaaaabpqbaaaaeqqdaaaafpqjaaaaaampbaaabljqlcaaalqqqq2aclqncaaalpmqhaaahgaoiaaaaabqgaaaaakkaaaaahqeddaadpqpplaacnmjaaa4aaacpiaaaaalqeaaaajqqaaaadpqqaaaamqqqogaagmoqmfaaaainaaaaaacobaa0aagpjaaaaalqqnaaaakqqqhaabqialiaahobakiaaimaaneaafqijnaaaagmnfaa3abinqnaaabnmpqaaaaafpiaaaafpfaaaaagqlbaaaacnqlaaaaacoqeaaanqphaa6aaaioeaaaahqhaaaaaokaaaaabqgaaaaadqqkaaaacqmogaaaamplkaaaaakniaa9aaenneaaaaqkkiaaaaohglaaaagppqcaaaaaalfaaaaaahjaabeegmkaabglpmba5aagpqplaabpoiihaaeqfaaaaahqiaaaaablqiaaaaaaplaaaaaaolaaaaajqfaaa1aaabiqcaaafnqqaaalqpmqaaadibiqaaaaaaiqdaaaaaiqeaaaaahqhaaaaakqia4aaaanlaaaaaiqfaaaadpqeaaaaipqkbaaeqoqqlaahqnpodaaaaaqlaaaaaamlaa8aacklbaaaafodmaaaagndpaaaaippjaaacqljaaaacockaaaaahgnaaaaabpgaaa3aajoqqcaahpheoiaaaaafpeaaaaaqeaaaaaapeaaaaaahmaaaapcioaaaakpmdaa1aaamqjaaaacqqgaaaadqqcaaaaiqmaaaaagqqaaaaakqpbaaaajqlaaaaaiqkaaa0aaeooeaaaapkknaaafpacpgaaenaaoiaagjaamhaadobamfaaamjgpcaaadoogaa7aagqnmobaaoeepeaabhakhaaaaacnbaaacjoqmaaaegpcebaaaghaaaaaakeaaaa7aadqmmhaaamnnqgaaacagoaaaabenkbaaajqqqiaaaemmhbaaaaogaaaaaeqcaaa6aagpeaaaabohaaaaaepbaaaaaflacbaaaenmqndaabqcbikaaamealmaaaenmoca3aadnnbaaaakpqhaaaafdpkaaaaaaqpbaachaeqiaafnaaojaaaoljqiaaadmniaa1aaaafpiaaaacpqjaaadpqqkaahqkiqhaaabaiqeaaaaalqbaaaaajqbaaaaaioaa8abdppcaacqqmqgaabphgoaaaafookaaaaahqhaaaaagpniaaaaimhqaaaaepqoaa7aahqqpfaaajmpqhaaaaajpbaaahmppiaabqqqnfaaaaokaaaaafqcaaaaaiobaaa6aacmbaaaaagnaaaaaaneaaaaaaqbaaaaafqqqkbaacpgbkiaaakkajjaaacmqpba6aaangaaaaafqiaaaaaliaaaaaaneaaaaaaopqofaaanhaanbaakgafoaaacnmpea2abppcaaaahonjaaaajjgnaaaabaimaaaaaaimaaaaaalgaaaaahqqqhaaaqpmmda5abjmnlaaadpeddaaafmhgaaaafqonhaaabiacmaaaaaacoaaaagckgaaaalqnbaa3aahppcaaaangmgaaaaaapcaaaaankaaaaaaipmaaadhacpbaacpggqbaaaepqhaa1aaakqlbaaaapqpcaaabnqoaaaabpqmaaaaaoqiaaaaanqfaaaaboqbaaaaaipbaa5aenjidaaafqommgaaiqbaaaaadqlbaaaaaiqjaaaaaakqaaaabbmoaaaaeoodaaa3aadlnpdaaeqolqiaacfaopbaaaaaqlaaaaaalkaaaaaaimaaaailpiaaaacmodaa9aabiopfaaboiboiaahmahqiaaeommjiaaabdajiaaaaaangaaamkeqaaaaciqhaa9aaabhooaaadphboaacqkfoiaaepqmqfaaafdbpaaaaaaemaaaaaahkaaaaaahmaa6aabkkaaaabnkbaaaaeoaaaaaagmaaaaaailfklbaafqngkiaaakjahlaaabmqoca1aafpcaaaaabqiaaaaaaomaaaaacqqdaaaacjogaaaaaagnaaaackmqeeaaepqqqq6aabnbaaaaahpbaaaabogaaaaaaqdabaaabqgppfaabqoedmaaahhajmaaaalqjca4aaabpcaaaaafpaeaaaanibqdaafpcfpaafpqqqiaaommoqcaaaaammaaaaacqfaa0aalimfaaabplgocaaelaajeaaeiaaigaaghaaldaafiafnaaadnfpdaaaajoeaaa4aaabpcaaaaagoaaaaaaljagaaagpblpaafqokqiabpqqqqdaadhfnlaaaaaapdaa5aaijimiaaamokifaabocaaaaagqmmiaaabeehphaaaaaakhaabmejpbaaajqodaa5aalhmpbaabqojgaaaimaaaaaafoppfaaabgekjaaaaaaelaaaakeniaaaamqkbaa2aaeoqeaaadqqqgaaaiqmqhaaadfmpaaaaaapmaaaaagqcaaaaaiqmfbaaaeqqpea8aabgijdaaanpmlhaaanlajhaaafpppaaaaboqqaaaaljaqbaaajkknaaaadljcaa9aaamobaaaajqkfaaaainfoaaaacoqqeaaaaaekkaaaaaaeqaaacgejqaaablqpha8aablopdaabnqmqiaaiqegqfaafplnoaaaacmqnaaaaanqqgaaaaqqqhaaaalnmba5aamnmmmaaaqnmllaaaqnlcaaadqoqhaaaaaallaaaaaailaaabolpjaaaakomaaa6aaihaaaaaalmaaaaaapjaaaaahqqjeaaafqolqfaacqqamiaaappbpgaaahoqnba2adqpbaaaakqpgaaaankniaaaabdlkaaaaaapiaaaaaeqkfhaabnqqqqaacoplida7aackkmpkaajqmipgaanjaembabqdbncaaafajhaaaaadnbaaaaamhaaaaaaocaaa0acipqkaaalqkepbaamnaanfaalnaaphaaiqaapgaagqbfqcaacqgpmaaaahqobaa6aaajpbaaaakneaaaacpbaaaaafleeaaaaeqqqqeaaaqcakiaaaimenhaaabjqlba0aacojbaaabmmliaaaeobandaainaakgaafqbaijaaaqaaljaaanlkpeaaadpqfaa0aadlhbaaaakpooaaacqkbmeaacqdaeiaafmaagiaabmaaljaaapjopbaaaeppeaa7aappcaaaaaiplaaaaaamoaaaaahmqnjaahqqqkfaabfqoaaaaajpdaaaacqeaaaa4aaadnhaaaabolaaaaammbcdaahqebpkaakoahqiaapqqqqbaaellplaaaaacpeaa5aamqqqhaabopgebaaiqcaaaaajqmmjbaabiiipkaaaaaanmaaaicgqfaablqqiaa8aailikaaadpimqeaadmadqcaaalkpkaaaaeqqgaaaahjeqaaaamlfqaaaadkjdaa5abiilpkaaeqqlmgaaeqeaaaaabqpiaaaaaekqgaaaaaammaaagpjnkaaabnqneaa9abmqkbaaaimdliaaamngmiaaadpqqqbaaaaaangaaaaaaglaaanaafmaaamqqqia0aafnjbaaaanpkpfaadpcaliaaemaaiiaafiaajiaaelabmhaacofkmaaaagnkaaa5aaimomdaaamfadaaaaqcebaaaeqompeaaaeaaiiaabaaalfaagobcpbaaaioqeaa7aadpqqmaaammhqgaaemajnaaaabbnhaaaainqqgaaampmgbaaaapfaaaaadqcaaa3aajqngaaaagfqqaaaaaipfaaaaafodaaaaaajpcaaaaaalmaaaeilpmaaalomiaa1aaaahohaaaadqqjaaagpqqgaafqqqqcaaeiiqqaaaaadqqdaaaabnqaaaaaaipaa7aadoigeaaalqqqpbadqdcpgaafiajoaaaahjpneaaakqqpdaaaanhaaaaagpcaaa7aabmqqmaaahqlmjaaaghaoeaaaaagqdaaaakqqjaaaaipfaaaaaikaaaaaaqfaaa3aajqqpeaaiqjholaaffbnpbaaaakqhaaaaablqeaaaaaaoiaaadegqeaaaoqqiaa8abnjincaakhaamcaajgajgaaabnkkaaaaajqcaaaacmfmbaaaejajfaaabmliaaa0aadmibaaaaoqqpbaadpcbmeaagjaahiaahiaafiaaemaajgaaapljqcaaadlphaa5abnoqodaaeoihdaaaglaaaaaafqplfaaachhkqaaaaaadqaaaahfnlaaaapqkbaa6aadqobaaaalqgaaaaapjbaaaadqoqmcaaeqonloaaaqfdhqdaalmiqkaaacoqmaa8aabioocaabnqqqfaahqkkqeaadqopmaaaadmqkaaaaajqqdaaaapqqeaaaalqmca0aafpjaaaaapglgaaahjaaoaaafjaaigaaenaaeiaabqaaelaaaphfqeaaacppfaa0aacpncaaaaiqpmaaaajobpfaaaonaljaadqlamjaacqdcqgaabnlpoaaaaeqpfaa3aaflqqiaaapoimpaaaaacojaaaaalmbaaaabqfaaaaabojaaaabepjaaaahqlcaa6aabjnbaaabmofaaaacqfaaaaafpadaaaadqqqpdaacqlbjlaaalngmlaaaagqpca5abimqqhaahqmmmfaaendaaaaaeqqnaaaacigpgaaaahajmaaaaqlnmaaaafnmfaa6aaagmgaaaabpobaaaakqiaaaabnqaaaaadqqleaaaaqqqqhaaajqqqmaaaaglmfa1aaamhaaaaaaopaaaaaaoqbaaaaapqcaaaaanqbaaaaaoqbaaaaaoqbaaaaagqcaa2ackoqmaaakmhkmaaaaaankaaaaadqdaaaaankaaaaafqbaaaaaopmqkaabqnjdaa8aaenqocaacpfeoeaaipgbpbaaeqqnkaaaabjqkaaaaeodogaaajkdniaaadpqlba1ablqpmdaabnqqmaaacqqqiaaaaqqqcaaaiqqoaaaahqqjaaaabnqnbaaaaiqmaaa9aadokdaaaakonpbaaameeqeaaagppqiaaabiioiaaacaajlaaaqkimmaaahmooga1aaiobaaaaahqdaaaaagqgaaaaagqjaaaaacqoaaaaaaiqdaaaammqqmeaahqqqmf9aaiqncaaacqilobaadqbmqfaaamqqnjaaaaecjoaaaefainaabqlbnhaaaipqpba3abkqqgaaahojmmaaabbfpfaaaadqodaaaabloqgaaaaaamlaaahinqfaaapqmfaa6aacqiaaaaaipfaaaacqhaaaaadqhfbaaahqqqpdaafqmekoaaaonfkpaaadnqqha3aaoqogaaaahkqqdaaaafqqbaaaacqiaaaaaamnbaaaaaeqhaaafjoqhaaanqqkba2abnqqfaaahkekmaaaaaalhaaaaacpcaaaaamhaaaaagmbaaaaaqdbfdaabpqqpda0aabnmbaaaajqqmaaaaogandaagkaakgaahnaajiaadqbdohaaalqqqbaaaalqgaa2aahofaaaafqqlaaaacocoaaaaaafqaaaaaaiqaaaaaalmaaaaalqoikaaahmmmpc9aadkodaaaeqnplaaainbnqcaagqooogaaafhbliaabibaiiaacqliohaaafmojba8aacmoiaaaannpmaaafpckgaaaconobaaaaalpnbaaabpdohaaagnbqeaaabmqlaa5aammopbaabplgfaaagpmeaaaaglingaaaaaabnaaaaaaajdaacgbgodaablqniaa6aaalnaaaaabqmaaaaaeqgaaaaahqqhaaaaiqqolaaajqdfqeaagpfoqcaablqpea1aaaeoofaaaajqqhaaafpqpdaaepqqmaaafqqqmaaaaamqnbaaaaiqqhaaaaeopga9aaafnqiaaaipghoaacqbblkaaeqpqqgaaaeefpbaaaaajiaaaaacpbaaaaagkaaa5afqqqlbaaeqpkibaaeqmaaaaabnqfaaaaagqnaaaaaakqeaaaaenqcaaacpqjaaa0aaemofaaaalqqqdaadqocqhaaiqhaqgaaeqedqeaaeqfkoaaaaoqqkaaaaeoocaa4aaadqdaaaaamqcaaaaiqqeaaahqpqmlaaiqqqndaaaahobaaaaagqaaaaaaeoaaa6aacppdaaaanpidaaafqgaaaaaipfecaaaiqqqocaaeqhbniaaalmblnaaabmqqka2abiqqdaaagqmqeaaabhaqeaaaaahpaaaaaaojaaaaakobefaaanmlpdaaamqmdaa1aaaalmaaaaadpoaaaaalqlaaaajqqkaaaeqmqmaaadkdqlaaaaaaqoaaaaaallaa2aadnpbaaaepopkaaanncnjaaaokapjaaabbcqeaaaaajpbaaaacpqqqgaacpqkme6aacqiaaaaaiqgaaaaapkaaaaaeqcaaaaaiqqqocaaiqheqiaabqjgqeaaadmqmaa6aaamfaaaaacphaaaaahqiaaaaappieaaaapqqpdaabqnellaaalojplaaaboqpga2aabpncaaaaaiokaaaaaafpbaaaaacqfaaaaaipbaaadknnaaaaiqqmeaaabnpoqh3abjpqgaaanpkqlaaafdeqhaaaaaiqhaaaaabnpfaaaaacnlaaamfdnoaaakqqofa5abmqqqmaajqngifaaiqpdaaaaaeolaaaaaammaaaaaamnaaaaadplaaaaamncaaa3aenqqhaaaimqqnaaaajqqdaaaapqgaaaaakljcaaaabhpncaaadehqkaaclplica6aaannaaaaahqdaaaaamlaaaaaaogaaaaabqmqldaacqpjjpcaalmbdqgaabnqqpb2aallcaaaadqqiaaaagmiiaaaaafgmaaaaaaljaaaaaapgdfaaanqnpjaabmmmmba2acqkaaaaahqqdaaaadkmiaaaaaahkaaaaaakmaaaaaippmfaacqqqqpcacpommha3aanqqfaaafpglnaaaaccniaaaaeqpcaaaadlpqfaaaaacplaaadejqgaaapqqkaa8aahkqjaaaapqnpbaaaknkqcaaabqqlaaaaiqqfaaaapiohaaaaqhqeaaaajqoaaa4aaagqcaaaacppaaaaapqdcdaahqhdplaahqooqfaabhmqkaaaaahqeaaaaakpaaa0aacopfaaaakqqpbaadqkkqeaafqaaogaafqgamhaabpnengaaalqqpaaaaclneaa4aaadphaaaaanodaaaagpcggaacpeapiaaimaeqbaalomqkaaacihpeaaaaadqcaa5aagpqqdaaaoqggbaadofaaaaalpieaaaabkmqiaaaaaafqaaaaafnoaaaaeqodaa3aagoqlaaagoheqeaahhafqcaaaaoqfaaaaaenlaaaaaaaliaaaacekmaaajqqlda9abknjcaaacmemkaaaaofllaaaaciipcaaaaaamfaaaaaaemaaaebailaaalqqoda1aalkaaaaaanpaaaaaamqfaaaabpqfaaaaadnkaaaaaakoaaaaaflqjfbaamqqqqm0aaemnfaaaaoqqqeaagncbliaaglaaiiaaeqaakiaaeqeiqdaaaqqqmaaaaepodaa5aakmqqiaaeqqlfeaakmdaaaaamlaaaaaagqoiaaaaafkqdaaaaeiqdaaaanqlaaa5aalppqjaaeqoijdaaemaaaaaagqpdaaaadllmaaaaaacqaaaacmjqaaaaalqiaaa3aakppleaabkfhqkaaaabooaaaaalnaaaaaafqfaaaaabkoaaaaachpdaaaglqiaa0aaconaaaaakppiaaacqhepaaaeqeanhaaeqbakiaaeqfbmlaabponqdaaadmnfaa2aalqkaaaagpqqgaaaaaclmaaaaaajiaaaaaepcaaabjpjdaaaaqqqqhaaaknieba9aagpfaaaabpppdaaacqgloaaaapopqbaaadikqfaaaaadqiaaaaekqiaaahmnmba9abjqnhaaahoekmaaagpjqlaaaajlhoaaaaaaapcaaaaaalgaadnifofaaajonkba0aaajogaaaaknencaacoaakgaaejaagiaafiaaihaaclbajfaaaglendaaablqmaa7aadlqpcaaeqkeqeaahgafqbaaaaakmaaaaajqqkaaaagpgbaaaanjaaaaabpcaaa3abgmpfaaahooqhaaaacokaaaaalqcaaaaaclqmaaaaaaeohaaacefohaaagqoiaa2aaipmbaaainimgaaaecaigaaaaabncaaaaajhaaaaafnaeeaaakmjplaaajqjhba7aagqqgaaafnfhnaaabbaflaaaaafooiaaaafqicaaaaiiaaaaabodaaaaahmaaaa3aagpqkaaadqlpkaaaekkqeaaaaeqpdaaaabjqpcaaaaadqgaaadjmqfaaajqqiaa6aaanbaaaaakmbaaaaaodaaaaaeoaefaaahqehohaadoaaemaaakkekmaaabjqoca9aaaaindaaaamllfaaaliiqaaacqqqpaaacqlhkaaaaaaihaaaaaakiaaaaaajhaa4aabodaaaaaioadaaabqekmaaahocpfaaanolqqjaaiqqoeaaaaapjaaaaacqfaaa3ablqqmaaaiqnqqdaabfhqoaaaaalqeaaaaacpjaaaaaalnaaaadhpoaaaaoqqgaa1aaalqfaaaaakqfaaaaeqqfaaalqqqdaaafioqcaaaaaoqcaaaaalqcaaaaaiqiaa4aaaipaaaaafqgaaaabokahhaafqdbqhaaiqlnqdaablpqndaaaahqbaaaaamkaaa8aaenpjaaaeogfqaaahmccqaaaeqpohaaaajqqfaaaakgipcaaaljenlaaacoqpga8aagipnbaabqqlpeaaapjipcaaakqqkaaaanqkaaaaepkmaaaacpfpaaaaaiqkaaa7abimqqdaafoikpaaaacfomcaadpqpmiaadgohaaaaacpbaaaaakiaaaaaaoeaaaa8aakoibaaacqogbaaaappipaaaafqqkaaaamppmaaaeqgeqgaaiqkiqiaabimomba0aajpfaaaadppqeaaakoajoaaaimaamfaaiiaakiaafoaamiaaaqhmqeaaajqphaa5aeqqqpdaalqoiibaamodaaaaaiqeaaaaacqjaaaaaakmaaaaabolaaaaafqdaaaa5aacmqqhaaaknhidaacpgaaaaalohfbaaafqqqpgaaaeeeoiaaaaehofaaacppfaa6aadlaaaaaajnaaaaaapeaaaaacpabaaaaepoqncaadqldhmaaangdioaaaeoqoha9aabnkbaaaamghkaaaakklpaaaaboqqfaaaaaakkaaaaaaflaaaceeolaaaclpqfa7aagpqdaaadqmpiaaaaeaogaaaaacqgcaaaeoqqiaaapqhaaaaagqaaaaaahjaaaa5aaioqqbaagqqidaaaoobaaaaakpeaaaaadpqgaaaaabipcaaaacnpaaaaakqeaaa3abnqqkaaaipippaaadifqgaaaaaeqjaaaaaagqfaaaaaafqaaaiggnmaabpqqoda4aaagmaaaaacpfaaaaamiacgaaepabniaagqcgobaaiqqqgaaabfiqbaaaaadlaaa7aagmkoiaaaponqdaabmajlaaaaaeqicaaajqqqjaaacpgaaaaadpbaaaaailaaaa7aahpqpaaacpcfqbaaaaaknaaaaadolcaaagqqqiaaafnhaaaaadpbaaaaakmaaaa5aadkpiaaaamoibaaabqdaaaaacqjlqdaaeqojphaabeaapdaaaadmiaaaackiaaa0aajniaaaaanqqmaaacqhgpdaaioaaidaafoaaiiaacqnloeaadqpqgaaaagoiaaa2aclqpgaaalpjonaaahbanjaaaaabqiaaaablnbaaaafqfaaaacpjceeaacpqqqqb9aajmngaaaaqiipcaaaqkjqfaaaemlmfaaaaaaiiaaaaaajhaaaiehqcaaakqqhaa0aajpgaaaacqqqhaaaeoflnaaahmaameaailaahfaaenbbkgaacqppobaaaipleaa5aaaiqqhaaapqkibaadqmfaaaaiqqqdaaailcnjaaaaaalnaaaaaamlaaaaalocaa9aaiqlbaaaaocfjaaaaobfmaaaagqqobaaaadhkhaaaaaaemaaagbacoaaajqqqma2adppdaaaaiomkaaaaflgoaaaaaahoaaaaaakmaaaaaapjaaaablqmifaafqqqqqa9aahmlbaaaamkfoaaagnndpaaaijlqiaaablkjlbaaaaaangaaaaaakmaaaimqnca0aadnndaaaaoihpbaadqaajgaagnaaeiaaejaaeiaabnaafiaaaohaleaaadpqoaa8aaacpfaaaacekmaaadpokiaaaipbleaaabipqaaaaaagqmbaaaaeopeaaaacolaa1aadillbaaadqqmaaaacpqmaaaaaqqhaaaabpqkaaaabqqgaaaadqqfaaaacpqgaa5aalkimbaaaqnmkaaafocaaaaahqqniaaaaeeiqhaaaaaajiaaajehqfaaaoqohaa6aaameaaaaagobaaaaaocaaaaacobecaaaeqpmpfaadqgaflaaajlenfaaablqjaa6aaaipdaaaabplcaaaanqbaaaadqoaaaaadqpfaaaadpqlohaaalqggpaaaakomia1aaadmmcaaahpqqaaaepjoqdaacaaoqaaaaaaoqaaaaaapnaaaaaaqobaaaadqnca5adlpmhbaaeqnljgaaepaaaaaadqiaaaaaalqiaaaaaanmaaaabhqdaaaafngaaaa';
+</script>
+<script>
+// ===================== Hessian lab engine (DOM-free) =====================
+"use strict";
+// ---------- RNG ----------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeGauss(rng){let spare=null;return function(){if(spare!==null){const s=spare;spare=null;return s}let u,v,s;do{u=2*rng()-1;v=2*rng()-1;s=u*u+v*v}while(s>=1||s===0);const m=Math.sqrt(-2*Math.log(s)/s);spare=v*m;return u*m}}
+function permutation(n,rng){const p=new Int32Array(n);for(let i=0;i<n;i++)p[i]=i;for(let i=n-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=p[i];p[i]=p[j];p[j]=t}return p}
+
+// ---------- tape-based vectorised reverse-mode autodiff ----------
+// A tensor is a row-major r×c Float64Array with an optional gradient buffer.
+let TAPE=[];
+class T{constructor(v,r,c,back,parents){this.v=v;this.r=r;this.c=c;this.g=null;this.back=back||null;this.p=parents||null}
+  grad(){if(!this.g)this.g=new Float64Array(this.v.length);return this.g}}
+function rec(t){TAPE.push(t);return t}
+function konst(v,r,c){return new T(v,r,c)}
+function leaf(v,g,r,c){const t=new T(v,r,c);t.g=g;t.leaf=true;return t}
+function matmul(A,B){const n=A.r,k=A.c,m=B.c,out=new Float64Array(n*m),a=A.v,b=B.v;
+  for(let i=0;i<n;i++){const io=i*m,ia=i*k;for(let l=0;l<k;l++){const x=a[ia+l];if(x===0)continue;const lb=l*m;for(let j=0;j<m;j++)out[io+j]+=x*b[lb+j]}}
+  const C=new T(out,n,m,null,[A,B]);
+  C.back=()=>{const g=C.g;if(A.back||A.leaf){const ga=A.grad();for(let i=0;i<n;i++){const io=i*m,ia=i*k;for(let l=0;l<k;l++){let s=0;const lb=l*m;for(let j=0;j<m;j++)s+=g[io+j]*b[lb+j];ga[ia+l]+=s}}}
+    if(B.back||B.leaf){const gb=B.grad();for(let i=0;i<n;i++){const io=i*m,ia=i*k;for(let l=0;l<k;l++){const x=a[ia+l];if(x===0)continue;const lb=l*m;for(let j=0;j<m;j++)gb[lb+j]+=x*g[io+j]}}}};
+  return rec(C)}
+function addBias(A,b){const n=A.r,m=A.c,out=new Float64Array(n*m);for(let i=0;i<n;i++)for(let j=0;j<m;j++)out[i*m+j]=A.v[i*m+j]+b.v[j];
+  const C=new T(out,n,m,null,[A,b]);C.back=()=>{const g=C.g;if(A.back||A.leaf){const ga=A.grad();for(let q=0;q<g.length;q++)ga[q]+=g[q]}if(b.back||b.leaf){const gb=b.grad();for(let i=0;i<n;i++)for(let j=0;j<m;j++)gb[j]+=g[i*m+j]}};return rec(C)}
+function unary(A,f,fp){const n=A.v.length,out=new Float64Array(n),d=new Float64Array(n);for(let q=0;q<n;q++){out[q]=f(A.v[q]);d[q]=fp(A.v[q])}
+  const C=new T(out,A.r,A.c,null,[A]);C.back=()=>{if(!(A.back||A.leaf))return;const ga=A.grad(),g=C.g;for(let q=0;q<n;q++)ga[q]+=g[q]*d[q]};return rec(C)}
+function binop(A,B,kind){const n=A.v.length,out=new Float64Array(n),a=A.v,b=B.v;
+  if(kind===0)for(let q=0;q<n;q++)out[q]=a[q]+b[q];else if(kind===1)for(let q=0;q<n;q++)out[q]=a[q]-b[q];else for(let q=0;q<n;q++)out[q]=a[q]*b[q];
+  const C=new T(out,A.r,A.c,null,[A,B]);C.back=()=>{const g=C.g;
+    if(A.back||A.leaf){const ga=A.grad();if(kind===2)for(let q=0;q<n;q++)ga[q]+=g[q]*b[q];else for(let q=0;q<n;q++)ga[q]+=g[q]}
+    if(B.back||B.leaf){const gb=B.grad();if(kind===2)for(let q=0;q<n;q++)gb[q]+=g[q]*a[q];else if(kind===1)for(let q=0;q<n;q++)gb[q]-=g[q];else for(let q=0;q<n;q++)gb[q]+=g[q]}};return rec(C)}
+const add=(A,B)=>binop(A,B,0),sub=(A,B)=>binop(A,B,1),mul=(A,B)=>binop(A,B,2);
+function mulConst(A,c){const n=A.v.length,out=new Float64Array(n);for(let q=0;q<n;q++)out[q]=A.v[q]*c[q%c.length];
+  const C=new T(out,A.r,A.c,null,[A]);C.back=()=>{if(!(A.back||A.leaf))return;const ga=A.grad(),g=C.g;for(let q=0;q<n;q++)ga[q]+=g[q]*c[q%c.length]};return rec(C)}
+function scale(A,s){return mulConst(A,[s])}
+function addConst(A,c){const n=A.v.length,out=new Float64Array(n);for(let q=0;q<n;q++)out[q]=A.v[q]+c[q%c.length];
+  const C=new T(out,A.r,A.c,null,[A]);C.back=()=>{if(!(A.back||A.leaf))return;const ga=A.grad(),g=C.g;for(let q=0;q<n;q++)ga[q]+=g[q]};return rec(C)}
+function sumSq(A){let s=0;for(const x of A.v)s+=x*x;const C=new T(new Float64Array([s]),1,1,null,[A]);
+  C.back=()=>{if(!(A.back||A.leaf))return;const ga=A.grad(),g=C.g[0];for(let q=0;q<A.v.length;q++)ga[q]+=2*g*A.v[q]};return rec(C)}
+function softmaxCE(Z,y){const n=Z.r,m=Z.c,P=new Float64Array(n*m);let L=0;
+  for(let i=0;i<n;i++){let mx=-Infinity;for(let j=0;j<m;j++)mx=Math.max(mx,Z.v[i*m+j]);let s=0;for(let j=0;j<m;j++){const e=Math.exp(Z.v[i*m+j]-mx);P[i*m+j]=e;s+=e}
+    for(let j=0;j<m;j++)P[i*m+j]/=s;L-=Math.log(Math.max(P[i*m+y[i]],1e-300))}
+  const C=new T(new Float64Array([L/n]),1,1,null,[Z]);C.probs=P;
+  C.back=()=>{const gz=Z.grad(),g=C.g[0]/n;for(let i=0;i<n;i++)for(let j=0;j<m;j++)gz[i*m+j]+=g*(P[i*m+j]-(j===y[i]?1:0))};return rec(C)}
+function addScalars(list,w){let s=0;list.forEach((t,i)=>s+=w[i]*t.v[0]);const C=new T(new Float64Array([s]),1,1,null,list);
+  C.back=()=>{list.forEach((t,i)=>{t.grad()[0]+=w[i]*C.g[0]})};return rec(C)}
+function backward(root,seed){for(const t of TAPE)if(t.g&&!t.leaf)t.g.fill(0);root.grad();if(seed)root.g.set(seed);else root.g[0]=1;
+  for(let i=TAPE.length-1;i>=0;i--){const t=TAPE[i];if(t.back&&t.g)t.back()}}
+
+// ---------- activations: value, first, second, third derivative ----------
+const ACT={
+  tanh:{f:Math.tanh,d1:z=>{const t=Math.tanh(z);return 1-t*t},d2:z=>{const t=Math.tanh(z);return -2*t*(1-t*t)},d3:z=>{const t=Math.tanh(z);return -2*(1-t*t)*(1-3*t*t)}},
+  relu:{f:z=>z>0?z:0,d1:z=>z>0?1:0,d2:()=>0,d3:()=>0},
+  softplus:{f:z=>z>30?z:Math.log1p(Math.exp(z)),d1:z=>1/(1+Math.exp(-z)),d2:z=>{const s=1/(1+Math.exp(-z));return s*(1-s)},d3:z=>{const s=1/(1+Math.exp(-z));return s*(1-s)*(1-2*s)}},
+  sin:{f:Math.sin,d1:Math.cos,d2:z=>-Math.sin(z),d3:z=>-Math.cos(z)}};
+const actf=(Z,a)=>unary(Z,ACT[a].f,ACT[a].d1),act1=(Z,a)=>unary(Z,ACT[a].d1,ACT[a].d2),act2=(Z,a)=>unary(Z,ACT[a].d2,ACT[a].d3);
+
+// ---------- MLP layout ----------
+function layout(sizes){const L=[];let off=0;for(let l=0;l<sizes.length-1;l++){const r=sizes[l],c=sizes[l+1];
+  L.push({l,name:'W'+(l+1),off,r,c,size:r*c,kind:'W'});off+=r*c;L.push({l,name:'b'+(l+1),off,r:1,c,size:c,kind:'b'});off+=c}return{blocks:L,P:off,sizes}}
+function layerGroups(lay){const n=lay.sizes.length-1,g=[];for(let l=0;l<n;l++){const bl=lay.blocks.filter(b=>b.l===l);g.push({l,start:bl[0].off,size:bl.reduce((s,b)=>s+b.size,0),label:'L'+(l+1)+' ('+lay.sizes[l]+'→'+lay.sizes[l+1]+')'})}return g}
+function initParams(lay,act,rng){const g=makeGauss(rng),th=new Float64Array(lay.P);
+  for(const b of lay.blocks){if(b.kind!=='W')continue;const s=act==='relu'?Math.sqrt(2/b.r):Math.sqrt(2/(b.r+b.c));for(let q=0;q<b.size;q++)th[b.off+q]=g()*s}return th}
+function leaves(lay,th,gr){return lay.blocks.map(b=>leaf(th.subarray(b.off,b.off+b.size),gr.subarray(b.off,b.off+b.size),b.r,b.c))}
+function mlp(X,lv,act,nl){let H=X;for(let l=0;l<nl;l++){H=addBias(matmul(H,lv[2*l]),lv[2*l+1]);if(l<nl-1)H=actf(H,act)}return H}
+// forward Taylor propagation of (u, u_x, u_xx) for a scalar input
+function mlpTaylor(X,lv,act,nl){const n=X.r;let H=X,H1=konst(new Float64Array(n).fill(1),n,1),H2=null;
+  for(let l=0;l<nl;l++){const W=lv[2*l],b=lv[2*l+1];const Z=addBias(matmul(H,W),b),Z1=matmul(H1,W),Z2=H2?matmul(H2,W):null;
+    if(l===nl-1){H=Z;H1=Z1;H2=Z2;break}
+    const s1=act1(Z,act);H=actf(Z,act);const nH1=mul(s1,Z1);let nH2=mul(act2(Z,act),mul(Z1,Z1));if(Z2)nH2=add(nH2,mul(s1,Z2));H1=nH1;H2=nH2}
+  return{u:H,ux:H1,uxx:H2||konst(new Float64Array(n),n,1)}}
+
+// ---------- datasets / objectives ----------
+function loadDigits(raw,pool,classes){const X=[],y=[];const per=65;
+  for(let s=0;s<raw.length;s+=per){const lab=+raw[s];if(lab>=classes)continue;const px=[];for(let q=1;q<per;q++)px.push(raw.charCodeAt(s+q)-97);
+    if(pool){const p=[];for(let a=0;a<4;a++)for(let b=0;b<4;b++){let m=0;for(let u=0;u<2;u++)for(let v=0;v<2;v++)m+=px[(2*a+u)*8+2*b+v];p.push(m/4)}X.push(p)}else X.push(px);y.push(lab)}
+  const d=X[0].length,n=X.length,mean=new Float64Array(d);for(const x of X)for(let j=0;j<d;j++)mean[j]+=x[j]/n;
+  const flat=new Float64Array(n*d);X.forEach((x,i)=>{for(let j=0;j<d;j++)flat[i*d+j]=(x[j]-mean[j])/16});return{X:flat,y:Int32Array.from(y),n,d}}
+function buildProblem(cfg){const rng=mulberry32(cfg.dataSeed|0||1),g=makeGauss(rng);
+  if(cfg.obj==='digits'){const D=loadDigits(DIGITS_RAW,cfg.pool,cfg.classes);const nTr=Math.round(D.n*0.8);
+    const sl=(a,b)=>({X:D.X.subarray(a*D.d,b*D.d),y:D.y.subarray(a,b),n:b-a});
+    return{kind:'ce',din:D.d,dout:cfg.classes,train:sl(0,nTr),test:sl(nTr,D.n),label:'Digits '+(cfg.pool?'4×4':'8×8')+', '+cfg.classes+' classes',ls:false}}
+  if(cfg.obj==='teacher'){const d=cfg.tdim,n=320,X=new Float64Array(n*d);for(let q=0;q<X.length;q++)X[q]=g();
+    const lay=layout([d,cfg.twidth,1]);const th=initParams(lay,'tanh',rng);for(let q=0;q<th.length;q++)th[q]*=1.6;
+    TAPE=[];const lv=leaves(lay,th,new Float64Array(lay.P));const Y=mlp(konst(X,n,d),lv,'tanh',2).v;TAPE=[];
+    const y=new Float64Array(n);for(let i=0;i<n;i++)y[i]=Y[i]+cfg.noise*g();const nTr=256;
+    return{kind:'mse',din:d,dout:1,train:{X:X.subarray(0,nTr*d),y:y.subarray(0,nTr),n:nTr},test:{X:X.subarray(nTr*d),y:y.subarray(nTr),n:n-nTr},label:'Teacher regression, d = '+d,ls:true}}
+  // PINN problems on (0,1) with hard constraint u = x(1-x) NN(x)
+  const a=cfg.obj==='poisson'?2*Math.PI:6*Math.PI,k2=cfg.obj==='helmholtz'?cfg.k*cfg.k:0;
+  const us=x=>x*(1-x)*Math.sin(a*x),uss=x=>-2*Math.sin(a*x)+2*(1-2*x)*a*Math.cos(a*x)-x*(1-x)*a*a*Math.sin(a*x);
+  const f=x=>uss(x)+k2*us(x);const N=cfg.ncol,X=new Float64Array(N);for(let i=0;i<N;i++)X[i]=(i+rng())/N;
+  const F=X.map(f);let rms=0;for(const v of F)rms+=v*v;rms=Math.sqrt(rms/N)||1;
+  const grid=new Float64Array(201).map((_,i)=>i/200);
+  return{kind:'pinn',din:1,dout:1,train:{X,F,n:N},grid,uStar:grid.map(us),k2,rms,ls:true,
+    label:cfg.obj==='poisson'?'PINN Poisson-1D, u″ = f':'PINN Helmholtz-1D, u″ + k²u = f, k = '+cfg.k}}
+
+// Build the loss graph for a batch. Returns {loss, resid?} tensors (TAPE filled).
+function forward(prob,lay,act,th,gr,batch,l2){TAPE=[];const lv=leaves(lay,th,gr),nl=lay.sizes.length-1;
+  if(prob.kind==='pinn'){const n=batch.n,x=batch.X,g0=new Float64Array(n),g1=new Float64Array(n),g2=new Float64Array(n).fill(-2);
+    for(let i=0;i<n;i++){g0[i]=x[i]*(1-x[i]);g1[i]=1-2*x[i]}
+    const o=mlpTaylor(konst(x,n,1),lv,act,nl);
+    const uxx=add(add(mulConst(o.u,g2),scale(mulConst(o.ux,g1),2)),mulConst(o.uxx,g0));
+    let r=uxx;if(prob.k2)r=add(r,scale(mulConst(o.u,g0),prob.k2));
+    const c=new Float64Array(n);for(let i=0;i<n;i++)c[i]=-batch.F[i];r=addConst(r,c);r=scale(r,1/(prob.rms*Math.sqrt(n)));
+    return{loss:withL2(sumSq(r),lv,l2),resid:r}}
+  const Xt=konst(batch.X,batch.n,prob.din),Z=mlp(Xt,lv,act,nl);
+  if(prob.kind==='ce')return{loss:withL2(softmaxCE(Z,batch.y),lv,l2),out:Z};
+  const c=new Float64Array(batch.n);for(let i=0;i<batch.n;i++)c[i]=-batch.y[i];const r=scale(addConst(Z,c),1/Math.sqrt(batch.n));
+  return{loss:withL2(sumSq(r),lv,l2),resid:r}}
+function withL2(L,lv,l2){if(!l2)return L;const W=lv.filter((_,i)=>i%2===0).map(w=>scale(sumSq(w),l2/2));return addScalars([L,...W],[1,...W.map(()=>1)])}
+function lossGrad(prob,lay,act,th,batch,l2){const gr=new Float64Array(lay.P);const o=forward(prob,lay,act,th,gr,batch,l2);backward(o.loss);TAPE=[];return{L:o.loss.v[0],g:gr}}
+function lossOnly(prob,lay,act,th,batch,l2){const o=forward(prob,lay,act,th,new Float64Array(lay.P),batch,l2);TAPE=[];return o.loss.v[0]}
+// Jacobian of the residual vector (rows = residual terms), via one reverse pass per row.
+function jacobian(prob,lay,act,th,batch){const gr=new Float64Array(lay.P);const o=forward(prob,lay,act,th,gr,batch,0);const n=o.resid.v.length,J=new Float64Array(n*lay.P),e=new Float64Array(n);
+  for(let i=0;i<n;i++){gr.fill(0);e.fill(0);e[i]=1;backward(o.resid,e);J.set(gr,i*lay.P)}const r=Float64Array.from(o.resid.v);TAPE=[];return{J,r,n}}
+function evalMetric(prob,lay,act,th){if(prob.kind==='ce'){const gr=new Float64Array(lay.P);const o=forward(prob,lay,act,th,gr,prob.test,0);const P=o.loss.probs||TAPE.find(t=>t.probs).probs;TAPE=[];
+    let ok=0;const m=prob.dout;for(let i=0;i<prob.test.n;i++){let b=0;for(let j=1;j<m;j++)if(P[i*m+j]>P[i*m+b])b=j;if(b===prob.test.y[i])ok++}return ok/prob.test.n}
+  if(prob.kind==='mse')return lossOnly(prob,lay,act,th,prob.test,0);
+  TAPE=[];const lv=leaves(lay,th,new Float64Array(lay.P));const nl=lay.sizes.length-1;const o=mlp(konst(prob.grid,prob.grid.length,1),lv,act,nl);TAPE=[];
+  let e=0,s=0;for(let i=0;i<prob.grid.length;i++){const x=prob.grid[i],u=x*(1-x)*o.v[i];e+=(u-prob.uStar[i])**2;s+=prob.uStar[i]**2}return Math.sqrt(e/s)}
+function predictPINN(prob,lay,act,th){TAPE=[];const lv=leaves(lay,th,new Float64Array(lay.P));const o=mlp(konst(prob.grid,prob.grid.length,1),lv,act,lay.sizes.length-1);TAPE=[];return prob.grid.map((x,i)=>x*(1-x)*o.v[i])}
+
+// ---------- curvature ----------
+function hessianFD(prob,lay,act,th,set,l2,eps){const P=lay.P,H=new Float64Array(P*P),tp=Float64Array.from(th);
+  for(let j=0;j<P;j++){const t0=tp[j];tp[j]=t0+eps;const gp=lossGrad(prob,lay,act,tp,set,l2).g;tp[j]=t0-eps;const gm=lossGrad(prob,lay,act,tp,set,l2).g;tp[j]=t0;
+    for(let i=0;i<P;i++)H[i*P+j]=(gp[i]-gm[i])/(2*eps)}
+  for(let i=0;i<P;i++)for(let j=i+1;j<P;j++){const m=.5*(H[i*P+j]+H[j*P+i]);H[i*P+j]=m;H[j*P+i]=m}return H}
+function gaussNewton(prob,lay,act,th,set,l2){const{J,n}=jacobian(prob,lay,act,th,set),P=lay.P,G=new Float64Array(P*P);
+  for(let r=0;r<n;r++){const o=r*P;for(let i=0;i<P;i++){const a=2*J[o+i];if(a===0)continue;const gi=i*P;for(let j=i;j<P;j++)G[gi+j]+=a*J[o+j]}}
+  for(let i=0;i<P;i++){G[i*P+i]+=l2;for(let j=i+1;j<P;j++)G[j*P+i]=G[i*P+j]}return G}
+
+// ---------- symmetric eigensolver: Householder tridiagonalisation + implicit QL (JAMA tred2/tql2) ----------
+function symEig(A,n){const V=new Float64Array(n*n);V.set(A);const d=new Float64Array(n),e=new Float64Array(n);const v=(i,j)=>i*n+j;
+  for(let j=0;j<n;j++)d[j]=V[v(n-1,j)];
+  for(let i=n-1;i>0;i--){let scale=0,h=0;for(let k=0;k<i;k++)scale+=Math.abs(d[k]);
+    if(scale===0){e[i]=d[i-1];for(let j=0;j<i;j++){d[j]=V[v(i-1,j)];V[v(i,j)]=0;V[v(j,i)]=0}}
+    else{for(let k=0;k<i;k++){d[k]/=scale;h+=d[k]*d[k]}let f=d[i-1],g=Math.sqrt(h);if(f>0)g=-g;e[i]=scale*g;h-=f*g;d[i-1]=f-g;for(let j=0;j<i;j++)e[j]=0;
+      for(let j=0;j<i;j++){f=d[j];V[v(j,i)]=f;g=e[j]+V[v(j,j)]*f;for(let k=j+1;k<=i-1;k++){g+=V[v(k,j)]*d[k];e[k]+=V[v(k,j)]*f}e[j]=g}
+      f=0;for(let j=0;j<i;j++){e[j]/=h;f+=e[j]*d[j]}const hh=f/(h+h);for(let j=0;j<i;j++)e[j]-=hh*d[j];
+      for(let j=0;j<i;j++){f=d[j];g=e[j];for(let k=j;k<=i-1;k++)V[v(k,j)]-=(f*e[k]+g*d[k]);d[j]=V[v(i-1,j)];V[v(i,j)]=0}}d[i]=h}
+  for(let i=0;i<n-1;i++){V[v(n-1,i)]=V[v(i,i)];V[v(i,i)]=1;const h=d[i+1];
+    if(h!==0){for(let k=0;k<=i;k++)d[k]=V[v(k,i+1)]/h;for(let j=0;j<=i;j++){let g=0;for(let k=0;k<=i;k++)g+=V[v(k,i+1)]*V[v(k,j)];for(let k=0;k<=i;k++)V[v(k,j)]-=g*d[k]}}
+    for(let k=0;k<=i;k++)V[v(k,i+1)]=0}
+  for(let j=0;j<n;j++){d[j]=V[v(n-1,j)];V[v(n-1,j)]=0}V[v(n-1,n-1)]=1;e[0]=0;
+  // tql2
+  for(let i=1;i<n;i++)e[i-1]=e[i];e[n-1]=0;let f=0,tst1=0;const eps=Math.pow(2,-52);
+  for(let l=0;l<n;l++){tst1=Math.max(tst1,Math.abs(d[l])+Math.abs(e[l]));let m=l;while(m<n){if(Math.abs(e[m])<=eps*tst1)break;m++}
+    if(m>l){let iter=0;do{iter++;let g=d[l],p=(d[l+1]-g)/(2*e[l]),r=Math.hypot(p,1);if(p<0)r=-r;d[l]=e[l]/(p+r);d[l+1]=e[l]*(p+r);const dl1=d[l+1];let h=g-d[l];
+        for(let i=l+2;i<n;i++)d[i]-=h;f+=h;p=d[m];let c=1,c2=c,c3=c,el1=e[l+1],s=0,s2=0;
+        for(let i=m-1;i>=l;i--){c3=c2;c2=c;s2=s;g=c*e[i];h=c*p;r=Math.hypot(p,e[i]);e[i+1]=s*r;s=e[i]/r;c=p/r;p=c*d[i]-s*g;d[i+1]=h+s*(c*g+s*d[i]);
+          for(let k=0;k<n;k++){h=V[v(k,i+1)];V[v(k,i+1)]=s*V[v(k,i)]+c*h;V[v(k,i)]=c*V[v(k,i)]-s*h}}
+        p=-s*s2*c3*el1*e[l]/dl1;e[l]=s*p;d[l]=c*p}while(Math.abs(e[l])>eps*tst1&&iter<60)}
+    d[l]=d[l]+f;e[l]=0}
+  // sort descending; return vals and V with columns = eigenvectors
+  const ord=Array.from({length:n},(_,i)=>i).sort((a,b)=>d[b]-d[a]);const vals=new Float64Array(n),W=new Float64Array(n*n);
+  for(let c=0;c<n;c++){vals[c]=d[ord[c]];for(let k=0;k<n;k++)W[k*n+c]=V[k*n+ord[c]]}return{vals,V:W}}
+const col=(V,n,c)=>{const x=new Float64Array(n);for(let k=0;k<n;k++)x[k]=V[k*n+c];return x};
+const dot=(a,b)=>{let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s};
+const norm=a=>Math.sqrt(dot(a,a));
+const ipr=v=>{let s=0;for(const x of v)s+=x*x*x*x;return s};
+function dispSI(a,b){let p=0,m=0;for(let i=0;i<a.length;i++){const u=a[i]-b[i],w=a[i]+b[i];p+=u*u;m+=w*w}return Math.min(p,m)/a.length}
+
+// ---------- optimisers ----------
+function cg(matvec,b,K,precond){const n=b.length,x=new Float64Array(n),r=Float64Array.from(b),z=precond?precond(r):Float64Array.from(r),p=Float64Array.from(z);let rz=dot(r,z);
+  for(let k=0;k<K;k++){const Ap=matvec(p),pAp=dot(p,Ap);if(!(pAp>0))break;const al=rz/pAp;for(let i=0;i<n;i++){x[i]+=al*p[i];r[i]-=al*Ap[i]}
+    if(norm(r)<1e-14*norm(b))break;const z2=precond?precond(r):Float64Array.from(r);const rz2=dot(r,z2);const be=rz2/rz;rz=rz2;for(let i=0;i<n;i++)p[i]=z2[i]+be*p[i]}return x}
+function cholesky(A,n){const L=new Float64Array(n*n);for(let i=0;i<n;i++)for(let j=0;j<=i;j++){let s=A[i*n+j];for(let k=0;k<j;k++)s-=L[i*n+k]*L[j*n+k];if(i===j){if(s<=0)s=1e-300;L[i*n+i]=Math.sqrt(s)}else L[i*n+j]=s/L[j*n+j]}return L}
+function cholSolve(L,n,b){const y=new Float64Array(n);for(let i=0;i<n;i++){let s=b[i];for(let k=0;k<i;k++)s-=L[i*n+k]*y[k];y[i]=s/L[i*n+i]}for(let i=n-1;i>=0;i--){let s=y[i];for(let k=i+1;k<n;k++)s-=L[k*n+i]*y[k];y[i]=s/L[i*n+i]}return y}
+// One damped Gauss–Newton step (Algorithm 1 of LANCE, with an explicit small Jacobian):
+// (G + λI) d = ∇L, G = JᵀJ, K CG iterations, optional layer-aware preconditioner, Armijo backtracking.
+function gnStep(st,prob,lay,act,th,batch,l2,K,layerAware){const{J,r,n}=jacobian(prob,lay,act,th,batch),P=lay.P;const lam=st.lam;
+  const g=new Float64Array(P);for(let q=0;q<n;q++){const o=q*P,rq=2*r[q];for(let i=0;i<P;i++)g[i]+=rq*J[o+i]}for(let i=0;i<P;i++)g[i]+=l2*th[i];
+  const L0=dot(r,r)+(l2?l2/2*wsq(lay,th):0);
+  const mv=v=>{const Jv=new Float64Array(n);for(let q=0;q<n;q++){let s=0;const o=q*P;for(let i=0;i<P;i++)s+=J[o+i]*v[i];Jv[q]=s}const out=new Float64Array(P);for(let q=0;q<n;q++){const o=q*P,a=Jv[q];for(let i=0;i<P;i++)out[i]+=a*J[o+i]}for(let i=0;i<P;i++)out[i]+=(lam+l2)*v[i];return out};
+  let pre=null;
+  if(layerAware){const groups=layerGroups(lay);const diag=new Float64Array(P);for(let q=0;q<n;q++){const o=q*P;for(let i=0;i<P;i++)diag[i]+=J[o+i]*J[o+i]}const tot=diag.reduce((a,b)=>a+b,0)||1;
+    const plan=groups.map(gp=>{let tau=0;for(let i=gp.start;i<gp.start+gp.size;i++)tau+=diag[i];const rho=(tau/tot)/(gp.size/P);
+      if(rho>1&&gp.size<=512){const m=gp.size,B=new Float64Array(m*m);for(let q=0;q<n;q++){const o=q*P+gp.start;for(let i=0;i<m;i++){const a=J[o+i];if(!a)continue;for(let j=0;j<=i;j++)B[i*m+j]+=a*J[o+j]}}
+        for(let i=0;i<m;i++){B[i*m+i]+=lam+l2;for(let j=0;j<i;j++)B[j*m+i]=B[i*m+j]}return{gp,exact:true,L:cholesky(B,m)}}
+      return{gp,exact:false,mu:tau/gp.size+lam+l2}});
+    st.exactLayers=plan.filter(p=>p.exact).map(p=>p.gp.l);
+    pre=v=>{const out=new Float64Array(P);for(const p of plan){const{start,size}=p.gp;if(p.exact){const s=cholSolve(p.L,size,v.subarray(start,start+size));out.set(s,start)}else for(let i=start;i<start+size;i++)out[i]=v[i]/p.mu}return out}}
+  const d=cg(mv,g,K,pre);let alpha=1;const gd=dot(g,d),tn=new Float64Array(P);let ok=false,Ln=L0;
+  for(let it=0;it<30;it++){for(let i=0;i<P;i++)tn[i]=th[i]-alpha*d[i];Ln=lossOnly(prob,lay,act,tn,batch,l2);if(Ln<=L0-1e-4*alpha*gd){ok=true;break}alpha/=2}
+  st.lam=Math.min(10,Math.max(1e-8,alpha===1&&ok?0.7*lam:1.5*lam));
+  if(!ok)return{upd:new Float64Array(P),L:L0,g};const upd=new Float64Array(P);for(let i=0;i<P;i++)upd[i]=-alpha*d[i];return{upd,L:L0,g}}
+function wsq(lay,th){let s=0;for(const b of lay.blocks)if(b.kind==='W')for(let q=0;q<b.size;q++)s+=th[b.off+q]**2;return s}
+// Returns the parameter update for one step (θ ← θ + upd)
+function optStep(name,st,cfg,prob,lay,act,th,batch,lr){const l2=cfg.l2;
+  if(name==='GN-CG'||name==='LANCE')return gnStep(st,prob,lay,act,th,batch,l2,cfg.K,name==='LANCE');
+  const{L,g}=lossGrad(prob,lay,act,th,batch,l2);const P=lay.P,upd=new Float64Array(P);
+  if(name==='SGD'){for(let i=0;i<P;i++)upd[i]=-lr*g[i]}
+  else if(name==='SAM'){const gn=norm(g)||1,tp=new Float64Array(P);for(let i=0;i<P;i++)tp[i]=th[i]+cfg.rho*g[i]/gn;const g2=lossGrad(prob,lay,act,tp,batch,l2).g;for(let i=0;i<P;i++)upd[i]=-lr*g2[i]}
+  else{st.t=(st.t||0)+1;if(!st.m){st.m=new Float64Array(P);st.v=new Float64Array(P)}const b1=.9,b2=.999,c1=1-b1**st.t,c2=1-b2**st.t;
+    for(let i=0;i<P;i++){st.m[i]=b1*st.m[i]+(1-b1)*g[i];st.v[i]=b2*st.v[i]+(1-b2)*g[i]*g[i];upd[i]=-lr*(st.m[i]/c1)/(Math.sqrt(st.v[i]/c2)+1e-8)}}
+  return{upd,L,g}}
+
+// ---------- experiment ----------
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function curvSet(cfg,prob){const n=Math.min(cfg.hessN||prob.train.n,prob.train.n);if(n>=prob.train.n||prob.kind==='pinn')return prob.train;const d=prob.din;return{X:prob.train.X.subarray(0,n*d),y:prob.train.y.subarray(0,n),n}}
+function curvature(cfg,prob,lay,th){const set=curvSet(cfg,prob);return cfg.curv==='gn'&&prob.ls?gaussNewton(prob,lay,cfg.act,th,set,cfg.l2):hessianFD(prob,lay,cfg.act,th,set,cfg.l2,cfg.eps)}
+function ckSteps(T,C){const s=new Set([0]);for(let c=1;c<=C;c++)s.add(Math.round(c*T/C));return[...s].sort((a,b)=>a-b)}
+async function runOptimiser(cfg,prob,lay,th0,name,onProg,shouldStop){const P=lay.P,K=cfg.topk,th=Float64Array.from(th0),st={lam:cfg.lam0},rng=mulberry32((cfg.seed|0)+99);
+  const steps=(name==='GN-CG'||name==='LANCE')?cfg.stepsGN:cfg.steps,cks=ckSteps(steps,cfg.ckpts),ckSet=new Set(cks),groups=layerGroups(lay);
+  const fullBatch=prob.kind==='pinn'||name==='GN-CG'||name==='LANCE'||cfg.batch>=prob.train.n;
+  const lrBase=name==='Adam'?cfg.lrAdam:name==='SAM'?cfg.lrSAM:cfg.lrSGD;
+  const out={name,steps:[],ck:[],batchLoss:new Float64Array(steps),P,lrBase,halve:cfg.halve,fullBatch};
+  let perm=permutation(prob.train.n,rng),pp=0,lastCk=null,t0=performance.now(),pending=null;
+  const sub=(idx)=>{const d=prob.din,n=idx.length;if(prob.kind==='pinn')return prob.train;const X=new Float64Array(n*d),y=prob.kind==='ce'?new Int32Array(n):new Float64Array(n);
+    idx.forEach((k,i)=>{X.set(prob.train.X.subarray(k*d,k*d+d),i*d);y[i]=prob.train.y[k]});return{X,y,n}};
+  const hn=curvSet(cfg,prob).n,ckW=Math.max(20,2*P*hn/(prob.kind==='ce'?60:prob.kind==='pinn'?6:120));const totalWork=steps+cks.length*ckW;let work=0;
+  for(let t=0;t<=steps;t++){
+    if(shouldStop&&shouldStop())throw new Error('stopped');
+    if(ckSet.has(t)){const C=curvature(cfg,prob,lay,th);const{vals,V}=symEig(C,P);const{L,g}=lossGrad(prob,lay,cfg.act,th,curvSet(cfg,prob),cfg.l2);const gn=norm(g)||1;const Lfull=lossOnly(prob,lay,cfg.act,th,prob.train,cfg.l2);
+      const top=[];for(let c=0;c<K;c++){const v=col(V,P,c);if(dot(v,g)>0)for(let i=0;i<P;i++)v[i]=-v[i];top.push(v)}
+      const alG=new Float64Array(P),alC=new Float64Array(P),iprAll=new Float64Array(P);let dth=null;
+      if(lastCk){dth=new Float64Array(P);for(let i=0;i<P;i++)dth[i]=th[i]-lastCk.theta[i]}const dn=dth?norm(dth)||1:1;
+      for(let c=0;c<P;c++){let sg=0,sd=0,s4=0;for(let k=0;k<P;k++){const x=V[k*P+c];sg+=x*g[k];if(dth)sd+=x*dth[k];s4+=x*x*x*x}
+        const sgn=sg>0?-1:1;alG[c]=Math.abs(sg)/gn;alC[c]=dth?sgn*sd/dn:NaN;iprAll[c]=s4}
+      const tiny=1e-10*Math.max(Math.abs(vals[0]),Math.abs(vals[P-1]),1e-300);for(let c=0;c<P;c++)if(Math.abs(vals[c])<tiny)vals[c]=0;
+      let neg=0,negMass=0,tr=0;for(const l of vals){if(l<0){neg++;negMass+=-l}tr+=Math.abs(l)}
+      const diag=new Float64Array(P);for(let i=0;i<P;i++)diag[i]=C[i*P+i];let dtot=0;for(const x of diag)dtot+=x;
+      const tau=groups.map(gp=>{let s=0;for(let i=gp.start;i<gp.start+gp.size;i++)s+=diag[i];return s});
+      const rec={step:t,loss:Lfull,metric:evalMetric(prob,lay,cfg.act,th),gnorm:Math.sqrt(dot(g,g)),vals,top,topVals:Array.from(vals.slice(0,K)),alG,alC,iprAll,
+        ipr:top.map(ipr),negFrac:neg/P,negMass:negMass/(tr||1),lmax:vals[0],lmin:vals[P-1],theta:Float64Array.from(th),tau,E:tau.map(x=>x/(dtot||1)),
+        Vfull:null,aGrad:top.map(v=>Math.abs(dot(v,g))/gn),aUpd:null,lr:lrBase*Math.pow(.5,cfg.halve?Math.floor(t/cfg.halve):0),exactLayers:null};
+      if(prob.kind==='pinn'&&cfg.keepPred)rec.pred=predictPINN(prob,lay,cfg.act,th);
+      out.ck.push(rec);pending=rec;lastCk=rec;work+=ckW;onProg&&onProg(work/totalWork);await tick();t0=performance.now();}
+    if(t===steps){if(pending){pending.aUpd=pending.top.map(()=>NaN);pending.aGradB=pending.top.map(()=>NaN)}break}
+    let idx=null;if(!fullBatch){if(pp+cfg.batch>perm.length){perm=permutation(prob.train.n,rng);pp=0}idx=perm.subarray(pp,pp+cfg.batch);pp+=cfg.batch}
+    const batch=fullBatch?prob.train:sub(idx);const lr=lrBase*Math.pow(.5,cfg.halve?Math.floor(t/cfg.halve):0);
+    const{upd,L,g:gB}=optStep(name,st,cfg,prob,lay,cfg.act,th,batch,lr);out.batchLoss[t]=L;
+    if(pending){const un=norm(upd);pending.aUpd=pending.top.map(v=>un?Math.abs(dot(v,upd))/un:NaN);const gbn=norm(gB)||1;pending.aGradB=pending.top.map(v=>Math.abs(dot(v,gB))/gbn);if(st.exactLayers)pending.exactLayers=st.exactLayers;pending=null}
+    for(let i=0;i<lay.P;i++)th[i]+=upd[i];if(!th.every(Number.isFinite))throw new Error(name+' diverged at step '+t+' (try a smaller learning rate)');
+    work++;if(performance.now()-t0>35){onProg&&onProg(work/totalWork);await tick();t0=performance.now()}}
+  out.final=out.ck[out.ck.length-1];out.lamFinal=st.lam;return out}
+async function randomBaseline(cfg,prob,lay,M,onProg){const K=Math.min(cfg.topk,3),vecs=[];for(let m=0;m<M;m++){const th=initParams(lay,cfg.act,mulberry32(1000+m*7919+(cfg.seed|0)));const C=curvature(cfg,prob,lay,th);const{V}=symEig(C,lay.P);
+    vecs.push(Array.from({length:K},(_,c)=>col(V,lay.P,c)));onProg&&onProg((m+1)/M);await tick()}
+  const tau=[];for(let c=0;c<K;c++){let s=0,n=0;for(let a=0;a<M;a++)for(let b=a+1;b<M;b++){s+=dispSI(vecs[a][c],vecs[b][c]);n++}tau.push(n?s/n:NaN)}return tau}
+if(typeof module!=='undefined')module.exports={mulberry32,layout,initParams,buildProblem,lossGrad,lossOnly,hessianFD,gaussNewton,symEig,runOptimiser,randomBaseline,jacobian,evalMetric,ipr,dispSI,layerGroups,setDigits:s=>{global.DIGITS_RAW=s}};
+
+</script>
+<script>
+// ===================== Hessian lab UI =====================
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const OPT_COL={SGD:'--s1',Adam:'--s2',SAM:'--s3','GN-CG':'--s4',LANCE:'--s6'};
+const IDX_COL=['--accent','--s1','--s3','--s4','--s5','--s0','--s6','--s2'];
+const OBJ_INFO={
+  digits:{name:'Digits classification (cross-entropy)',ls:false},
+  teacher:{name:'Teacher regression (MSE)',ls:true},
+  poisson:{name:'PINN Poisson-1D',ls:true},
+  helmholtz:{name:'PINN Helmholtz-1D',ls:true}};
+const PRESETS={
+  digits:{depth:1,width:6,act:'tanh',steps:1000,batch:64,lrSGD:0.2,lrAdam:0.005,lrSAM:0.2,l2:1e-4,opts:['SGD','Adam'],curv:'hessian'},
+  teacher:{depth:1,width:10,act:'tanh',steps:1000,batch:32,lrSGD:0.05,lrAdam:0.003,lrSAM:0.05,l2:0,opts:['SGD','Adam','GN-CG'],curv:'hessian'},
+  poisson:{depth:2,width:10,act:'tanh',steps:600,batch:64,lrSGD:0.005,lrAdam:0.003,lrSAM:0.005,l2:0,opts:['Adam','GN-CG','LANCE'],curv:'hessian'},
+  helmholtz:{depth:2,width:10,act:'tanh',steps:600,batch:64,lrSGD:0.0005,lrAdam:0.003,lrSAM:0.0005,l2:0,opts:['Adam','GN-CG','LANCE'],curv:'gn'}};
+const ALL_OPTS=['SGD','Adam','SAM','GN-CG','LANCE'];
+let RUNS=[],TAU=null,PROB=null,LAY=null,CFG=null,shown=0,ckIdx=-1,dispIdx=0,vecIdx=0,running=false,stopFlag=false;
+
+// ---------- formatting ----------
+function fm(v,d=3){if(v==null||!isFinite(v))return '–';const a=Math.abs(v);if(a===0)return '0';if(a>=1e4||a<1e-3)return v.toExponential(d-1).replace('e','e');return (+v.toPrecision(d)).toString()}
+const pct=v=>(100*v).toFixed(1)+'%';
+
+// ---------- canvas charts ----------
+function setupCanvas(cv,h){const w=Math.max(260,cv.parentElement.clientWidth-(cv.parentElement.tagName==='FIGURE'?24:0)),dpr=window.devicePixelRatio||1;cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);return{c,w,h}}
+function niceTicks(lo,hi,n){if(!(hi>lo)){hi=lo+1}const sp=hi-lo,s0=sp/n,m=Math.pow(10,Math.floor(Math.log10(s0))),r=s0/m,st=(r<1.5?1:r<3?2:r<7?5:10)*m;const t=[];for(let v=Math.ceil(lo/st)*st;v<=hi+st*1e-9;v+=st)t.push(+v.toPrecision(12));return t}
+function mkScale(kind,lo,hi,a,b,lin){let f;if(kind==='log'){const L=Math.log10(lo),H=Math.log10(hi);f=v=>a+(Math.log10(Math.max(v,1e-300))-L)/(H-L||1)*(b-a)}
+  else if(kind==='symlog'){const s=v=>Math.sign(v)*Math.log10(1+Math.abs(v)/lin);const L=s(lo),H=s(hi);f=v=>a+(s(v)-L)/(H-L||1)*(b-a)}else f=v=>a+(v-lo)/(hi-lo||1)*(b-a);return f}
+function ticksFor(kind,lo,hi,lin,n){if(kind==='log'){const a=Math.floor(Math.log10(lo)),b=Math.ceil(Math.log10(hi));const step=Math.max(1,Math.ceil((b-a)/6));
+    for(const ms of [[1],[1,2,5],[1,2,3,4,5,6,7,8,9]]){const t=[];for(let e=a;e<=b;e+=(ms.length>1?1:step))for(const m of ms){const v=m*Math.pow(10,e);if(v>=lo*0.999&&v<=hi*1.001)t.push(+v.toPrecision(6))}if(t.length>=3||ms.length===9)return t.length>8&&ms.length>1?t.filter((_,i)=>i%2===0):t}}
+  if(kind==='symlog'){const t=[0];const mx=Math.max(Math.abs(lo),Math.abs(hi));const e0=Math.ceil(Math.log10(lin)),e1=Math.floor(Math.log10(mx));const step=Math.max(1,Math.ceil((e1-e0+1)/3));
+    for(let e=e1;e>=e0;e-=step){const v=Math.pow(10,e);if(v<=hi)t.push(v);if(-v>=lo)t.push(-v)}return t.filter(v=>v>=lo&&v<=hi)}return niceTicks(lo,hi,n)}
+function tl(v){if(v===0)return '0';const a=Math.abs(v);if(a>=1e4||a<1e-2){const e=Math.floor(Math.log10(a)),m=v/Math.pow(10,e);return (Math.abs(Math.abs(m)-1)<1e-9?(m<0?'−':''):(+m.toPrecision(2)+'').replace('-','−')+'·')+'10'+sup(e)}return String(+v.toPrecision(3)).replace('-','−')}
+function sup(e){const m={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};return String(e).split('').map(ch=>m[ch]).join('')}
+// opts: {h, x:{kind,label,lim}, y:{kind,label,lim}, series:[{x,y,col,w,dash,pts,r,alpha,line}], hl:[{v,col,dash,label}], vl:[...], diag}
+function plot(cv,o){const{c,w,h}=setupCanvas(cv,o.h||250);const ml=o.ml||56,mr=14,mt=12,mb=40;
+  const ax=(axis,vals)=>{let lo,hi;const fin=vals.filter(v=>isFinite(v)&&(axis.kind!=='log'||v>0));if(axis.lim){[lo,hi]=axis.lim}else if(!fin.length){lo=0;hi=1}else{lo=Math.min(...fin);hi=Math.max(...fin)}
+    if(axis.kind==='log'){if(!(lo>0))lo=hi>0?hi*1e-3:1e-3;if(hi<=lo)hi=lo*10;if(!axis.lim){lo/=1.4;hi*=1.4}}else{if(hi===lo){hi+=Math.abs(hi)*.1||1;lo-=Math.abs(lo)*.1||1}if(!axis.lim){const p=(hi-lo)*.05;lo-=p;hi+=p;if(axis.zero&&lo>0&&lo<(hi-lo))lo=0}}
+    let lin=axis.lin;if(axis.kind==='symlog'&&!lin){const m=Math.max(...fin.map(Math.abs),1e-12);lin=m*1e-3}return{lo,hi,lin}};
+  const xs=[],ys=[];for(const s of o.series){for(let i=0;i<s.x.length;i++){if(isFinite(s.x[i])&&isFinite(s.y[i])){xs.push(s.x[i]);ys.push(s.y[i])}}}
+  (o.hl||[]).forEach(l=>{if(isFinite(l.v)&&l.fit)ys.push(l.v)});
+  const X=ax(o.x,xs),Y=ax(o.y,ys);const tx=mkScale(o.x.kind,X.lo,X.hi,ml,w-mr,X.lin),ty=mkScale(o.y.kind,Y.lo,Y.hi,h-mb,mt,Y.lin);
+  const line=css('--line'),muted=css('--muted'),ink=css('--ink'),grid=css('--grid');c.font='11px Inter, system-ui, sans-serif';c.lineWidth=1;
+  for(const v of ticksFor(o.y.kind,Y.lo,Y.hi,Y.lin,4)){const y=ty(v);c.strokeStyle=grid;c.beginPath();c.moveTo(ml,y);c.lineTo(w-mr,y);c.stroke();c.fillStyle=muted;c.textAlign='right';c.fillText(tl(v),ml-5,y+4)}
+  for(const v of ticksFor(o.x.kind,X.lo,X.hi,X.lin,6)){const x=tx(v);c.strokeStyle=line;c.beginPath();c.moveTo(x,h-mb);c.lineTo(x,h-mb+4);c.stroke();c.fillStyle=muted;c.textAlign='center';c.fillText(tl(v),x,h-mb+16)}
+  c.strokeStyle=muted;c.beginPath();c.moveTo(ml,h-mb+.5);c.lineTo(w-mr,h-mb+.5);c.stroke();
+  c.fillStyle=ink;c.font='italic 12.5px "Source Serif 4", Georgia, serif';c.textAlign='center';if(o.x.label)c.fillText(o.x.label,(ml+w-mr)/2,h-6);
+  if(o.y.label){c.save();c.translate(13,(mt+h-mb)/2);c.rotate(-Math.PI/2);c.fillText(o.y.label,0,0);c.restore()}
+  c.save();c.beginPath();c.rect(ml,mt-2,w-mr-ml,h-mb-mt+4);c.clip();
+  if(o.shadeNeg&&o.x.kind!=='log'&&X.lo<0){const x0=tx(X.lo),x1=tx(Math.min(0,X.hi));c.fillStyle=css('--accent-soft');c.fillRect(x0,mt,x1-x0,h-mb-mt)}
+  if(o.diag){c.strokeStyle=muted;c.setLineDash([4,4]);c.beginPath();const a=Math.max(X.lo,Y.lo),b=Math.min(X.hi,Y.hi);c.moveTo(tx(a),ty(a));c.lineTo(tx(b),ty(b));c.stroke();c.setLineDash([])}
+  for(const l of o.hl||[]){if(!isFinite(l.v)||l.v<Y.lo||l.v>Y.hi)continue;const y=ty(l.v);c.strokeStyle=css(l.col||'--muted');c.setLineDash(l.dash||[5,4]);c.beginPath();c.moveTo(ml,y);c.lineTo(w-mr,y);c.stroke();c.setLineDash([]);if(l.label){c.fillStyle=css(l.col||'--muted');c.font='11px Inter, system-ui, sans-serif';if(l.left){c.textAlign='left';c.fillText(l.label,ml+6,y-4)}else{c.textAlign='right';c.fillText(l.label,w-mr-4,y-4)}}}
+  for(const l of o.vl||[]){if(!isFinite(l.v)||l.v<X.lo||l.v>X.hi)continue;const x=tx(l.v);c.strokeStyle=css(l.col||'--muted');c.setLineDash(l.dash||[5,4]);c.beginPath();c.moveTo(x,mt);c.lineTo(x,h-mb);c.stroke();c.setLineDash([])}
+  for(const s of o.series){const col=css(s.col||'--accent');c.globalAlpha=s.alpha==null?1:s.alpha;
+    if(s.line!==false){c.strokeStyle=col;c.lineWidth=s.w||1.8;c.setLineDash(s.dash||[]);c.beginPath();let pen=false;
+      for(let i=0;i<s.x.length;i++){const ok=isFinite(s.x[i])&&isFinite(s.y[i])&&(o.y.kind!=='log'||s.y[i]>0)&&(o.x.kind!=='log'||s.x[i]>0);if(!ok){pen=false;continue}const px=tx(s.x[i]),py=ty(s.y[i]);if(pen)c.lineTo(px,py);else c.moveTo(px,py);pen=true}c.stroke();c.setLineDash([])}
+    if(s.pts){for(let i=0;i<s.x.length;i++){if(!(isFinite(s.x[i])&&isFinite(s.y[i])))continue;if(o.y.kind==='log'&&s.y[i]<=0)continue;if(o.x.kind==='log'&&s.x[i]<=0)continue;c.beginPath();c.arc(tx(s.x[i]),ty(s.y[i]),s.r||3,0,7);
+      if(s.hollow){c.strokeStyle=col;c.lineWidth=1.5;c.stroke()}else{c.fillStyle=col;c.fill()}}}
+    c.globalAlpha=1}
+  c.restore();return{tx,ty}}
+function legend(el,items){$(el).innerHTML=items.map(it=>`<span><i style="background:${css(it.col)}${it.dash?';height:2px;vertical-align:3px':''}"></i>${it.label}</span>`).join('')}
+function bars(cv,o){const{c,w,h}=setupCanvas(cv,o.h||230);const ml=50,mr=12,mt=12,mb=40;const n=o.cats.length,g=o.groups.length;let mx=0;for(const gr of o.groups)for(const v of gr.v)mx=Math.max(mx,v);if(o.ref)mx=Math.max(mx,o.ref);mx*=1.1;if(!(mx>0))mx=1;
+  const ty=v=>h-mb-(v/mx)*(h-mb-mt),bw=(w-ml-mr)/n;c.font='11px Inter, system-ui, sans-serif';
+  for(const v of niceTicks(0,mx,4)){const y=ty(v);c.strokeStyle=css('--grid');c.beginPath();c.moveTo(ml,y);c.lineTo(w-mr,y);c.stroke();c.fillStyle=css('--muted');c.textAlign='right';c.fillText(tl(v),ml-5,y+4)}
+  o.cats.forEach((cat,i)=>{const x0=ml+i*bw+bw*.12,iw=bw*.76/g;o.groups.forEach((gr,j)=>{const v=gr.v[i];c.fillStyle=css(gr.col);c.fillRect(x0+j*iw+1,ty(v),iw-2,ty(0)-ty(v))});c.fillStyle=css('--muted');c.textAlign='center';c.fillText(cat,ml+i*bw+bw/2,h-mb+15)});
+  if(o.ref!=null){const y=ty(o.ref);c.strokeStyle=css('--ink');c.setLineDash([5,4]);c.beginPath();c.moveTo(ml,y);c.lineTo(w-mr,y);c.stroke();c.setLineDash([])}
+  c.strokeStyle=css('--muted');c.beginPath();c.moveTo(ml,h-mb+.5);c.lineTo(w-mr,h-mb+.5);c.stroke();
+  if(o.ylabel){c.fillStyle=css('--ink');c.font='italic 12.5px "Source Serif 4", Georgia, serif';c.save();c.translate(13,(mt+h-mb)/2);c.rotate(-Math.PI/2);c.textAlign='center';c.fillText(o.ylabel,0,0);c.restore()}}
+function mixHex(a,b,t){const p=s=>{s=s.replace('#','');if(s.length===3)s=s.split('').map(x=>x+x).join('');return[0,2,4].map(i=>parseInt(s.slice(i,i+2),16))};const A=p(a),B=p(b);return 'rgb('+A.map((x,i)=>Math.round(x+(B[i]-x)*t)).join(',')+')'}
+function heat(cv,vec){const blocks=LAY.blocks,nl=LAY.sizes.length-1;let mx=0;for(const x of vec)mx=Math.max(mx,Math.abs(x));mx=mx||1;
+  const cols=[];for(let l=0;l<nl;l++){const W=blocks[2*l],b=blocks[2*l+1];cols.push({W,b,rows:W.r+1,cols:W.c})}
+  const avail=Math.max(260,cv.parentElement.clientWidth-24),gap=26,totC=cols.reduce((s,q)=>s+q.cols,0);const maxR=Math.max(...cols.map(q=>q.rows));
+  let cell=Math.min(22,(avail-gap*(nl-1)-10)/totC,260/maxR);cell=Math.max(cell,2);const h=Math.ceil(maxR*cell+46);const{c,w}=setupCanvas(cv,h);
+  const pos=css('--accent'),neg=css('--s1'),bg=css('--panel');let x=Math.max(4,(w-(totC*cell+gap*(nl-1)))/2);c.font='11px Inter, system-ui, sans-serif';
+  for(const q of cols){for(let i=0;i<q.W.r;i++)for(let j=0;j<q.W.c;j++){const v=Math.sign(vec[q.W.off+i*q.W.c+j])*Math.sqrt(Math.abs(vec[q.W.off+i*q.W.c+j])/mx);c.fillStyle=v>=0?mixHex(bg,pos,Math.min(1,v)):mixHex(bg,neg,Math.min(1,-v));c.fillRect(x+j*cell,4+i*cell,cell-(cell>4?1:0),cell-(cell>4?1:0))}
+    for(let j=0;j<q.b.c;j++){const v=Math.sign(vec[q.b.off+j])*Math.sqrt(Math.abs(vec[q.b.off+j])/mx);c.fillStyle=v>=0?mixHex(bg,pos,Math.min(1,v)):mixHex(bg,neg,Math.min(1,-v));c.fillRect(x+j*cell,4+q.W.r*cell+3,cell-(cell>4?1:0),cell-(cell>4?1:0))}
+    c.fillStyle=css('--muted');c.textAlign='center';c.fillText(q.W.name+' ('+q.W.r+'×'+q.W.c+') + '+q.b.name,x+q.cols*cell/2,h-14);x+=q.cols*cell+gap}}
+
+// ---------- config ----------
+function readCfg(){const g=id=>+$(id).value;return{obj:$('obj').value,pool:$('pool').value==='1',classes:g('classes'),tdim:g('tdim'),twidth:g('twidth'),noise:g('noise'),k:g('kwave'),ncol:g('ncol'),
+  l2:g('l2'),depth:g('depth'),width:g('width'),act:$('act').value,opts:ALL_OPTS.filter(o=>$('op_'+o).getAttribute('aria-pressed')==='true'&&!$('op_'+o).disabled),
+  steps:g('steps'),stepsGN:g('stepsGN'),batch:g('batch'),lrSGD:g('lrSGD'),lrAdam:g('lrAdam'),lrSAM:g('lrSAM'),rho:g('rho'),halve:g('halve'),K:g('Kcg'),lam0:g('lam0'),seed:g('seed'),dataSeed:g('seed'),
+  curv:$('curv').value,ckpts:g('ckpts'),hessN:g('hessN'),eps:g('eps'),topk:g('topk'),nBase:g('nBase'),keepPred:true}}
+function sizesFor(cfg){const din=cfg.obj==='digits'?(cfg.pool?16:64):cfg.obj==='teacher'?cfg.tdim:1,dout=cfg.obj==='digits'?cfg.classes:1;return[din,...Array(cfg.depth).fill(cfg.width),dout]}
+function syncUI(){const cfg=readCfg(),ls=OBJ_INFO[cfg.obj].ls,pinn=cfg.obj==='poisson'||cfg.obj==='helmholtz';
+  $('boxDigits').hidden=cfg.obj!=='digits';$('boxTeacher').hidden=cfg.obj!=='teacher';$('boxPinn').hidden=!pinn;$('kRow').hidden=cfg.obj!=='helmholtz';
+  for(const o of['GN-CG','LANCE']){const b=$('op_'+o);b.disabled=!ls;b.title=ls?'':'Gauss–Newton needs a least-squares objective'}
+  const gnOpt=$('curv').querySelector('option[value=gn]');gnOpt.disabled=!ls;if(!ls&&$('curv').value==='gn')$('curv').value='hessian';
+  const P=layout(sizesFor(cfg)).P;const warn=P>700;$('pInfo').innerHTML=`Architecture ${sizesFor(cfg).join('–')} · <b>P = ${P}</b> parameters`+(warn?' <span class="warn">· above 700: full Hessians would be too slow here, reduce width or depth.</span>':P>350?' · <span class="warn">large: expect up to a minute per optimiser</span>':'');
+  $('actWarn').hidden=!(pinn&&cfg.act==='relu');$('runBtn').disabled=running||warn||!cfg.opts.length;
+  $('batchRow').style.opacity=pinn?.5:1;$('hessNRow').style.opacity=pinn?.5:1;
+  $('valWidth').textContent=cfg.width;}
+function applyPreset(){const p=PRESETS[$('obj').value];for(const k of['depth','width','act','steps','batch','lrSGD','lrAdam','lrSAM','l2','curv'])$(k).value=p[k];
+  for(const o of ALL_OPTS)$('op_'+o).setAttribute('aria-pressed',p.opts.includes(o)?'true':'false');syncUI()}
+
+// ---------- run ----------
+function setStatus(s,err){$('status').textContent=s;$('status').classList.toggle('err',!!err)}
+function prog(f){const p=$('prog');p.hidden=f==null;if(f!=null)p.firstElementChild.style.width=(100*Math.min(1,f)).toFixed(1)+'%'}
+async function run(){if(running)return;const cfg=readCfg();running=true;stopFlag=false;syncUI();$('stopBtn').disabled=false;
+  try{PROB=buildProblem(cfg);LAY=layout(sizesFor(cfg));CFG=cfg;const th0=initParams(LAY,cfg.act,mulberry32(cfg.seed|0));const out=[];const t0=performance.now();
+    const nJobs=cfg.opts.length+(cfg.nBase>1?0.5:0);let done=0;
+    for(const name of cfg.opts){setStatus(`Training with ${name}…`);const ts=performance.now();
+      const r=await runOptimiser(cfg,PROB,LAY,th0,name,f=>prog((done+f)/nJobs),()=>stopFlag);r.time=(performance.now()-ts)/1000;out.push(r);done++}
+    TAU=null;if(cfg.nBase>1){setStatus('Random baseline τ from '+cfg.nBase+' independent initialisations…');TAU=await randomBaseline(cfg,PROB,LAY,cfg.nBase,f=>prog((done+0.5*f)/nJobs))}
+    RUNS=out;shown=0;ckIdx=-1;prog(null);setStatus(`${PROB.label} · P = ${LAY.P} · ${out.map(r=>r.name+' '+r.time.toFixed(1)+' s').join(' · ')} · total ${((performance.now()-t0)/1000).toFixed(1)} s`);
+    $('emptyMsg').hidden=true;$('results').hidden=false;buildToolbar();drawAll()}
+  catch(e){prog(null);setStatus(e.message==='stopped'?'Stopped. Results from the previous run are still shown.':'Error: '+e.message,e.message!=='stopped');console.warn(e)}
+  finally{running=false;$('stopBtn').disabled=true;syncUI()}}
+
+// ---------- toolbar ----------
+function buildToolbar(){$('runSeg').innerHTML=RUNS.map((r,i)=>`<button type="button" aria-pressed="${i===shown}" data-i="${i}"><i class="sw" style="background:${css(OPT_COL[r.name])}"></i> ${r.name}</button>`).join('');
+  $('runSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{shown=+b.dataset.i;ckIdx=-1;buildToolbar();drawAll()});
+  const R=RUNS[shown];const s=$('ckSlider');s.max=R.ck.length-1;if(ckIdx<0||ckIdx>R.ck.length-1)ckIdx=R.ck.length-1;s.value=ckIdx;$('ckVal').textContent='step '+R.ck[ckIdx].step;
+  $('dispSeg').innerHTML=Array.from({length:Math.min(3,CFG.topk)},(_,i)=>`<button type="button" aria-pressed="${i===dispIdx}" data-i="${i}">v${subs(i+1)}</button>`).join('');
+  $('dispSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{dispIdx=+b.dataset.i;buildToolbar();drawDisp()});
+  $('vecSeg').innerHTML=Array.from({length:CFG.topk},(_,i)=>`<button type="button" aria-pressed="${i===vecIdx}" data-i="${i}">v${subs(i+1)}</button>`).join('');
+  $('vecSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{vecIdx=+b.dataset.i;buildToolbar();drawLoc()})}
+const subs=n=>String(n).split('').map(d=>'₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+
+// ---------- panels ----------
+function curTab(){const b=document.querySelector('.tabs button[aria-selected=true]');return b?b.dataset.tab:'overview'}
+function drawAll(){if(!RUNS.length)return;const t=curTab();$('toolbar').hidden=t==='compare'||t==='method';
+  ({overview:drawOverview,spectrum:drawSpectrum,disp:drawDisp,align:drawAlign,loc:drawLoc,layers:drawLayers,compare:drawCompare,method:()=>{}})[t]()}
+const R=()=>RUNS[shown],CK=()=>R().ck[ckIdx];
+const metricName=()=>PROB.kind==='ce'?'test accuracy':PROB.kind==='mse'?'test MSE':'relative L² error';
+function smooth(a,step){const out=[],xs=[];const n=a.length;const bin=Math.max(1,Math.floor(n/300));for(let i=0;i<n;i+=bin){let s=0,c=0;for(let j=i;j<Math.min(n,i+bin);j++){s+=a[j];c++}xs.push(i+bin/2);out.push(s/c)}return{x:xs,y:out}}
+function drawOverview(){const r=R(),f=r.final,ck=CK(),P=r.P;
+  $('cards').innerHTML=[[P,'parameters P'],[fm(f.loss),'final training loss'],[PROB.kind==='ce'?pct(f.metric):fm(f.metric),metricName()],[fm(f.lmax),'final λ_max'],[fm(f.lmin),'final λ_min'],[fm(f.ipr[0]),'final IPR of v₁ (1/P = '+fm(1/P)+')'],[fm(f.gnorm),'final ‖∇L‖'],[r.time.toFixed(1)+' s','wall time']].map(([b,s])=>`<div class="card"><b>${b}</b><span>${s}</span></div>`).join('');
+  const sm=smooth(r.batchLoss);const steps=r.ck.map(c=>c.step);
+  plot($('cvLoss'),{x:{kind:'lin',label:'step',lim:[0,steps[steps.length-1]]},y:{kind:'log',label:'loss'},series:[{x:sm.x,y:sm.y,col:OPT_COL[r.name],w:1,alpha:.55},{x:steps,y:r.ck.map(c=>c.loss),col:'--ink',w:1.6,pts:true,r:3}],vl:[{v:ck.step,col:'--accent',dash:[2,3]}]});
+  legend('lgLoss',[{col:OPT_COL[r.name],label:(r.fullBatch?'full-batch':'mini-batch')+' loss per step'},{col:'--ink',label:'training loss at checkpoints'}]);
+  const K=Math.min(CFG.topk,5),ser=[];for(let i=0;i<K;i++)ser.push({x:steps,y:r.ck.map(c=>c.topVals[i]),col:IDX_COL[i],w:i?1.2:2,pts:true,r:2.5});
+  const hl=[];if(r.name==='SGD'||r.name==='SAM'){if(!r.halve)hl.push({v:2/r.lrBase,col:'--ink',label:'2/η',fit:false})}
+  const ser2=ser.slice();if((r.name==='SGD'||r.name==='SAM')&&r.halve)ser2.push({x:steps,y:r.ck.map(c=>2/c.lr),col:'--ink',dash:[5,4],w:1.2});
+  plot($('cvTop'),{x:{kind:'lin',label:'step'},y:{kind:'log',label:'eigenvalue'},series:ser2,hl,vl:[{v:ck.step,col:'--accent',dash:[2,3]}]});
+  legend('lgTop',[...ser.map((s,i)=>({col:s.col,label:'λ'+subs(i+1)})),...(r.name==='SGD'||r.name==='SAM'?[{col:'--ink',label:(!r.halve&&2/r.lrBase>1.5*Math.max(...r.ck.map(c=>c.topVals[0])))?'2/η = '+fm(2/r.lrBase)+', above the plotted range':'2/η, edge of stability for gradient descent',dash:1}]:[])]);
+  plot($('cvMin'),{x:{kind:'lin',label:'step'},y:{kind:'symlog',label:'λ_min'},series:RUNS.map(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.lmin),col:OPT_COL[q.name],pts:true,r:2.5,w:q===r?2:1.1,alpha:q===r?1:.5})),hl:[{v:0,col:'--muted',dash:[2,3]}]});
+  legend('lgMin',RUNS.map(q=>({col:OPT_COL[q.name],label:q.name})));
+  plot($('cvG'),{x:{kind:'lin',label:'step'},y:{kind:'log',label:'‖∇L‖'},series:[{x:steps,y:r.ck.map(c=>c.gnorm),col:OPT_COL[r.name],pts:true,r:2.5}]});
+  const pinn=PROB.kind==='pinn';$('figPred').hidden=!pinn;$('figMetric').hidden=pinn;
+  if(pinn){plot($('cvPred'),{x:{kind:'lin',label:'x',lim:[0,1]},y:{kind:'lin',label:'u(x)'},series:[{x:PROB.grid,y:PROB.uStar,col:'--ink',w:2.4},{x:PROB.grid,y:ck.pred,col:OPT_COL[r.name],w:1.8,dash:[6,3]}]});
+    legend('lgPred',[{col:'--ink',label:'exact u*'},{col:OPT_COL[r.name],label:r.name+' at step '+ck.step+', rel. L² error '+fm(ck.metric)}])}
+  else{plot($('cvMetric'),{x:{kind:'lin',label:'step'},y:{kind:PROB.kind==='ce'?'lin':'log',label:metricName(),lim:PROB.kind==='ce'?[0,1]:null},series:RUNS.map(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.metric),col:OPT_COL[q.name],pts:true,r:2.5,w:q===r?2:1.1}))});legend('lgMetric',RUNS.map(q=>({col:OPT_COL[q.name],label:q.name})))}}
+function hist(vals,lin,nb){const s=v=>Math.sign(v)*Math.log10(1+Math.abs(v)/lin);let lo=Infinity,hi=-Infinity;for(const v of vals){lo=Math.min(lo,s(v));hi=Math.max(hi,s(v))}return{s,lo,hi}}
+function drawSpectrum(){const r=R(),ck=CK(),P=r.P;const sets=[{c:r.ck[0],col:'--muted',label:'initialisation'},{c:ck,col:OPT_COL[r.name],label:'step '+ck.step}];
+  let mx=0;for(const q of sets)for(const v of q.c.vals)mx=Math.max(mx,Math.abs(v));const lin=Math.max(mx*1e-4,1e-10);const sl=v=>Math.sign(v)*Math.log10(1+Math.abs(v)/lin),inv=u=>Math.sign(u)*lin*(Math.pow(10,Math.abs(u))-1);
+  let lo=Infinity,hi=-Infinity;for(const q of sets)for(const v of q.c.vals){lo=Math.min(lo,sl(v));hi=Math.max(hi,sl(v))}const nb=48,bw=(hi-lo)/nb||1;
+  const ser=sets.map(q=>{const cnt=new Array(nb).fill(0);for(const v of q.c.vals){const k=Math.min(nb-1,Math.floor((sl(v)-lo)/bw));cnt[k]++}const x=[],y=[];for(let k=0;k<nb;k++){x.push(inv(lo+k*bw),inv(lo+(k+1)*bw));y.push(cnt[k]||NaN,cnt[k]||NaN)}return{x,y,col:q.col,w:q===sets[0]?1.2:2}});
+  plot($('cvHist'),{x:{kind:'symlog',label:'eigenvalue λ (symmetric log scale)',lin},y:{kind:'log',label:'count',lim:[0.7,P]},series:ser,shadeNeg:true,vl:[{v:0,col:'--muted',dash:[2,3]}]});
+  legend('lgHist',sets.map(q=>({col:q.col,label:q.label})).concat([{col:'--accent-soft',label:'negative curvature'}]));
+  $('specNote').textContent=`Linear region |λ| < ${fm(lin)}. At step ${ck.step}: ${(100*ck.negFrac).toFixed(1)}% of eigenvalues are negative, carrying ${(100*ck.negMass).toFixed(2)}% of Σ|λ|; λ_max = ${fm(ck.lmax)}, λ_min = ${fm(ck.lmin)}, condition-like ratio λ_max/|λ| at the 10th percentile ≈ ${fm(ck.lmax/Math.max(1e-300,Math.abs(ck.vals[Math.floor(.9*P)])))}.`;
+  plot($('cvNeg'),{x:{kind:'lin',label:'step'},y:{kind:'lin',label:'share negative',zero:true},series:RUNS.map(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.negFrac),col:OPT_COL[q.name],pts:true,r:2.5,w:q===r?2:1.1})).concat(RUNS.map(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.negMass),col:OPT_COL[q.name],dash:[4,3],w:1.1})))});
+  legend('lgNeg',RUNS.map(q=>({col:OPT_COL[q.name],label:q.name})).concat([{col:'--muted',label:'solid: count share · dashed: Σ|λ| share',dash:1}]));
+  const K=Math.min(12,P);$('tblTop').innerHTML='<thead><tr><th>i</th>'+r.ck.filter((_,i)=>i%Math.ceil(r.ck.length/6)===0||i===r.ck.length-1).map(c=>`<th>step ${c.step}</th>`).join('')+'</tr></thead><tbody>'+
+    Array.from({length:K},(_,i)=>'<tr><td>λ'+subs(i+1)+'</td>'+r.ck.filter((_,j)=>j%Math.ceil(r.ck.length/6)===0||j===r.ck.length-1).map(c=>`<td>${fm(c.vals[i])}</td>`).join('')+'</tr>').join('')+'</tbody>'}
+function twTimes(r){const n=r.ck.length;const pick=[];const m=Math.min(6,n-1);for(let k=0;k<m;k++)pick.push(Math.round(k*(n-2)/Math.max(1,m-1)));return[...new Set(pick)]}
+function drawDisp(){const r=R(),i=dispIdx,P=r.P,tws=twTimes(r),pal=['--s0','--s1','--s4','--s5','--s3','--accent'];
+  const ser=tws.map((a,k)=>{const x=[],y=[];for(let b=a+1;b<r.ck.length;b++){x.push(r.ck[b].step-r.ck[a].step);y.push(dispSI(r.ck[a].top[i],r.ck[b].top[i]))}return{x,y,col:pal[k%pal.length],pts:true,r:2.5}});
+  const hl=TAU?[{v:TAU[i],col:'--warn',dash:[6,4],label:'random baseline τ'+subs(i+1),fit:true,left:true}]:[];hl.push({v:2/P,col:'--muted',dash:[2,3],label:'orthogonal, 2/P',fit:false});
+  plot($('cvDisp'),{x:{kind:'log',label:'lag t (steps)'},y:{kind:'log',label:'Δ'+subs(i+1)+'(t_w, t_w + t)'},series:ser,hl});
+  legend('lgDisp',tws.map((a,k)=>({col:pal[k%pal.length],label:'t_w = '+r.ck[a].step})).concat(TAU?[{col:'--warn',label:'random baseline τ from '+CFG.nBase+' initialisations',dash:1}]:[]));
+  const fin=r.final;const K=Math.min(CFG.topk,5);
+  plot($('cvCos'),{x:{kind:'lin',label:'step'},y:{kind:'lin',label:'|cos(v_i(t), v_i(final))|',lim:[0,1.02]},series:Array.from({length:K},(_,q)=>({x:r.ck.map(c=>c.step),y:r.ck.map(c=>Math.abs(dot(c.top[q],fin.top[q]))),col:IDX_COL[q],pts:true,r:2.5,w:q?1.2:2}))});
+  legend('lgCos',Array.from({length:K},(_,q)=>({col:IDX_COL[q],label:'v'+subs(q+1)})));
+  const ser2=tws.map((a,k)=>{const x=[],y=[];for(let b=a+1;b<r.ck.length;b++){const d=new Float64Array(P);for(let j=0;j<P;j++)d[j]=r.ck[b].theta[j]-r.ck[a].theta[j];const n=norm(d)||1;x.push(r.ck[b].step-r.ck[a].step);y.push(Math.abs(dot(r.ck[a].top[0],d))/n)}return{x,y,col:pal[k%pal.length],pts:true,r:2.5}});
+  plot($('cvTwoUpd'),{x:{kind:'log',label:'lag t (steps)'},y:{kind:'log',label:'|v₁(t_w) · (θ(t_w+t) − θ(t_w))| / ‖·‖'},series:ser2,hl:[{v:Math.sqrt(1/P),col:'--muted',dash:[2,3],label:'random direction, 1/√P'}]});
+  legend('lgTwoUpd',tws.map((a,k)=>({col:pal[k%pal.length],label:'t_w = '+r.ck[a].step})))}
+function drawAlign(){const r=R(),ck=CK(),P=r.P;let mx=0;for(const v of ck.vals)mx=Math.max(mx,Math.abs(v));const lin=Math.max(mx*1e-4,1e-10);
+  const ser=[{x:Array.from(ck.vals),y:Array.from(ck.alG),col:'--s1',line:false,pts:true,r:2.6,alpha:.8}];
+  if(ck.step>0)ser.push({x:Array.from(ck.vals),y:Array.from(ck.alC).map(Math.abs),col:'--accent',line:false,pts:true,r:2.6,hollow:true});
+  plot($('cvAL'),{x:{kind:'symlog',label:'eigenvalue λ_i',lin},y:{kind:'log',label:'alignment'},series:ser,shadeNeg:true,hl:[{v:1/Math.sqrt(P),col:'--muted',dash:[2,3],label:'random, 1/√P'}]});
+  legend('lgAL',[{col:'--s1',label:'|v_i · ∇L| / ‖∇L‖ at step '+ck.step},...(ck.step>0?[{col:'--accent',label:'|v_i · (θ_t − θ_prev ckpt)| / ‖·‖ (fsc AL)'}]:[])]);
+  const K=Math.min(3,CFG.topk),pal=['--accent','--s1','--s3'];const ser2=[];for(let i=0;i<K;i++)ser2.push({x:r.ck.map(c=>c.aGradB?c.aGradB[i]:NaN),y:r.ck.map(c=>c.aUpd[i]),col:pal[i],line:false,pts:true,r:3.2,alpha:.85});
+  plot($('cvDiag'),{x:{kind:'log',label:'|v_i · ∇L_B| / ‖∇L_B‖ (step gradient)',lim:[1e-4,1]},y:{kind:'log',label:'|v_i · Δθ| / ‖Δθ‖',lim:[1e-4,1]},series:ser2,diag:true});
+  legend('lgDiag',Array.from({length:K},(_,i)=>({col:pal[i],label:'v'+subs(i+1)+', one point per checkpoint'})).concat([{col:'--muted',label:'update = gradient direction',dash:1}]));
+  const kk=Math.min(CFG.topk,10);plot($('cvCap'),{x:{kind:'lin',label:'step'},y:{kind:'lin',label:'share of ‖∇L‖² in top-k',lim:[0,1.02]},series:RUNS.map(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>{let s=0;for(let i=0;i<kk;i++)s+=c.aGrad[i]**2;return s}),col:OPT_COL[q.name],pts:true,r:2.5,w:q===r?2:1.1}))});
+  legend('lgCap',RUNS.map(q=>({col:OPT_COL[q.name],label:q.name+', k = '+kk})));}
+function drawLoc(){const r=R(),ck=CK(),P=r.P,K=Math.min(CFG.topk,6);
+  plot($('cvIPR'),{x:{kind:'lin',label:'step'},y:{kind:'log',label:'IPR(v_i) = Σ v_ij⁴'},series:Array.from({length:K},(_,q)=>({x:r.ck.map(c=>c.step),y:r.ck.map(c=>c.ipr[q]),col:IDX_COL[q],pts:true,r:2.5,w:q?1.2:2})),hl:[{v:1/P,col:'--muted',dash:[2,3],label:'delocalised, 1/P',fit:true},{v:3/P,col:'--muted',dash:[6,3],label:'Gaussian random vector, 3/(P+2)',fit:false}]});
+  legend('lgIPR',Array.from({length:K},(_,q)=>({col:IDX_COL[q],label:'v'+subs(q+1)})));
+  let mx=0;for(const v of ck.vals)mx=Math.max(mx,Math.abs(v));const lin=Math.max(mx*1e-4,1e-10);
+  plot($('cvIPRall'),{x:{kind:'symlog',label:'eigenvalue λ_i',lin},y:{kind:'log',label:'IPR'},series:[{x:Array.from(ck.vals),y:Array.from(ck.iprAll),col:OPT_COL[r.name],line:false,pts:true,r:2.4,alpha:.75}],shadeNeg:true,hl:[{v:1/P,col:'--muted',dash:[2,3],label:'1/P'}]});
+  heat($('cvVec'),ck.top[vecIdx]);$('vecNote').textContent=`v${subs(vecIdx+1)} at step ${ck.step} (λ = ${fm(ck.topVals[vecIdx])}, IPR = ${fm(ck.ipr[vecIdx])}), reshaped into the weight matrices (rows = inputs, columns = units) with biases in the bottom row. Colour intensity is √(|v_j|/max|v|), max|v| = ${fm(Math.max(...ck.top[vecIdx].map(Math.abs)))}; warm is positive, cool is negative. Sign is fixed so that v points against the gradient.`}
+function drawLayers(){const r=R(),ck=CK(),gr=layerGroups(LAY),P=r.P,cats=gr.map(g=>'L'+(g.l+1));const share=gr.map(g=>g.size/P);
+  const rho=c=>c.E.map((e,i)=>e/share[i]);const curvName=CFG.curv==='gn'&&PROB.ls?'Gauss–Newton 2JᵀJ':'Hessian';
+  bars($('cvE'),{cats,groups:[{v:share,col:'--muted'},{v:r.ck[0].E,col:'--s5'},{v:ck.E,col:OPT_COL[r.name]}],ylabel:'share'});
+  legend('lgE',[{col:'--muted',label:'parameter share P_ℓ/P'},{col:'--s5',label:'curvature energy E_ℓ at init'},{col:OPT_COL[r.name],label:'E_ℓ at step '+ck.step}]);
+  bars($('cvRho'),{cats,groups:[{v:rho(r.ck[0]).map(x=>Math.max(0,x)),col:'--s5'},{v:rho(ck).map(x=>Math.max(0,x)),col:OPT_COL[r.name]}],ref:1,ylabel:'ρ_ℓ'});
+  legend('lgRho',[{col:'--s5',label:'ρ_ℓ at init'},{col:OPT_COL[r.name],label:'ρ_ℓ at step '+ck.step},{col:'--ink',label:'ρ = 1 (energy share = parameter share)',dash:1}]);
+  plot($('cvEt'),{x:{kind:'lin',label:'step'},y:{kind:'lin',label:'E_ℓ',zero:true},series:gr.map((g,i)=>({x:r.ck.map(c=>c.step),y:r.ck.map(c=>c.E[i]),col:IDX_COL[i],pts:true,r:2.5}))});
+  legend('lgEt',gr.map((g,i)=>({col:IDX_COL[i],label:g.label})));
+  const ex=r.ck.find(c=>c.exactLayers);$('tblLay').innerHTML='<thead><tr><th>Layer</th><th>P_ℓ</th><th>P_ℓ/P</th><th>E_ℓ init</th><th>ρ_ℓ init</th><th>E_ℓ step '+ck.step+'</th><th>ρ_ℓ step '+ck.step+'</th><th>LANCE exact block (ρ > 1, P_ℓ ≤ 512)</th></tr></thead><tbody>'+
+    gr.map((g,i)=>`<tr><td>${g.label}</td><td>${g.size}</td><td>${pct(share[i])}</td><td>${pct(r.ck[0].E[i])}</td><td>${fm(rho(r.ck[0])[i])}</td><td>${pct(ck.E[i])}</td><td class="${rho(ck)[i]>1?'good':''}">${fm(rho(ck)[i])}</td><td>${rho(ck)[i]>1&&g.size<=512?'yes':'no'}</td></tr>`).join('')+'</tbody>';
+  $('layNote').textContent=`Energies are block traces of the ${curvName} diagonal, τ_ℓ = Σ_{j∈ℓ} C_jj, normalised to sum to one.`+(curvName==='Hessian'?' The Hessian diagonal can have negative entries away from a minimum, which can push a share below zero.':'')+(ex&&r.name==='LANCE'?` In this LANCE run the preconditioner solved exactly on layer(s) ${ex.exactLayers.map(l=>'L'+(l+1)).join(', ')||'none'} at step ${ex.step}.`:'')}
+function meanDispCurve(r,i){const acc=new Map();for(let a=0;a<r.ck.length-1;a++)for(let b=a+1;b<r.ck.length;b++){const lag=r.ck[b].step-r.ck[a].step,d=dispSI(r.ck[a].top[i],r.ck[b].top[i]);const e=acc.get(lag)||[0,0];e[0]+=d;e[1]++;acc.set(lag,e)}
+  const ks=[...acc.keys()].sort((x,y)=>x-y);return{x:ks,y:ks.map(k=>acc.get(k)[0]/acc.get(k)[1])}}
+function drawCompare(){const ser=f=>RUNS.map(q=>({...f(q),col:OPT_COL[q.name],pts:true,r:2.5}));const lg=id=>legend(id,RUNS.map(q=>({col:OPT_COL[q.name],label:q.name+(q.fullBatch?' (full batch)':'')})));
+  plot($('cvCLoss'),{x:{kind:'lin',label:'step'},y:{kind:'log',label:'training loss'},series:ser(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.loss)}))});lg('lgCLoss');
+  plot($('cvCLmax'),{x:{kind:'lin',label:'step'},y:{kind:'log',label:'λ_max'},series:ser(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.lmax)}))});lg('lgCLmax');
+  plot($('cvCIpr'),{x:{kind:'lin',label:'step'},y:{kind:'log',label:'IPR(v₁)'},series:ser(q=>({x:q.ck.map(c=>c.step),y:q.ck.map(c=>c.ipr[0])})),hl:[{v:1/LAY.P,col:'--muted',dash:[2,3],label:'1/P',fit:true}]});lg('lgCIpr');
+  plot($('cvCDisp'),{x:{kind:'log',label:'lag t (steps)'},y:{kind:'log',label:'mean over t_w of Δ₁(t_w, t_w + t)'},series:ser(q=>meanDispCurve(q,0)),hl:TAU?[{v:TAU[0],col:'--warn',dash:[6,4],label:'τ₁',fit:true}]:[]});lg('lgCDisp');
+  const K=Math.min(3,CFG.topk);const mean=a=>{const f=a.filter(Number.isFinite);return f.length?f.reduce((x,y)=>x+y,0)/f.length:NaN};
+  const s2=[];RUNS.forEach(q=>{s2.push({x:Array.from({length:K},(_,i)=>mean(q.ck.map(c=>c.aGradB?c.aGradB[i]:NaN))),y:Array.from({length:K},(_,i)=>mean(q.ck.map(c=>c.aUpd[i]))),col:OPT_COL[q.name],line:false,pts:true,r:4.5})});
+  plot($('cvCDiag'),{x:{kind:'log',label:'mean |v_i · ∇L| / ‖∇L‖',lim:[1e-3,1]},y:{kind:'log',label:'mean |v_i · Δθ| / ‖Δθ‖',lim:[1e-3,1]},series:s2,diag:true});lg('lgCDiag');
+  $('tblCmp').innerHTML='<thead><tr><th>Optimiser</th><th>steps</th><th>final loss</th><th>'+metricName()+'</th><th>λ_max</th><th>λ_min</th><th>IPR v₁</th><th>mean a_grad⁽¹⁾</th><th>mean a_upd⁽¹⁾</th><th>time</th></tr></thead><tbody>'+
+    RUNS.map(q=>{const f=q.final;return `<tr><td><i class="sw" style="background:${css(OPT_COL[q.name])}"></i> ${q.name}</td><td>${f.step}</td><td>${fm(f.loss)}</td><td>${PROB.kind==='ce'?pct(f.metric):fm(f.metric)}</td><td>${fm(f.lmax)}</td><td>${fm(f.lmin)}</td><td>${fm(f.ipr[0])}</td><td>${fm(mean(q.ck.map(c=>c.aGrad[0])))}</td><td>${fm(mean(q.ck.map(c=>c.aUpd[0])))}</td><td>${q.time.toFixed(1)} s</td></tr>`}).join('')+'</tbody>'}
+
+// ---------- export ----------
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function exportCSV(){if(!RUNS.length)return;const K=Math.min(3,CFG.topk);const head=['optimiser','step','loss','metric','grad_norm','lambda_max','lambda_min','neg_share',...Array.from({length:K},(_,i)=>'lambda_'+(i+1)),...Array.from({length:K},(_,i)=>'ipr_'+(i+1)),...Array.from({length:K},(_,i)=>'a_grad_'+(i+1)),...Array.from({length:K},(_,i)=>'a_upd_'+(i+1)),...layerGroups(LAY).map(g=>'E_L'+(g.l+1))];
+  const rows=[head.join(',')];for(const q of RUNS)for(const c of q.ck)rows.push([q.name,c.step,c.loss,c.metric,c.gnorm,c.lmax,c.lmin,c.negFrac,...c.topVals.slice(0,K),...c.ipr.slice(0,K),...c.aGrad.slice(0,K),...c.aUpd.slice(0,K),...c.E].join(','));download('hessian_runs.csv',rows.join('\n'),'text/csv')}
+function exportJSON(){if(!RUNS.length)return;const o={config:CFG,problem:PROB.label,sizes:LAY.sizes,P:LAY.P,tau:TAU,runs:RUNS.map(q=>({optimiser:q.name,lr:q.lrBase,time_s:q.time,checkpoints:q.ck.map(c=>({step:c.step,loss:c.loss,metric:c.metric,grad_norm:c.gnorm,eigenvalues:Array.from(c.vals),ipr_top:c.ipr,a_grad_top:c.aGrad,a_upd_top:c.aUpd,layer_energy:c.E,alignment_all_grad:Array.from(c.alG),alignment_all_ckpt:Array.from(c.alC),v1:Array.from(c.top[0])}))}))};
+  download('hessian_runs.json',JSON.stringify(o),'application/json')}
+
+// ---------- init ----------
+function init(){
+  ALL_OPTS.forEach(o=>{const b=$('op_'+o);b.onclick=()=>{if(b.disabled)return;b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true');syncUI()}});
+  $('obj').onchange=applyPreset;['pool','classes','tdim','twidth','depth','width','act','curv','steps'].forEach(id=>$(id).addEventListener('input',syncUI));
+  $('runBtn').onclick=run;$('stopBtn').onclick=()=>{stopFlag=true};$('dlCsv').onclick=exportCSV;$('dlJson').onclick=exportJSON;
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+    document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!=='p-'+b.dataset.tab);drawAll()});
+  $('ckSlider').oninput=()=>{ckIdx=+$('ckSlider').value;$('ckVal').textContent='step '+R().ck[ckIdx].step;drawAll()};
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(drawAll,120)});
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(RUNS.length){buildToolbar();drawAll()}});
+  applyPreset();run()}
+document.addEventListener('DOMContentLoaded',init);
+window.HessLab={get runs(){return RUNS},get tau(){return TAU},buildProblem,layout,initParams,hessianFD,gaussNewton,symEig,readCfg,sizesFor,run};
+
+</script>
+</body>
+</html>

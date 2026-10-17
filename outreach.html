@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" data-title-en="Outreach · Paolo Barucca" data-title-it="Divulgazione · Paolo Barucca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Outreach · Paolo Barucca</title>
+  <script>
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'it' || q === 'en') localStorage.setItem('lang', q);
+      var l = localStorage.getItem('lang') || ((navigator.language || '').slice(0, 2) === 'it' ? 'it' : 'en');
+      document.documentElement.dataset.lang = l;
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="lang.js" defer></script>
+</head>
+<body>
+<header class="site">
+  <nav class="nav">
+    <a class="name" href="index.html">Paolo Barucca</a>
+    <a href="research.html"><span class="en">Research</span><span class="it">Ricerca</span></a>
+    <a href="teaching.html"><span class="en">Teaching</span><span class="it">Didattica</span></a>
+    <a href="outreach.html" aria-current="page"><span class="en">Outreach</span><span class="it">Divulgazione</span></a>
+    <a href="consultancy.html"><span class="en">Consultancy</span><span class="it">Consulenza</span></a>
+    <a href="comedy.html">Comedy</a>
+    <a href="writing.html"><span class="en">Writing</span><span class="it">Scrittura</span></a>
+    <button class="lang" type="button">IT</button>
+  </nav>
+</header>
+
+<main>
+<h1><span class="en">Outreach</span><span class="it">Divulgazione</span></h1>
+  <p class="lead"><span class="en">Taking research out of the lecture hall: seminars, public talks and comedy nights.</span><span class="it">Portare la ricerca fuori dall’aula: seminari, incontri pubblici e serate comiche.</span></p>
+
+  <h2><span class="en">Now</span><span class="it">In corso</span></h2>
+  <div class="entry">
+    <h3><a href="https://www.ucl.ac.uk/engineering/computer-science/research/research-groups-and-centres/financial-computing-and-analytics-group/seminars"><span class="en">Financial Computing and Analytics seminar series</span><span class="it">Seminari di Financial Computing and Analytics</span></a></h3>
+    <p><span class="en">The UCL seminar series I organise, hosting researchers from UCL and beyond. Wednesdays, 4–5 pm, in person.</span><span class="it">La serie di seminari UCL che organizzo, con ricercatori di UCL e di altre università. Il mercoledì, 16–17, in presenza.</span></p>
+    <p class="sub"><a href="https://www.ucl.ac.uk/engineering/computer-science/research/research-groups-and-centres/financial-computing-and-analytics-group/seminars/previous-seminars-and-recordings"><span class="en">Previous seminars and recordings</span><span class="it">Seminari passati e registrazioni</span></a></p>
+  </div>
+  <div class="entry">
+    <h3><a href="https://www.ucl.ac.uk/events/events/2026/nov/learning-surprise">Learning by Surprise</a></h3>
+    <p><span class="en">A UCL Lunch Hour Lecture: learning, in a brain or in an AI system, as the steady reduction of future surprise; what can and cannot be learned from noisy data, and why two identical AI systems can learn different things. Chaired by Iacopo Iacopini. Free, booking essential.</span><span class="it">Una UCL Lunch Hour Lecture: l’apprendimento, in un cervello o in un sistema di IA, come riduzione costante della sorpresa futura; cosa si può e non si può imparare da dati rumorosi, e perché due sistemi di IA identici possono imparare cose diverse. Modera Iacopo Iacopini. Gratuita, prenotazione obbligatoria.</span></p>
+    <p class="sub"><span class="en">Online, 26 November 2026, 13:00–14:00</span><span class="it">Online, 26 novembre 2026, 13:00–14:00</span></p>
+  </div>
+
+  <h2><span class="en">Past</span><span class="it">Passati</span></h2>
+  <div class="entry">
+    <h3><a href="https://www.bloomsburytheatre.com/event/2026/10/laughter-best-medicine">Laughter is the Best Medicine</a></h3>
+    <p><span class="en">A medical comedy night where health researchers, doctors and people with lived experience share an evening of health-themed comedy. Presented by the UCL Institute of Healthcare Engineering.</span><span class="it">Una serata di comicità medica in cui ricercatori, medici e pazienti condividono stand-up a tema salute. Organizzata dall’UCL Institute of Healthcare Engineering.</span></p>
+    <p class="sub">Bloomsbury Studio, <span class="en">London, 1 October 2026</span><span class="it">Londra, 1 ottobre 2026</span></p>
+  </div>
+  <div class="entry">
+    <h3>Il Sentiero dei Sistemi Complessi</h3>
+    <p class="sub">COMPENG2026, <span class="en">July 2026</span><span class="it">luglio 2026</span></p>
+  </div>
+  <div class="entry">
+    <h3><a href="https://ccs25.cssociety.org/public-dissemination-event/">La complessità è semplice?</a></h3>
+    <p class="sub">Conference on Complex Systems, <span class="en">September 2025</span><span class="it">settembre 2025</span></p>
+  </div>
+
+  <h2><span class="en">Interactive experiments</span><span class="it">Esperimenti interattivi</span></h2>
+  <p><span class="en">Experiments I run in talks and lectures. The room becomes the system, and each one runs in the browser with nothing to install.</span><span class="it">Esperimenti che porto in conferenze e lezioni. La sala diventa il sistema, e ognuno gira nel browser senza installare nulla.</span></p>
+  <div class="grid">
+    <a class="card" href="twothirds.html"><h3><span class="en">Two-thirds of the average</span><span class="it">Due terzi della media</span></h3><p><span class="en">Everyone picks a number; the closest to two-thirds of the average wins.</span><span class="it">Ognuno sceglie un numero; vince chi si avvicina di più ai due terzi della media.</span></p></a>
+    <a class="card" href="lattice.html"><h3><span class="en">The 7 × 7 lattice</span><span class="it">Il reticolo 7 × 7</span></h3><p><span class="en">Ising, voter and Hopfield dynamics played out on the room itself.</span><span class="it">Dinamiche di Ising, del votante e di Hopfield giocate dalla sala stessa.</span></p></a>
+    <a class="card" href="metn.html"><h3><span class="en">Temporal network explorer</span><span class="it">Esploratore di reti temporali</span></h3><p><span class="en">Fit and compare temporal network models in the browser.</span><span class="it">Stima e confronta modelli di reti temporali nel browser.</span></p></a>
+  </div>
+
+  <p><span class="en">Want a talk at your school, festival or event?</span><span class="it">Vuoi un intervento nella tua scuola, festival o evento?</span> <a href="contact.html?topic=events"><span class="en">Get in touch</span><span class="it">Scrivimi</span></a>.</p>
+</main>
+
+<footer>© Paolo Barucca · <a href="contact.html"><span class="en">Get in touch</span><span class="it">Contatti</span></a> · <a href="links.html">Links</a></footer>
+</body>
+</html>
